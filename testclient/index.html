@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Test Client</title>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="bootstrap.min.css" >
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" >
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>  
+        <link rel="stylesheet" href="form.css" >
+        <script src="form.js"></script>
+    </head>
+    <body >
+        <div class="container">
+            <div class="row">
+  
+                <div class="col-md-6 col-md-offset-3">
+                    <h2>Test Client</h2>
+    <form role="form" method="post" id="reused_form">
+                      <div class="row">
+                            <div class="col-sm-6 form-group">
+                                <label for="name"> Host</label><input type="text" class="form-control" id="firstname" name="firstname" maxlength="50">
+                            </div>
+                            <div class="col-sm-6 form-group">
+                                <label for="name"> Port</label><input type="text" class="form-control" id="lastname" name="lastname" maxlength="50">
+                            </div>
+      </div>
+                        <div class="row">
+                            <div class="col-sm-6 form-group">
+                               <input type="button" class="btn btn-lg btn-success btn-block" id="btnGetToken" name="btnGetToken" maxlength="50" value="REQUEST JWT TOKEN">
+                            </div>
+                            <div class="col-sm-6 form-group">
+                                <input type="tel" class="form-control" id="phone" name="phone" required maxlength="50">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 form-group">
+                               <label for="wshost">WS Host</label>
+                <input type="text" class="form-control" id="wshost" name="wshost" maxlength="50">
+                            </div>                            
+                    </div>
+                        <div class="row">
+                  <div class="col-sm-12 form-group">
+                                <input type="button" class="btn btn-lg btn-success btn-block" id="btnConnect" name="btnConnect" maxlength="50" value="CONNECT">
+                          </div>
+                        </div>
+                        
+                        
+ 						<div class="row">
+                        <div id="container" style="width:600px;">  
+                        
+                          <ul class="nav nav-tabs">  
+                            <li class="active"><a data-toggle="tab" href="#home">Stats</a></li>  
+                            <li><a data-toggle="tab" href="#menu1">Logging</a></li> 
+                          </ul>  
+                          
+                         <div class="tab-content">  
+                            <div id="home" class="tab-pane fade in active">  
+                               <div class="row">
+                            <div class="col-sm-12 form-group">
+                               <textarea class="form-control" type="textarea" id="stats" name="stats" placeholder="Your Message Here" maxlength="6000" rows="7"></textarea>
+                            </div>
+                            <div class="col-sm-12 form-group">
+                                <button type="button" class="btn btn-lg btn-success btn-block" id="btnClearStats">CLEAR</button>
+                            </div>
+                        </div>
+                            </div>  
+                            <div id="menu1" class="tab-pane fade">  
+                              <div class="row">
+                            <div class="col-sm-12 form-group">
+                               <textarea class="form-control" type="textarea" id="logs" name="logs" placeholder="Your Message Here" maxlength="6000" rows="7"></textarea>
+                            </div>
+                            <div class="col-sm-12 form-group">
+                                <button type="button" class="btn btn-lg btn-success btn-block" id="btnClearLogs">CLEAR</button>
+                            </div>
+                        </div>
+                            </div>  
+                          </div>  
+                        </div>
+                        </div>
+    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

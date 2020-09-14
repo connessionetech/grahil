@@ -1,0 +1,10 @@
+tornado==5.1.1
+jproperties==2.0.0
+psutil==5.6.1
+PyJWT==1.7.1
+user-agents==2.0 
+aiofile==1.5.2
+pyfastcopy==1.0.3
+smalluuid==1.0.0
+requests==2.22.0
+APScheduler==3.6.1

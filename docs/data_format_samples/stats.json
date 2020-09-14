@@ -1,0 +1,66 @@
+{
+	"target": {
+		"meta_info": {},
+		"is_stopping": false,
+		"version": "",
+		"stats": {
+			"created": 0,
+			"open_file_handles": 0,
+			"percent_cpu_used": 0,
+			"percent_memory_used": 0
+		},
+		"name": "red5 open source",
+		"is_starting": false,
+		"is_running": false,
+		"installed": false
+	},
+	"system": {
+		"os_version": "16.04",
+		"os_type": "Linux",
+		"boot_time": 1555259680.0,
+		"meta_info": {},
+		"uptime": 7961.258805036545,
+		"os_name": "Ubuntu",
+		"os_release": "4.15.0-47-generic",
+		"stats": {
+			"memory_info": {
+				"free_swap_mem": 25306329088,
+				"percent_swap_mem": 0.0,
+				"used_virtual_mem": 3744305152,
+				"used_swap_mem": 0,
+				"percent_virtual_mem": 36.3,
+				"free_virtual_mem": 6316859392,
+				"total_swap_mem": 25306329088,
+				"total_virtual_mem": 12499443712
+			},
+			"cpu_info": {
+				"cpu_count": 4,
+				"cpu_percent": 18.1
+			},
+			"disk_info": {
+				"total_disk_space": 19549782016,
+				"used_disk_space": 9078566912,
+				"percent_disk_space": 49.0,
+				"part_disk_info": [{
+					"free": 9454518272,
+					"used": 9078566912,
+					"percent": 49.0,
+					"mountpoint": "/",
+					"total": 19549782016
+				}, {
+					"free": 67630080,
+					"used": 31984640,
+					"percent": 32.1,
+					"mountpoint": "/boot/efi",
+					"total": 99614720
+				}],
+				"mount_point": "/",
+				"free_disk_space": 9454518272
+			},
+			"net_info": {
+				"total_connections": 0,
+				"part_connections": []
+			}
+		}
+	}
+}
