@@ -23,6 +23,9 @@ import tornado
 from sys import platform
 from pathlib import Path
 import array
+import collections
+from tornado.ioloop import IOLoop
+from _datetime import datetime
 
 
 class LogMonitor(object):
@@ -30,16 +33,24 @@ class LogMonitor(object):
     classdocs
     '''
 
-    def __init__(self, conf, callback=None):
+    def __init__(self, conf, callback=None, chunk_callback=None):
         '''
         Constructor
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
         self.__log_files = {}
+        self.__log_store = {}
+        self.__callback = None
+        self.__chunk_callback = None
+        
         
         if callback != None:
             self.__callback = callback
+            
+        if chunk_callback != None:
+            self.__chunk_callback = chunk_callback
+            
         pass    
     
     
@@ -51,7 +62,9 @@ class LogMonitor(object):
         name = log_info["name"]
         if not name in self.__log_files:
             self.__log_files[name] = log_info
-            tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, name)    
+            self.__log_store[name] = collections.deque([], self.__conf["max_messages_chunks"])
+            tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, name)
+            tornado.ioloop.IOLoop.current().spawn_callback(self.__schedule_chunk_processing, name)    
     
     
     '''
@@ -60,6 +73,10 @@ class LogMonitor(object):
     def deregisterLogFile(self, name):
         if name in self.__log_files:
             del self.__log_files[name]
+            del self.__log_store[name]
+            pcallback = self.__log_files["chunk_collector"]
+            pcallback.stop()
+            # Stop tail
             
             
     
@@ -81,6 +98,60 @@ class LogMonitor(object):
     def callback(self, fun):
         self.__callback = fun
         
+        
+        
+    @property
+    def chunk_callback(self):
+        return self.__chunk_callback
+    
+    
+    
+    @chunk_callback.setter
+    def chunk_callback(self, fun):
+        self.__chunk_callback = fun
+        
+    
+    
+    ''' call collector every 15 seconds '''
+    def __schedule_chunk_processing(self, logname):
+        callback = tornado.ioloop.PeriodicCallback(lambda: self.__chunk_collector(logname), 15000)
+        self.__log_files["chunk_collector"] = callback;
+        callback.start()
+        pass
+    
+    
+    
+    async def __chunk_collector(self, logname):
+        try:    
+            log_info = self.__log_files[logname]
+            log_topic_path = log_info["topic_path"]
+            log_file_path = log_info["log_file_path"]
+            log_file = Path(str(log_file_path))
+            
+            if not log_file.exists():
+                self.deregisterLogFile(logname)
+                raise Exception("Log file %s does not exist at location %s ", logname,  str(log_file.absolute()))
+            
+            q = self.__log_store[logname];
+            if(self.__chunk_callback != None):
+                log_topic_path = log_topic_path.replace("logging", "logging/chunked")
+                await self.__chunk_callback(logname, log_topic_path, q.copy(), None)
+            self.__log_store[logname].clear()
+            self.__log_store[logname] = None
+            self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"])                    
+        
+        except Exception as e:
+            
+            err = "An error occurred in processing log chunks " + str(e)
+            self.logger.warning(err)
+            
+            if(self.__chunk_callback != None):
+                await self.__chunk_callback(logname, log_topic_path, None, err)
+            
+        pass
+        
+    
+    
     
     
     async def __tail(self, logname):
@@ -119,20 +190,25 @@ class LogMonitor(object):
                 else: 
                     if(self.__callback != None):
                         await self.__callback(logname, log_topic_path, line, None)
+                        
+                    ''' Collect log lines in a queue till  it reaches queue size limit'''    
+                    q = self.__log_store[logname];
+                    q.append(line)
         
         except Exception as e:
             
             err = "An error occurred in monitoring log." + str(e)
             self.logger.warning(err)
             
-            await self.__callback(logname, log_topic_path, None, err)
+            if(self.__callback != None):
+                await self.__callback(logname, log_topic_path, None, err)
             
             if logname in self.__log_files:
                 await self._retry(logname)
             else:
-                self.logger.warning("Log was de-registered from monitoring")
-            
+                self.logger.warning("Log was de-registered from monitoring")            
         pass
+    
     
     
     

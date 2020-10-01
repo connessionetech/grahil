@@ -22,12 +22,12 @@ import os
 from pathlib import Path
 from aiofile.aio import AIOFile
 from shutil import copyfile, copytree
-from oneadmin.exceptions import FileSystemOperationError, FileUploadError
+from oneadmin.exceptions import *
 from fileinput import filename
 import ntpath
-from aiofile.utils import Reader
+from aiofile.utils import Reader, Writer
 import tornado
-from settings import settings
+from settings import *
 import datetime as dt
 import shutil
 import asyncio
@@ -60,6 +60,7 @@ class FileManager(object):
         self.__allowed_read_extensions = self.__config["allowed_read_extensions"]
         self.__allowed_write_extensions = self.__config["allowed_write_extensions"]
         self.__uploads = {}
+        self.__filestreams = {}
          
         self.executor = ThreadPoolExecutor(max_workers=FileManager.MAX_WORKERS)
         
@@ -699,4 +700,48 @@ class FileManager(object):
         except Exception as e:    
             raise FileSystemOperationError("Unable to list path " + filepath + ".Cause " + str(e))
         pass
+    
+    
+    async def write_file_stream(self, filepath, content, must_exist = False):
+        
+        file = Path(filepath)
+        filename = self.path_leaf(filepath)
+        
+        extension = os.path.splitext(filename)[1]
+        if not extension in self.__allowed_write_extensions:
+            raise Exception("Extension "+extension+" is not permitted in a write operation")
+        
+        path = file.absolute()
+        
+        if must_exist and not file.exists():
+            raise FileNotFoundError("Invalid path " + path + " or file " + filename + " not found. must exist to write to")
+        
+        if must_exist and not file.is_file():
+            raise FileNotFoundError("Path " + path + " is not a file.")
+        
+        
+        ''' Create record of stream '''
+        '''
+        if not filepath in self.__filestreams:
+            self.__filestreams[filepath] = {}
+            self.__filestreams[filepath]['name'] = filename
+            self.__filestreams[filepath]['start'] = datetime.datetime.now().timestamp()
+        '''
+                
+        try:
+            
+            async with AIOFile(str(path), "a+") as afp:
+                writer = Writer(afp)       
+                while len(content) > 0:
+                    try:
+                        line = content.pop()
+                        await writer(line)
+                    except:
+                        self.logger.error("An error occured while writing "  + line) 
+                
+                await afp.fsync()               
+                
+        except Exception as ex:
+            
+            raise FileSystemOperationError("Could not write to file " + filename)
     

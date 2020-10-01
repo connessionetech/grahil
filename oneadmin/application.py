@@ -87,6 +87,7 @@ class TornadoApplication(tornado.web.Application):
             self.__logmonitor = None
             self.__pubsubhub = None
             self.__pinger = None
+            self.__cunt = None
             
             
             # Attempt to find out public ip
@@ -139,8 +140,9 @@ class TornadoApplication(tornado.web.Application):
             # Register log monitor module
             log_monitor_config = modules["log_monitor"]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
-                self.__logmonitor = LogMonitor(conf)
+                self.__logmonitor = LogMonitor(log_monitor_config)
                 self.__logmonitor.callback = self.processLogLine
+                self.__logmonitor.chunk_callback = self.processLogChunk
                 
                     
                     
@@ -348,7 +350,18 @@ class TornadoApplication(tornado.web.Application):
             evt = buildDataEvent({"subject":"Target", "concern": "LogStatement", "content":str(data, 'utf-8')}, topic)
             await self.__pubsubhub.publish(topic, evt)
         else:
-            self.logger.error("Log monitor error " + str(error))
+            self.logger.error("Log line error " + str(error))
+        pass
+    
+    
+    async def processLogChunk(self, logname, topic, data, error=None):
+        if(error == None):
+            self.logger.debug("Log chunk received")
+            evt = buildDataEvent({"subject":"Target", "concern": "LogChunk", "content":data}, topic)
+            await self.__pubsubhub.publish(topic, evt)    
+            # await self.__filemanager.write_file_stream("/home/rajdeeprath/sample_frame.log", data)            
+        else:
+            self.logger.error("Log chunk error " + str(error))
         pass
     
     
