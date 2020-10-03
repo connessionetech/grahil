@@ -59,7 +59,7 @@
 			"log_monitor":{
 					"enabled": true,
 					"retry_time_gap_seconds": 5,
-					"max_messages_chunks": 20,
+					"max_messages_chunks": 100,
 					"static_targets": [
 						{
 							"name": "red5.log", 
@@ -122,11 +122,11 @@
 			"bot": {
 				"enabled": false,
 				"conf":{
-					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"
+					"token": ""
 				}			
 			},
 			"reaction_engine":{
-				"enabled": false
+				"enabled": true
 			}
 		}		
 	}

@@ -72,10 +72,10 @@ class LogMonitor(object):
     '''
     def deregisterLogFile(self, name):
         if name in self.__log_files:
-            del self.__log_files[name]
-            del self.__log_store[name]
             pcallback = self.__log_files["chunk_collector"]
             pcallback.stop()
+            del self.__log_files[name]
+            del self.__log_store[name]
             # Stop tail
             
             
@@ -127,6 +127,7 @@ class LogMonitor(object):
             log_topic_path = log_info["topic_path"]
             log_file_path = log_info["log_file_path"]
             log_file = Path(str(log_file_path))
+            log_chunk_processor_callback = self.__log_files["chunk_collector"];
             
             if not log_file.exists():
                 self.deregisterLogFile(logname)
@@ -146,6 +147,7 @@ class LogMonitor(object):
             self.logger.warning(err)
             
             if(self.__chunk_callback != None):
+                log_topic_path = log_topic_path.replace("logging", "logging/chunked")
                 await self.__chunk_callback(logname, log_topic_path, None, err)
             
         pass

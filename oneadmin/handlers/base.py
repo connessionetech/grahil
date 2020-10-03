@@ -178,6 +178,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         pubsubhub = modules.getModule("pubsub")
         self.application.unregisterClient(self)
         pubsubhub.clearsubscriptions(self)
+        # terminate recordings
         self.logger.info("Total clients %d", self.application.totalclients)
         self.finished = True
 

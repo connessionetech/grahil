@@ -713,20 +713,17 @@ class FileManager(object):
         
         path = file.absolute()
         
-        if must_exist and not file.exists():
-            raise FileNotFoundError("Invalid path " + path + " or file " + filename + " not found. must exist to write to")
-        
-        if must_exist and not file.is_file():
+        if must_exist :
+            if not file.exists():
+                raise FileNotFoundError("Invalid path " + path + " or file " + filename + " not found. must exist to write to")
+        else:
+            if not file.exists():
+                async with AIOFile(str(path), 'w+') as afp:
+                    await afp.fsync()
+
+        if not file.is_file():
             raise FileNotFoundError("Path " + path + " is not a file.")
-        
-        
-        ''' Create record of stream '''
-        '''
-        if not filepath in self.__filestreams:
-            self.__filestreams[filepath] = {}
-            self.__filestreams[filepath]['name'] = filename
-            self.__filestreams[filepath]['start'] = datetime.datetime.now().timestamp()
-        '''
+
                 
         try:
             

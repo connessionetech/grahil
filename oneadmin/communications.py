@@ -660,15 +660,20 @@ class PubSubHub(object):
             msgque = channel[2] #queue
             try:
                 message = await msgque.get()
+                
                 clients = channel[3] #set
                 if len(clients) > 0:
                     self.logger.debug("Pushing message %s to %s subscribers...".format(message, len(clients)))
                     for clients in clients:
-                        await clients.submit(message)
-                
-                # Notify reaction engine
-                if self.__notifyable != None and self.__isValidReactableEvent(message) == True:
-                    await self.__notifyable.notifyEvent(message)
+                        await clients.submit(message)                
+                                
+                try:
+                    # Notify reaction engine
+                    if self.__notifyable != None and self.__isValidReactableEvent(message) == True:
+                        await self.__notifyable.notifyEvent(message)
+                except Exception as e:
+                        err = "An error occurred in reaction engine while reacting to this event." + str(e)
+                        self.logger.error(err)
                 
             except:
                 logging.error("Oops!,%s,occurred.", sys.exc_info()[0])

@@ -22,6 +22,7 @@ from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
 from oneadmin.communications import PubSubHub, RPCGateway, Pinger
+from oneadmin.modules.reaction import ReactionEngine
 
 from requests.api import get
 import logging
@@ -87,7 +88,7 @@ class TornadoApplication(tornado.web.Application):
             self.__logmonitor = None
             self.__pubsubhub = None
             self.__pinger = None
-            self.__cunt = None
+            self.__reaction_engine = None
             
             
             # Attempt to find out public ip
@@ -209,6 +210,20 @@ class TornadoApplication(tornado.web.Application):
         Register `rpc_gateway` module
         '''
         self.modules.registerModule("rpc_gateway", self.__rpc_gateway)
+        
+        
+        # Register reaction engine        
+        reaction_engine_conf = modules["reaction_engine"];
+        if reaction_engine_conf["enabled"] == True:
+            self.__reaction_engine = ReactionEngine(reaction_engine_conf, self.modules)
+            
+            '''
+            Register `reaction_engine` module            
+            self.modules.registerModule("reaction_engine", self.__reaction_engine);
+            '''
+            
+            # Inform pubsubhub of the reaction engine presence
+            self.__pubsubhub.notifyable = self.__reaction_engine
 
         
         
