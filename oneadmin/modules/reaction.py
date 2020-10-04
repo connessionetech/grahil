@@ -33,7 +33,68 @@ import importlib
 import inspect
 import time
 import asyncio
-from reactions.filesystem_reactions import write_log
+from oneadmin.modules.reactions.filesystem_reactions import write_log
+from datetime import datetime
+from croniter.croniter import croniter
+
+
+class SimpleScheduler(object):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self, conf):
+        '''
+        Constructor
+        ''' 
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.__conf = conf
+        self.__now = datetime.now()
+        self.__crons = {}
+    pass
+
+
+
+    def activate_cron(self, id):
+        info = self.__crons[id]
+        cron_object = info[0]
+        cron_object.get_next(float)
+        pass
+    
+    
+    
+    def dectivate_cron(self, id):
+        pass
+
+
+    
+    def register_cron_job(self, jobinfo):
+        
+        id = jobinfo["id"]
+        expr = jobinfo["expr"]
+        
+        if croniter.is_valid(expr):
+            cron_object = croniter(expr, self.__now)
+            self.__crons[id] = (jobinfo, cron_object)
+        else:
+            self.logger.error("Cannot register cron. Invalid expression " + expr)
+        pass
+    
+    
+    
+    def unregister_cron_job(self, id):
+        
+        if id in self.__crons:
+            del self.__crons[id]
+        
+        else:
+            self.logger.error("No cron job by id " + id + " was found")
+        
+        pass
+    
+
+
 
 class ReactionEngine(Notifyable):
     

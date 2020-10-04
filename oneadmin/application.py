@@ -22,7 +22,6 @@ from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
 from oneadmin.communications import PubSubHub, RPCGateway, Pinger
-from oneadmin.modules.reaction import ReactionEngine
 
 from requests.api import get
 import logging
@@ -33,6 +32,7 @@ import os
 
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
+from oneadmin.modules.reaction import ReactionEngine
 
 
 class ModuleRegistry(object):

@@ -113,12 +113,8 @@
 			"rpc_gateway":{
 				"enabled": true
 			},
-			"task_scheduler":{
-				"enabled": false,
-				"module":"oneadmin.modules.taskmanagement",
-				"klass":"TaskScheduler",
-				"conf":{
-				}
+			"scheduler":{
+				"enabled": false
 			},
 			"bot": {
 				"enabled": false,
