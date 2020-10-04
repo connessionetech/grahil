@@ -31,3 +31,28 @@ def getLogFileKey(path):
 def path_leaf(path):
         head, tail = ntpath.split(path)
         return tail or ntpath.basename(head)
+    
+
+''' builds log writer rule dynamically '''        
+def buildWriterRule(id, topic, filepath):
+    name = path_leaf(filepath)
+    return {
+        "id": "reaction-rule-09" + "-" +  id,
+        "description": "Rule for log recording " + name,
+        "listen-to": ""+ topic + "",
+        "enabled": true,
+        "trigger":{
+            "on-payload-object": "data",
+            "on-content": "*",
+            "using-condition": "equals",
+            "evaluator-func": null
+        },
+        "response":{
+            "action": "writelog",
+            "reaction-func": "standard_reactions.write_log",
+            "reaction-params": {
+                "filepath": "" + filepath + ""
+            }
+        }    
+    }
+    pass

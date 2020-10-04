@@ -2,7 +2,7 @@
 	"id": "reaction-rule-09",
 	"description": "Rule for log recording",
 	"listen-to": "/logging/chunked/red5pro-server-us-7-2-recording/log/red5.log",
-	"enabled": false,
+	"enabled": true,
 	"trigger":{
 		"on-payload-object": "data",
 		"on-content": "*",

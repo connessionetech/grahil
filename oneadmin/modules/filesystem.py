@@ -38,6 +38,7 @@ from tornado.ioloop import IOLoop
 import tempfile
 import os.path
 from os import path
+from _collections import deque
 
 class FileManager(object):
     '''
@@ -728,17 +729,18 @@ class FileManager(object):
         try:
             
             async with AIOFile(str(path), "a+") as afp:
-                writer = Writer(afp)       
-                while len(content) > 0:
-                    try:
-                        line = content.pop()
-                        await writer(line)
-                    except:
-                        self.logger.error("An error occured while writing "  + line) 
+                writer = Writer(afp)  
+                
+                try:
+                    if isinstance(content, deque):                    
+                        while len(content) > 0:
+                            line = content.popleft()
+                            await writer(line)
+                except Exception as ex:
+                    self.logger.error("An error occured while writing data : "  + line + " . Cause " + str(ex)) 
                 
                 await afp.fsync()               
                 
-        except Exception as ex:
-            
-            raise FileSystemOperationError("Could not write to file " + filename)
+        except Exception as ex1:
+            raise FileSystemOperationError("Could not write to file " + filename + "." +  str(ex1))
     

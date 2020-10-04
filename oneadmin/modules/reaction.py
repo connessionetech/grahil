@@ -257,23 +257,29 @@ class ReactionEngine(Notifyable):
         
     
     def registerRule(self, rule):
-        self.__rules[rule["id"]] = rule
-                        
-        '''
-        All {time} actions go to task scheduler
-        '''
-        if rule["listen-to"] == "{time}":
-            self.__register_timed_reaction(rule)                                
+        
+        try:
+            self.__rules[rule["id"]] = rule
+                            
+            '''
+            All {time} actions go to task scheduler
+            '''
+            if rule["listen-to"] == "{time}":
+                self.__register_timed_reaction(rule)                                
+                
+            else:
+                self.__topics_of_intertest.add(rule["listen-to"])
             
-        else:
-            self.__topics_of_intertest.add(rule["listen-to"])
-        pass
+        except Exception as e:
+            err = "Unable to register rule " + str(e)
+            self.logger.error(err)
     
     
     
     def deregisterRule(self, id):
-        del self.__rules[id]
-        pass
+        if self.__rules[id] != None:
+            del self.__rules[id]
+            pass
     
     
     
@@ -365,7 +371,7 @@ class ReactionEngine(Notifyable):
                                 raise ("Function " +fun + " was not found")
                             pass
                 else:
-                    self.logger.info("evaluate locally and return boolean expression")
+                    self.logger.debug("evaluate locally and return boolean expression")
                     
                     if rule["trigger"]["using-condition"] == "equals":
                         if rule["trigger"]["on-content"] == "*":
@@ -443,7 +449,7 @@ class ReactionEngine(Notifyable):
             pass
         
         elif rule["response"]["action"] == "writelog":
-            self.logger.info("Call writelog handler")
+            self.logger.debug("Call writelog handler")
             if self.file_manager is not None:
                 params = rule["response"]["reaction-params"]
                 await write_log(rule["id"], self.file_manager, params, event)
