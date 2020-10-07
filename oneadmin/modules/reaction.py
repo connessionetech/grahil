@@ -36,6 +36,7 @@ import asyncio
 from oneadmin.modules.reactions.filesystem_reactions import write_log
 from datetime import datetime
 from croniter.croniter import croniter
+from apscheduler.schedulers.tornado import TornadoScheduler
 
 
 class SimpleScheduler(object):
@@ -109,10 +110,8 @@ class ReactionEngine(Notifyable):
         self.__system__modules = modules
         self.__evaluator__modules={}
         self.__reaction__modules={}  
-        self.__topics_of_intertest = set()      
-        
-        if modules.hasModule("task_scheduler"):
-            self.task_scheduler = modules.getModule("task_scheduler")
+        self.__topics_of_intertest = set()
+        self.__task_scheduler = TornadoScheduler()
             
         
         if modules.hasModule("file_manager"):
@@ -124,14 +123,24 @@ class ReactionEngine(Notifyable):
     
     def _initialize(self):
         self.__rules = {}
-        self.__events = Queue(maxsize=50)
-        
+        self.__events = Queue(maxsize=50)        
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_evaluators)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_reactions)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         
+        self.__task_scheduler.start();
+    
+    
+    def __register_timed_reaction(self, rule):
+        time_object = rule["trigger"]["on-time-object"]
+        if time_object["recurring"] == False:            
+            date_time_str = time_object["expression"]
+            self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
+        else:    
+            self.task_scheduler.scheduleTaskByCronExpersssion(time_object, self.__respondToTimedEvent, rule)
+                
     
     
     def hello(self):
@@ -344,10 +353,7 @@ class ReactionEngine(Notifyable):
     
     
     
-    def __register_timed_reaction(self, rule):
-        if hasattr(self, 'task_scheduler'):
-            time_object = rule["trigger"]["on-time-object"]
-            self.task_scheduler.scheduleTaskByCronExpersssion(time_object, self.__respondToTimedEvent, rule)
+    
                 
     
     '''
@@ -524,7 +530,7 @@ class ReactionEngine(Notifyable):
     
     
     async def __respondToTimedEvent(self, rule, auxdata=None):
-        await self.__respondToEvent(rule, "Scheduled", auxdata)
+        # await self.__respondToEvent(rule, "Scheduled", auxdata)
         pass
     
     
