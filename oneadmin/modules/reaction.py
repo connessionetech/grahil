@@ -37,64 +37,7 @@ from oneadmin.modules.reactions.filesystem_reactions import write_log
 from datetime import datetime
 from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
-
-
-class SimpleScheduler(object):
-    '''
-    classdocs
-    '''
-
-
-    def __init__(self, conf):
-        '''
-        Constructor
-        ''' 
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.__conf = conf
-        self.__now = datetime.now()
-        self.__crons = {}
-    pass
-
-
-
-    def activate_cron(self, id):
-        info = self.__crons[id]
-        cron_object = info[0]
-        cron_object.get_next(float)
-        pass
-    
-    
-    
-    def dectivate_cron(self, id):
-        pass
-
-
-    
-    def register_cron_job(self, jobinfo):
-        
-        id = jobinfo["id"]
-        expr = jobinfo["expr"]
-        
-        if croniter.is_valid(expr):
-            cron_object = croniter(expr, self.__now)
-            self.__crons[id] = (jobinfo, cron_object)
-        else:
-            self.logger.error("Cannot register cron. Invalid expression " + expr)
-        pass
-    
-    
-    
-    def unregister_cron_job(self, id):
-        
-        if id in self.__crons:
-            del self.__crons[id]
-        
-        else:
-            self.logger.error("No cron job by id " + id + " was found")
-        
-        pass
-    
-
+from reactions.filesystem_reactions import copy_file
 
 
 class ReactionEngine(Notifyable):
@@ -105,6 +48,7 @@ class ReactionEngine(Notifyable):
         '''
         Constructor
         '''
+        
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
         self.__system__modules = modules
@@ -123,23 +67,31 @@ class ReactionEngine(Notifyable):
     
     def _initialize(self):
         self.__rules = {}
-        self.__events = Queue(maxsize=50)        
+        self.__events = Queue(maxsize=50)
+        self.__task_scheduler.start();        
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_evaluators)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_reactions)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         
-        self.__task_scheduler.start();
     
     
     def __register_timed_reaction(self, rule):
-        time_object = rule["trigger"]["on-time-object"]
-        if time_object["recurring"] == False:            
-            date_time_str = time_object["expression"]
-            self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
-        else:    
-            self.task_scheduler.scheduleTaskByCronExpersssion(time_object, self.__respondToTimedEvent, rule)
+        
+        try:
+            time_object = rule["trigger"]["on-time-object"]
+            if 'recurring' not in time_object or  time_object["recurring"] == False:            
+                date_time_str = time_object["expression"]
+                self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
+            else:    
+                cron_str = time_object["expression"]
+                if croniter.is_valid(cron_str):
+                    self.task_scheduler.scheduleTaskByCronExpersssion(time_object, self.__respondToTimedEvent, rule)
+                else:
+                    raise Exception("Invalid cron expression " + str(cron_str))
+        except Exception as e:  
+                self.logger.error("Error registering timed event. " + str(e))
                 
     
     
@@ -460,9 +412,15 @@ class ReactionEngine(Notifyable):
         Determines and executes appropriate reaction(s) to an event
     '''
     async def __respondToEvent(self, rule, event, auxdata=None):
-        if rule["response"]["action"] == "method":
-            fun = rule["response"]["reaction-func"]
-            func_parts = fun.split(".", 1)
+        
+        response_mode = rule["response"]["action"]
+        response_fun = None if "reaction-func" not in rule["response"]  or  rule["response"]["reaction-func"] == 'null' else rule["response"]["reaction-func"]
+        response_fun_params = None if "reaction-params" not in rule["response"]  or  rule["response"]["reaction-params"] == 'null' else rule["response"]["reaction-params"]
+        
+        if response_mode == "method":
+            
+            self.logger.debug("Call method")
+            func_parts = response_fun.split(".", 1)
             mod_name = func_parts[0]
             sys_module = False                        
             
@@ -479,58 +437,56 @@ class ReactionEngine(Notifyable):
                         module = self.__reaction__modules[mod_name]["module"]
                         if isinstance(getattr(module, func_name), types.FunctionType):
                             func = getattr(module, func_name)
-                            funparams = rule["response"]["reaction-params"]
-                            funparams = self.__detokenize(funparams)
+                            funparams = self.__detokenize(response_fun_params)
                             await self.arbitrary_method_reaction(rule["id"], func, event, funparams)
-                            pass 
                         else:
-                            self.logger.error("Function " +fun + " was not found")
-                        pass
+                            self.logger.error("Function " + response_fun + " was not found")
                 else:
                     self.logger.error("Module " + mod_name + " was not found")
-                    pass
             else:
                 self.logger.info("system module " + mod_name + " not available")                
             
-        elif rule["response"]["action"] == "delegate":
+        elif response_mode == "delegate":
             self.logger.debug("Call delegate")
                         
             if self.__system__modules.hasModule('target_delegate'):
-                funparams = rule["response"]["reaction-params"]
-                await self.delegate_method_reaction(rule["id"], event, funparams) 
+                await self.delegate_method_reaction(rule["id"], event, response_fun_params) 
             else:
                 self.logger.info("Delegate if unavailable. Reaction call will be skipped for rule %s", rule["id"])
-                pass
         
-        elif rule["response"]["action"] == "http":
+        elif response_mode == "http":
+            
             self.logger.info("Call http handler")
-            url = rule["response"]["reaction-params"]["url"]
-            method = rule["response"]["reaction-params"]["method"]
-            queryparams = rule["response"]["reaction-params"]["queryparams"]
-            post_event_data = rule["response"]["reaction-params"]["post_event_data"]
+            
+            url = response_fun_params["url"]
+            method = response_fun_params["method"]
+            queryparams = response_fun_params["queryparams"]
+            post_event_data = response_fun_params["post_event_data"]
             
             if post_event_data == True:
                 await http_reaction(rule["id"], url, method, queryparams, event)
             else:
                 await http_reaction(rule["id"], url, method, queryparams)
-            pass
-        
-        elif rule["response"]["action"] == "writelog":
+                        
+        elif rule["response"]["action"] == "write_log":
+            
             self.logger.debug("Call writelog handler")
             if self.file_manager is not None:
-                params = rule["response"]["reaction-params"]
-                await write_log(rule["id"], self.file_manager, params, event)
-                pass
-        
+                await write_log(rule["id"], self.file_manager, response_fun_params, event)
+            
+        elif rule["response"]["action"] == "copy_file":
+            
+            self.logger.debug("Call copyfile handler")
+            if self.file_manager is not None:
+                await copy_file(rule["id"], self.file_manager, response_fun_params, event)
         else:
             raise ("Invalid reaction type " + rule["response"]["action"])
         pass
         
     
     
-    
     async def __respondToTimedEvent(self, rule, auxdata=None):
-        # await self.__respondToEvent(rule, "Scheduled", auxdata)
+        await self.__respondToEvent(rule, "Scheduled", auxdata)
         pass
     
     

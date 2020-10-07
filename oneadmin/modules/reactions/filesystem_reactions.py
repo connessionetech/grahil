@@ -36,3 +36,13 @@ async def write_log(ruleid, filemanager, params, event):
 
 
 
+async def copy_file(ruleid, filemanager, params, event):
+    # logger.info(json.dumps(params))
+    source = params['source']
+    destination = params['destination']
+    await filemanager.copyFile(source, destination)    
+    pass
+
+
+
+

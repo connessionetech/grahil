@@ -75,7 +75,10 @@
 					"auto_clean_tmp_directories": false,
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
-					"accessible_paths":[],
+					"accessible_paths":[
+						"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/",
+						"/home/rajdeeprath/"
+						],
 					"allowed_read_extensions":[
 						".properties", 
 						".xml", 

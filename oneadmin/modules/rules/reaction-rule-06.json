@@ -6,15 +6,17 @@
 	"trigger": {
 		"on-time-object": {
 			"recurring": false,
-			"expression": "2020-10-07 05:03:00"
+			"expression": "2020-10-08 03:37:00"
 		},
 		"evaluator-func": null
 	},
 	"response": {
-		"action": "method",
-		"reaction-func": "sample_reactions.timed_reaction",
+		"action": "copy_file",
+		"reaction-func": "standard_reactions.copy_file",
 		"reaction-params": {
-			"param": "value"
+			"source": "/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/red5.log",
+			"destination": "/home/rajdeeprath/red5pro-server-us-7-2-recording.log",
+			"overwrite": true
 		}
 	}
 }

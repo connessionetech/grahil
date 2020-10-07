@@ -10,7 +10,7 @@
 		"evaluator-func": null
 	},
 	"response":{
-		"action": "writelog",
+		"action": "write_log",
 		"reaction-func": "standard_reactions.write_log",
 		"reaction-params": {
 			"filepath": "/home/rajdeeprath/red5-reaction-rule-09.log"
