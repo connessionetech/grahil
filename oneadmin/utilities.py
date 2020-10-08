@@ -34,10 +34,10 @@ def path_leaf(path):
     
 
 ''' builds log writer rule dynamically '''        
-def buildWriterRule(id, topic, filepath):
+def buildLogWriterRule(id, topic, filepath):
     name = path_leaf(filepath)
     return {
-        "id": "reaction-rule-09" + "-" +  id,
+        "id": "reaction-log-rule" + "-" +  id,
         "description": "Rule for log recording " + name,
         "listen-to": ""+ topic + "",
         "enabled": true,
@@ -48,7 +48,7 @@ def buildWriterRule(id, topic, filepath):
             "evaluator-func": null
         },
         "response":{
-            "action": "writelog",
+            "action": "start_log_record",
             "reaction-func": "standard_reactions.write_log",
             "reaction-params": {
                 "filepath": "" + filepath + ""

@@ -2,7 +2,7 @@
 	"id": "reaction-rule-09",
 	"description": "Rule for log recording",
 	"listen-to": "/logging/chunked/red5pro-server-us-7-2-recording/log/red5.log",
-	"enabled": true,
+	"enabled": false,
 	"trigger":{
 		"on-payload-object": "data",
 		"on-content": "*",
@@ -10,7 +10,8 @@
 		"evaluator-func": null
 	},
 	"response":{
-		"action": "write_log",
+		"nonce" : false,
+		"action": "log_record",
 		"reaction-func": "standard_reactions.write_log",
 		"reaction-params": {
 			"filepath": "/home/rajdeeprath/red5-reaction-rule-09.log"

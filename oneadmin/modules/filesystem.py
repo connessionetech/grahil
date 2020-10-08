@@ -487,6 +487,29 @@ class FileManager(object):
         pass
     
     
+    
+    '''
+        Check if file/folder exists
+    '''
+    def resource_exists(self, path, isFile=True):
+        if(not self.is_path_included(path)):
+            raise FileSystemOperationError("path is not within allowed path")
+        file = Path(path)
+        
+        if file.exists():
+            if isFile == True:
+                if os.path.isfile(path):
+                    return True
+                return False
+            else:
+                if os.path.isfile(path):
+                    return False
+                return True
+        else:
+            return False
+        
+    
+    
     '''
         Copies a file or folder to another location. Can read only from within base directory defined
     '''

@@ -18,6 +18,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import json
+import ntpath
+import datetime
+import time
+from utilities import buildLogWriterRule, path_leaf
+
 
 
 logger = logging.getLogger(__name__)
@@ -40,9 +45,14 @@ async def copy_file(ruleid, filemanager, params, event):
     # logger.info(json.dumps(params))
     source = params['source']
     destination = params['destination']
-    await filemanager.copyFile(source, destination)    
-    pass
-
-
-
+    overwrite = params['overwrite']
+    
+    if filemanager.resource_exists(destination):
+        filename = path_leaf(destination)
+        millis = int(round(time.time() * 1000))
+        filename = filename + "_" + millis
+        dirname = ntpath.dirname(destination)
+        destination = dirname + filename
+    
+    await filemanager.copyFile(source, destination)
 

@@ -40,6 +40,7 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from reactions.filesystem_reactions import copy_file
 
 
+
 class ReactionEngine(Notifyable):
     
     
@@ -258,16 +259,7 @@ class ReactionEngine(Notifyable):
                         if rule["enabled"] != True:
                             continue
                         
-                        self.__rules[rule["id"]] = rule
-                        
-                        '''
-                        All {time} actions go to task scheduler
-                        '''
-                        if rule["listen-to"] == "{time}":
-                            self.__register_timed_reaction(rule)                                
-                            
-                        else:
-                            self.__topics_of_intertest.add(rule["listen-to"])
+                        self.registerRule(rule)
             else:
                 raise FileNotFoundError("File : " + path + " does not exist.")
             
@@ -275,12 +267,20 @@ class ReactionEngine(Notifyable):
             err = "Unable to load one or more rule(s) " + str(e)
             self.logger.error(err)
             raise RulesError(err)
+    
+    
+    
+    def create_rule(self, event, rule):
+        self.registerRule(rule)
         
         
     
     def registerRule(self, rule):
         
         try:
+            
+            rule["_responded_to"] = False
+            
             self.__rules[rule["id"]] = rule
                             
             '''
@@ -417,21 +417,27 @@ class ReactionEngine(Notifyable):
         response_fun = None if "reaction-func" not in rule["response"]  or  rule["response"]["reaction-func"] == 'null' else rule["response"]["reaction-func"]
         response_fun_params = None if "reaction-params" not in rule["response"]  or  rule["response"]["reaction-params"] == 'null' else rule["response"]["reaction-params"]
         
+        
+        if 'nonce' in rule["response"]:
+            if rule["response"]["nonce"] == True: 
+                if rule["_responded_to"] == False:
+                    rule["_responded_to"] = True
+                else:    
+                    return
+        else:
+            rule["response"]["nonce"] = False
+        
+        
         if response_mode == "method":
             
             self.logger.debug("Call method")
-            func_parts = response_fun.split(".", 1)
-            mod_name = func_parts[0]
-            sys_module = False                        
+            sys_module = False
             
-            ''' look for system module '''
-            if mod_name.startswith('{') and mod_name.endswith('{'):
-                mod_name = mod_name.translate(mod_name.maketrans("{}", "  ")) 
-                sys_module = True
-            
-            
-            func_name = func_parts[1]                       
-            if sys_module == False:            
+            if '.' in response_fun:
+                func_parts = response_fun.split(".", 1)
+                mod_name = func_parts[0]
+                func_name = func_parts[1]
+                
                 if mod_name in self.__reaction__modules:
                     if "module" in self.__reaction__modules[mod_name]:
                         module = self.__reaction__modules[mod_name]["module"]
@@ -441,10 +447,11 @@ class ReactionEngine(Notifyable):
                             await self.arbitrary_method_reaction(rule["id"], func, event, funparams)
                         else:
                             self.logger.error("Function " + response_fun + " was not found")
-                else:
-                    self.logger.error("Module " + mod_name + " was not found")
+                    else:
+                        self.logger.error("Module " + mod_name + " was not found")                 
             else:
-                self.logger.info("system module " + mod_name + " not available")                
+                self.logger.error("Module not defined for function")
+                
             
         elif response_mode == "delegate":
             self.logger.debug("Call delegate")
@@ -468,9 +475,9 @@ class ReactionEngine(Notifyable):
             else:
                 await http_reaction(rule["id"], url, method, queryparams)
                         
-        elif rule["response"]["action"] == "write_log":
+        elif rule["response"]["action"] == "log_record":
             
-            self.logger.debug("Call writelog handler")
+            self.logger.debug("Call log_record handler")
             if self.file_manager is not None:
                 await write_log(rule["id"], self.file_manager, response_fun_params, event)
             
@@ -479,6 +486,14 @@ class ReactionEngine(Notifyable):
             self.logger.debug("Call copyfile handler")
             if self.file_manager is not None:
                 await copy_file(rule["id"], self.file_manager, response_fun_params, event)
+                
+        
+        elif rule["response"]["action"] == "create_rule":
+            
+            self.logger.debug("Call create_rule handler")
+            new_rule = rule["response"]["reaction-params"]["rule-data"]
+            self.registerRule(new_rule)
+                
         else:
             raise ("Invalid reaction type " + rule["response"]["action"])
         pass
