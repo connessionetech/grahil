@@ -700,15 +700,20 @@ class FileManager(object):
                     self.__list_directory_async, str(path)
                     ) 
             for name in files:
-                listing_path = Path(os.path.join(str(str(path), name)))
+                listing_path = Path(os.path.join(path, name))
                 if(listing_path.is_dir() == False and listing_path.is_file() == False):
                     continue                
                 statinfo = os.stat(str(listing_path))
                 listing = {}
                 listing["name"] = name
-                # listing["path"] = path.absolute()
+                
                 listing["is_directory"] = listing_path.is_dir()
                 listing["last_modified"] = statinfo[8]
+                
+                st = os.stat(listing_path)
+                oct_perm = oct(st.st_mode)
+                listing["permission"] = str(oct_perm)[-3:]
+                
                 files_listing.append(listing)
                 
             return files_listing

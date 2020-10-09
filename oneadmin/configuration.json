@@ -76,14 +76,15 @@
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
 					"accessible_paths":[
-						"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/",
+						"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/",
 						"/home/rajdeeprath/"
 						],
 					"allowed_read_extensions":[
 						".properties", 
 						".xml", 
 						".txt", 
-						".ini"
+						".ini",
+						".log"
 						],
 					"allowed_write_extensions":[
 						".properties", 

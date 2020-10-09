@@ -86,6 +86,7 @@ class RPCGateway(object):
         self.__task_queue["publish_channel"] = Queue(maxsize=5)
         self.__task_queue["run_diagnostics"] = Queue(maxsize=5)
         self.__task_queue["browse_fs"] = Queue()
+        self.__task_queue["delete_file"] = Queue(maxsize=3)
         self.__task_queue["fulfillRequest"] = Queue(maxsize=5)
         
         for rpc_task in self.__task_queue:
@@ -418,7 +419,33 @@ class RPCGateway(object):
         else:
             raise ModuleNotFoundError("`FileManager` module does not exist")
         pass
+    
+    
+
+    '''
+        delete file from a specified path.
         
+        Payload content =>
+        path : Path of file to delete.  
+    '''
+    async def delete_file(self, handler, params):
+        self.logger.info("delete_file")
+        
+        __filemanager = None
+        
+        if self.__system_modules.hasModule("file_manager"):
+            __filemanager = self.__system_modules.getModule("file_manager")
+        
+        if(__filemanager != None):
+            path = str(params[0])
+            result = await __filemanager.deleteFile(path)
+            return result
+        else:
+            raise ModuleNotFoundError("`FileManager` module does not exist")
+        pass
+        
+
+
 
 class PubSubHub(object):
     '''
