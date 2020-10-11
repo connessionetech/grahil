@@ -23,5 +23,7 @@ url_patterns = [
     (r"/", base.MainHandler),
     (r"/file/read", base.FileReadHandler),
     (r"/file/write", base.FileWriteHandler),
+    (r"/file/download", base.FileDownloadHandler),
+    (r"/file/delete", base.FileDeleteeHandler),
     (r"/ws", base.WebSocketHandler),
 ]

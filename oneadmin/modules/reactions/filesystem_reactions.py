@@ -21,7 +21,7 @@ import json
 import ntpath
 import datetime
 import time
-from utilities import buildLogWriterRule, path_leaf
+from oneadmin.utilities import buildLogWriterRule, path_leaf
 
 
 

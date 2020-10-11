@@ -149,7 +149,7 @@ class LogMonitor(object):
             self.logger.warning(err)
             
             if(self.__chunk_callback != None):
-                log_topic_path = log_topic_path.replace("logging", "logging/chunked")
+                log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
                 await self.__chunk_callback(logname, log_topic_path, None, err)
             
         pass
@@ -202,7 +202,7 @@ class LogMonitor(object):
                     ''' max_messages_chunks < 100 causes bug while writing log '''
                     if len(q)>=self.__conf["max_messages_chunks"] :
                         if self.__chunk_callback != None:
-                            log_topic_path = log_topic_path.replace("logging", "logging/chunked")
+                            log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
                             await self.__chunk_callback(logname, log_topic_path, q.copy(), None)
                         self.__log_store[logname].clear()
                         self.__log_store[logname] = None

@@ -2,7 +2,7 @@
 	"id": "reaction-rule-11",
 	"description": "event rule to start log recording at time",
 	"listen-to": "/logging/red5pro-server-us-7-2-recording/log/red5.log",
-	"enabled": false,
+	"enabled": true,
 	"trigger": {
 		"on-payload-object": "data",
 		"on-content": "Publish Start",

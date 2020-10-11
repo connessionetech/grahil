@@ -175,6 +175,7 @@ class RPCGateway(object):
     
     
     
+    
     '''
         Runs system diagnostics and generates report
     '''

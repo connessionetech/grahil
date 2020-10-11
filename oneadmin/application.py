@@ -236,6 +236,9 @@ class TornadoApplication(tornado.web.Application):
         self.addwatchfiles(settings["users_configuration"])
         
         
+
+        
+        
         tornado.web.Application.__init__(self, url_patterns, **settings)
         
         

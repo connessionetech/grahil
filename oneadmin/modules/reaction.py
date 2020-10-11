@@ -134,7 +134,7 @@ class ReactionEngine(Notifyable):
         
         for ruleid, rule in self.__rules.items():
             if self.__canReactTo(rule, event):
-                self.logger.debug("Processing event %s for rule %s", str(event), ruleid)
+                self.logger.info("Processing event %s for rule %s", str(event), ruleid)
                 tornado.ioloop.IOLoop.current().spawn_callback(self.__respondToEvent, rule, event)
 
 
@@ -275,6 +275,11 @@ class ReactionEngine(Notifyable):
         
         
     
+    def delete_rule(self, id):
+        self.deregisterRule(id) 
+               
+        
+    
     def registerRule(self, rule):
         
         try:
@@ -299,7 +304,7 @@ class ReactionEngine(Notifyable):
     
     
     def deregisterRule(self, id):
-        if self.__rules[id] != None:
+        if id in self.__rules and self.__rules[id] != None:
             del self.__rules[id]
             pass
     
@@ -493,6 +498,13 @@ class ReactionEngine(Notifyable):
             self.logger.debug("Call create_rule handler")
             new_rule = rule["response"]["reaction-params"]["rule-data"]
             self.registerRule(new_rule)
+            
+        
+        elif rule["response"]["action"] == "delete_rule":
+            
+            self.logger.debug("Call create_rule handler")
+            rule_id = rule["response"]["reaction-params"]["rule-data"]["id"]
+            self.deregisterRule(rule_id)
                 
         else:
             raise ("Invalid reaction type " + rule["response"]["action"])

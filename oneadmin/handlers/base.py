@@ -143,6 +143,111 @@ class FileWriteHandler(tornado.web.RequestHandler, LoggingHandler):
 
 
 
+class FileDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    CHUNK_SIZE = 256 * 1024
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+            
+
+    async def post(self, slug=None):
+        
+        modules = self.application.modules
+        
+        if modules.hasModule("file_manager"):
+            filemanager = modules.getModule("file_manager")
+            
+            if slug == "static":
+                try:
+                    path = self.get_argument("path", None, True)
+                    download_path = await self.__makeFileDownloadable(path)
+                    self.write(json.dumps(formatSuccessResponse(download_path)))
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:
+                    self.finish()
+            elif slug == "chunked"  or slug == None:
+                try:
+                    path = self.get_argument("path", None, True)
+                    file_name = filemanager.path_leaf(path)
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
+                    await self.flush()
+                    await self.__makeChunkedDownload(path)
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:  
+                    self.finish()
+                    pass
+            else:
+                self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
+            pass
+    
+    
+    async def __makeFileDownloadable(self,file_path):
+        modules = self.application.modules
+        filemanager = modules.getModule("file_manager")
+        configuration = self.application.configuration
+        static_path = settings["static_path"]
+        download_path = await filemanager.make_downloadable_static(configuration, static_path, file_path)
+        return download_path
+    
+    
+    async def __makeChunkedDownload(self, path):
+        modules = self.application.modules
+        filemanager = modules.getModule("file_manager")
+        await filemanager.download_file_async(path, FileDownloadHandler.CHUNK_SIZE, self.handle_data)
+        pass
+    
+    
+    async def handle_data(self, chunk):
+        self.logger.info("Writing chunk data")
+        self.write(chunk)
+        await self.flush()
+        pass
+    
+
+
+class FileDeleteeHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+
+    # write file
+    async def delete(self):
+        
+        modules = self.application.modules
+        
+        if modules.hasModule("file_manager"):
+            
+            filepath = self.get_argument("path", None, True)
+            self.logger.debug("Read file request for file %s", filepath)
+            
+            # Try catch and then send back response as json formatted message
+            if(filepath != None):
+                try:   
+                    content = await self.__delete(filepath)
+                    self.write(json.dumps(formatSuccessResponse(content)))
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+            else:
+                self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+                pass
+        
+        self.finish()
+
+
+    async def __delete(self, path):
+        modules = self.application.modules
+        filemanager = modules.getModule("file_manager")
+        await filemanager.deleteFile(path)
+        pass
+
+
+
 
 '''
 Websocket connections handler - main entry point for clients
