@@ -24,6 +24,8 @@ import tornado
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 import datetime
 import asyncio
+from utilities import buildLogWriterRule
+from exceptions import RulesError
 
 
 class Pinger(object):
@@ -71,6 +73,7 @@ class RPCGateway(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__task_queue = {}
         self.__system_modules = modules
+        self.__rulesmanager = None
         self.__initialize()
         pass
     
@@ -92,6 +95,15 @@ class RPCGateway(object):
         for rpc_task in self.__task_queue:
             tornado.ioloop.IOLoop.current().spawn_callback(self.__task_processor, rpc_task)
         pass
+    
+    
+    @property    
+    def rulesmanager(self):
+        return self.__rulesmanager
+        
+    @rulesmanager.setter
+    def rulesmanager(self, __rulesmanager):
+        self.__rulesmanager = __rulesmanager
     
     
     def isRPC(self, message):
@@ -191,6 +203,73 @@ class RPCGateway(object):
         else:
             raise ModuleNotFoundError("`sysmon` module does not exist")
         pass
+    
+    
+    
+    
+    
+    
+    '''
+        Starts recording of a log file by creating a log record rule in reaction engine
+        
+        Payload content =>
+        logname : The name of the log file
+    '''
+    def start_log_recording(self, handler, params):
+        self.logger.debug("start_log_recording")
+        
+        __logmon = None
+        
+        if self.__system_modules.hasModule("log_monitor"):
+            __logmon = self.__system_modules.getModule("log_monitor")
+        else:
+            raise ModuleNotFoundError("`LogMon` module does not exist")
+        
+        if self.__rulesmanager is not None:
+            log_name = params[0]  
+            log_info = __logmon.getLogInfo(log_name)
+            
+            if 'id' in handler:
+                rule_id = handler.id + '-' + log_name
+                topic_path = log_info["topic_path"]                
+                topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
+                filepath = log_info["log_file_path"]
+                    
+                rule = buildLogWriterRule(rule_id, topic_path, filepath)
+                if self.__rulesmanager.hasRule(rule['id']):
+                    raise RulesError('Rule for id ' + id + 'already exists')
+                else:
+                    self.__rulesmanager.registerRule(rule)
+                    handler.liveactions['logrecordings'].add(rule_id) # store reference on client WebSocket handler
+                    return rule['id']
+        pass
+    
+    
+    
+    
+    
+    
+    '''
+        Stops an ongoing recording of a log file by removing a log record rule in reaction engine
+        
+        Payload content =>
+        logname : The name of the log file
+    '''
+    def stop_log_recording(self, handler, params):
+        
+        self.logger.debug("stop_log_recording")
+        
+                
+        if self.__rulesmanager is not None:
+            rule_id = params[0]
+            
+            if 'id' in handler:                                
+                if self.__rulesmanager.hasRule(id):
+                    self.__rulesmanager.deregisterRule(id)
+                    handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
+                    return
+        else:
+            raise ModuleNotFoundError("No rules manager assigned")    
     
     
     

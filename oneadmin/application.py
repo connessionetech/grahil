@@ -224,6 +224,7 @@ class TornadoApplication(tornado.web.Application):
             
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.notifyable = self.__reaction_engine
+            self.__rpc_gateway.rulesmanager = self.__reaction_engine
 
         
         

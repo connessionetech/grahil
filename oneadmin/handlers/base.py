@@ -258,6 +258,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.messages = Queue()
         self.id = str(uuid.uuid4())
+        self.liveactions = {}
+        self.liveactions['logrecordings'] = set()
         self.finished = False
         pass
 
@@ -278,20 +280,38 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         tornado.ioloop.IOLoop.current().spawn_callback(lambda: self._close())
         pass
     
-    def _close(self):
+    def _close(self):        
+        self.__cancelRecordings()
+        self.__clearSubscriptions()
+        self.logger.info("Total clients %d", self.application.totalclients)
+        self.finished = True
+
+    
+    def on_ping(self):
+        pass
+    
+    
+    
+    def on_pong(self, data):
+        pass
+    
+    
+    
+    def __clearSubscriptions(self):
         modules = self.application.modules
         pubsubhub = modules.getModule("pubsub")
         self.application.unregisterClient(self)
         pubsubhub.clearsubscriptions(self)
-        # terminate recordings
-        self.logger.info("Total clients %d", self.application.totalclients)
-        self.finished = True
-
-    def on_ping(self):
         pass
     
-    def on_pong(self, data):
-        pass
+    
+    def __cancelRecordings(self):
+        modules = self.application.modules
+        rpc_gateway = modules.getModule("rpc_gateway")
+        if rpc_gateway != None:        
+            for k, v in self.liveactions['logrecordings'].items():
+                rpc_gateway.stop_log_recording(self, [k])
+                pass
 
 
     async def on_message(self, message):

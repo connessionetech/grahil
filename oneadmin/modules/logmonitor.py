@@ -72,7 +72,7 @@ class LogMonitor(object):
     '''
     def deregisterLogFile(self, name):
         if name in self.__log_files:
-            pcallback = self.__log_files["chunk_collector"]
+            pcallback = self.__log_files[name]["chunk_collector"]
             pcallback.stop()
             del self.__log_files[name]
             del self.__log_store[name]
@@ -86,6 +86,20 @@ class LogMonitor(object):
     def getLogFileKeys(self):
         return self.__log_files.keys() 
     
+    
+    
+    
+    '''
+    Get all log file keys that are used as topic names
+    '''
+    def getLogInfo(self, name):
+        if name in self.__log_files:
+            return self.__log_files[name]
+        else:
+            raise LookupError('Log info not found for log by name ' + name)
+    
+    
+        
     
     
     @property
@@ -115,7 +129,7 @@ class LogMonitor(object):
     ''' call collector every 15 seconds '''
     def __schedule_chunk_processing(self, logname):
         callback = tornado.ioloop.PeriodicCallback(lambda: self.__chunk_collector(logname), self.__conf["chunks_collector_interval"])
-        self.__log_files["chunk_collector"] = callback;
+        self.__log_files[logname]["chunk_collector"] = callback;
         callback.start()
         pass
     

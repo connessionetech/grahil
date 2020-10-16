@@ -55,7 +55,7 @@ class ReactionEngine(Notifyable):
         self.__system__modules = modules
         self.__evaluator__modules={}
         self.__reaction__modules={}  
-        self.__topics_of_intertest = set()
+        self.__topics_of_intertest = {}
         self.__task_scheduler = TornadoScheduler()
             
         
@@ -276,10 +276,20 @@ class ReactionEngine(Notifyable):
         
     
     def delete_rule(self, id):
-        self.deregisterRule(id) 
-               
+        self.deregisterRule(id)
         
-    
+        
+        
+    def hasRule(self, id):
+        if id in self.__rules and self.__rules[id] != None:
+            return True
+        return False
+            
+        
+                            
+    '''
+        Register rule and topic of interest
+    '''    
     def registerRule(self, rule):
         
         try:
@@ -295,21 +305,29 @@ class ReactionEngine(Notifyable):
                 self.__register_timed_reaction(rule)                                
                 
             else:
-                self.__topics_of_intertest.add(rule["listen-to"])
-            
+                if rule["listen-to"] not in self.__topics_of_intertest:
+                    self.__topics_of_intertest[rule["listen-to"]] = 1
+                else:
+                    self.__topics_of_intertest[rule["listen-to"]] = self.__topics_of_intertest[rule["listen-to"]] + 1
+                    
+                print(len(self.__rules))               
+        
         except Exception as e:
             err = "Unable to register rule " + str(e)
             self.logger.error(err)
     
     
     
+    '''
+        Delete rule and topic of interest
+    '''
     def deregisterRule(self, id):
         if id in self.__rules and self.__rules[id] != None:
+            rule = self.__rules[id]
+            self.__topics_of_intertest[rule["listen-to"]] = 0 if self.__topics_of_intertest[rule["listen-to"]] <= 0 else self.__topics_of_intertest[rule["listen-to"]] - 1
+            del self.__topics_of_intertest[rule["listen-to"]]
             del self.__rules[id]
             pass
-    
-    
-    
     
                 
     
