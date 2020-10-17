@@ -280,8 +280,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         tornado.ioloop.IOLoop.current().spawn_callback(lambda: self._close())
         pass
     
-    def _close(self):        
-        self.__cancelRecordings()
+    async def _close(self):        
+        await self.__cancelRecordings()
         self.__clearSubscriptions()
         self.logger.info("Total clients %d", self.application.totalclients)
         self.finished = True
@@ -305,13 +305,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         pass
     
     
-    def __cancelRecordings(self):
+    async def __cancelRecordings(self):
         modules = self.application.modules
         rpc_gateway = modules.getModule("rpc_gateway")
-        if rpc_gateway != None:        
-            for k, v in self.liveactions['logrecordings'].items():
-                rpc_gateway.stop_log_recording(self, [k])
-                pass
+        if rpc_gateway != None:  
+            for k in self.liveactions['logrecordings'].copy():
+                await rpc_gateway.stop_log_recording(self, [k])
 
 
     async def on_message(self, message):
@@ -412,6 +411,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         try:
             self.write_message(message)
         except WebSocketClosedError :
-            self._close()
+            tornado.ioloop.IOLoop.current().spawn_callback(lambda: self._close())
             
             

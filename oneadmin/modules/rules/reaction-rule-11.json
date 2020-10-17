@@ -2,7 +2,7 @@
 	"id": "reaction-rule-11",
 	"description": "event rule to start log recording at time",
 	"listen-to": "/logging/red5pro-server-us-7-2-recording/log/red5.log",
-	"enabled": true,
+	"enabled": false,
 	"trigger": {
 		"on-payload-object": "data",
 		"on-content": "Publish Start",
@@ -26,7 +26,7 @@
 						"evaluator-func": null
 					},
 					"response":{
-						"action": "log_record",
+						"action": "start_log_record",
 						"reaction-func": "standard_reactions.write_log",
 						"reaction-params": {
 							"filepath": "/home/rajdeeprath/red5-reaction-rule-test-10.log"

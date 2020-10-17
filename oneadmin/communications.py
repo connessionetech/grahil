@@ -82,6 +82,8 @@ class RPCGateway(object):
         self.__task_queue["start_target"] = Queue(maxsize=5)
         self.__task_queue["stop_target"] = Queue(maxsize=5)
         self.__task_queue["restart_target"] = Queue(maxsize=5)
+        self.__task_queue["start_log_recording"] = Queue(maxsize=5)
+        self.__task_queue["stop_log_recording"] = Queue(maxsize=5)
         self.__task_queue["subscribe_channel"] = Queue(maxsize=5)
         self.__task_queue["unsubscribe_channel"] = Queue(maxsize=5)
         self.__task_queue["create_channel"] = Queue(maxsize=5)
@@ -215,7 +217,7 @@ class RPCGateway(object):
         Payload content =>
         logname : The name of the log file
     '''
-    def start_log_recording(self, handler, params):
+    async def start_log_recording(self, handler, params):
         self.logger.debug("start_log_recording")
         
         __logmon = None
@@ -229,19 +231,19 @@ class RPCGateway(object):
             log_name = params[0]  
             log_info = __logmon.getLogInfo(log_name)
             
-            if 'id' in handler:
+            if hasattr(handler, 'id'):
                 rule_id = handler.id + '-' + log_name
                 topic_path = log_info["topic_path"]                
                 topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
                 filepath = log_info["log_file_path"]
                     
                 rule = buildLogWriterRule(rule_id, topic_path, filepath)
-                if self.__rulesmanager.hasRule(rule['id']):
-                    raise RulesError('Rule for id ' + id + 'already exists')
+                if self.__rulesmanager.hasRule(rule_id):
+                    raise RulesError('Rule for id ' + rule_id + 'already exists')
                 else:
                     self.__rulesmanager.registerRule(rule)
                     handler.liveactions['logrecordings'].add(rule_id) # store reference on client WebSocket handler
-                    return rule['id']
+                    return rule_id
         pass
     
     
@@ -255,7 +257,7 @@ class RPCGateway(object):
         Payload content =>
         logname : The name of the log file
     '''
-    def stop_log_recording(self, handler, params):
+    async def stop_log_recording(self, handler, params):
         
         self.logger.debug("stop_log_recording")
         
@@ -263,11 +265,12 @@ class RPCGateway(object):
         if self.__rulesmanager is not None:
             rule_id = params[0]
             
-            if 'id' in handler:                                
-                if self.__rulesmanager.hasRule(id):
-                    self.__rulesmanager.deregisterRule(id)
-                    handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
-                    return
+            if hasattr(handler, 'id'):                                
+                if self.__rulesmanager.hasRule(rule_id):
+                    self.__rulesmanager.deregisterRule(rule_id)
+                    if rule_id in handler.liveactions['logrecordings']:
+                        handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
+                        return
         else:
             raise ModuleNotFoundError("No rules manager assigned")    
     
@@ -643,7 +646,7 @@ class PubSubHub(object):
         clear all subscriptions
     '''
     def clearsubscriptions(self, client):
-        for key in self.channels:
+        for key in list(self.channels):
             self.logger.info("Clearing subscriptions in topic %s", key)
             self.unsubscribe(key, client)
         pass

@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import asyncio
 import ntpath
-
+import os
 
 def buildTopicPath(topic, subtopic):
     return topic + "/" + subtopic
@@ -36,22 +36,23 @@ def path_leaf(path):
 ''' builds log writer rule dynamically '''        
 def buildLogWriterRule(id, topic, filepath):
     name = path_leaf(filepath)
+    output_path = os.path.join(os.path.dirname(filepath),  "ondemand-" + id)
     return {
-        "id": "reaction-log-rule" + "-" +  id,
+        "id": id,
         "description": "Rule for log recording " + name,
         "listen-to": ""+ topic + "",
-        "enabled": true,
+        "enabled": True,
         "trigger":{
             "on-payload-object": "data",
             "on-content": "*",
             "using-condition": "equals",
-            "evaluator-func": null
+            "evaluator-func": None
         },
         "response":{
             "action": "start_log_record",
             "reaction-func": "standard_reactions.write_log",
             "reaction-params": {
-                "filepath": "" + filepath + ""
+                "filepath": "" + output_path + ""
             }
         }    
     }

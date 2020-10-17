@@ -310,7 +310,7 @@ class ReactionEngine(Notifyable):
                 else:
                     self.__topics_of_intertest[rule["listen-to"]] = self.__topics_of_intertest[rule["listen-to"]] + 1
                     
-                print(len(self.__rules))               
+                self.logger.info("total rules" +  str(len(self.__rules)))               
         
         except Exception as e:
             err = "Unable to register rule " + str(e)
@@ -327,6 +327,7 @@ class ReactionEngine(Notifyable):
             self.__topics_of_intertest[rule["listen-to"]] = 0 if self.__topics_of_intertest[rule["listen-to"]] <= 0 else self.__topics_of_intertest[rule["listen-to"]] - 1
             del self.__topics_of_intertest[rule["listen-to"]]
             del self.__rules[id]
+            self.logger.info("total rules" +  str(len(self.__rules)))
             pass
     
                 
@@ -498,7 +499,7 @@ class ReactionEngine(Notifyable):
             else:
                 await http_reaction(rule["id"], url, method, queryparams)
                         
-        elif rule["response"]["action"] == "log_record":
+        elif rule["response"]["action"] == "start_log_record":
             
             self.logger.debug("Call log_record handler")
             if self.file_manager is not None:

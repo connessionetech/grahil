@@ -194,7 +194,7 @@ class TornadoApplication(tornado.web.Application):
             '''
             Register `log monitor` module
             '''
-            self.modules.registerModule("log monitor", self.__logmonitor);        
+            self.modules.registerModule("log_monitor", self.__logmonitor);        
                         
                 
         except Exception as e:

@@ -11,7 +11,7 @@
 	},
 	"response":{
 		"nonce" : false,
-		"action": "log_record",
+		"action": "start_log_record",
 		"reaction-func": "standard_reactions.write_log",
 		"reaction-params": {
 			"filepath": "/home/rajdeeprath/red5-reaction-rule-09.log"
