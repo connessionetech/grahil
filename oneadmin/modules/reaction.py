@@ -38,6 +38,7 @@ from datetime import datetime
 from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
 from reactions.filesystem_reactions import copy_file
+from apscheduler.triggers.cron import CronTrigger
 
 
 
@@ -88,7 +89,8 @@ class ReactionEngine(Notifyable):
             else:    
                 cron_str = time_object["expression"]
                 if croniter.is_valid(cron_str):
-                    self.task_scheduler.scheduleTaskByCronExpersssion(time_object, self.__respondToTimedEvent, rule)
+                    trigger = CronTrigger.from_crontab(cron_str)
+                    self.__task_scheduler.add_job(self.__respondToTimedEvent, trigger, args=[rule])
                 else:
                     raise Exception("Invalid cron expression " + str(cron_str))
         except Exception as e:  

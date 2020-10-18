@@ -1,0 +1,22 @@
+{
+	"id": "reaction-rule-02",
+	"description": "Cron rule to trigget HTTP get",
+	"listen-to": "{time}",
+	"enabled": false,
+	"trigger": {
+		"on-time-object": {
+			"recurring": true,
+			"expression": "33 13 * * *"
+		},
+		"evaluator-func": null
+	},
+	"response":{
+		"action": "http",
+		"reaction-params": {
+			"url": "http://192.168.1.18/switch/1/set", 
+			"method":"GET",
+			"queryparams": {},
+			"post_event_data": false
+		}
+	}	
+}
