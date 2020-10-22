@@ -33,8 +33,8 @@ import os
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
-from abstracts import ServiceBot
-from bots import TelegramBot
+from oneadmin.abstracts import ServiceBot
+from oneadmin.modules.Bot import TelegramBot
 from numpy.distutils.fcompiler import none
 
 

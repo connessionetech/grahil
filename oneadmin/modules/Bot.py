@@ -8,7 +8,7 @@ import tornado
 
 import asyncio
 from aiogram import Bot
-from abstracts import ServiceBot
+from oneadmin.abstracts import ServiceBot
 from aiogram import Bot, Dispatcher, types
 from numpy.distutils.fcompiler import none
 

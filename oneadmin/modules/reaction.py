@@ -37,7 +37,7 @@ from oneadmin.modules.reactions.filesystem_reactions import write_log
 from datetime import datetime
 from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
-from reactions.filesystem_reactions import copy_file
+from oneadmin.modules.reactions.filesystem_reactions import copy_file
 from apscheduler.triggers.cron import CronTrigger
 
 

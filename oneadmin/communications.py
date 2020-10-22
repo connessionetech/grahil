@@ -24,8 +24,8 @@ import tornado
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 import datetime
 import asyncio
-from utilities import buildLogWriterRule
-from exceptions import RulesError
+from oneadmin.utilities import buildLogWriterRule
+from oneadmin.exceptions import RulesError
 
 
 class Pinger(object):
