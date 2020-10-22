@@ -120,11 +120,16 @@
 			"scheduler":{
 				"enabled": false
 			},
-			"bot": {
-				"enabled": false,
+			"service_bot": {
+				"enabled": true,
+				"module":"oneadmin.modules.bots",
+				"klass":"TelegramBot",
 				"conf":{
-					"token": ""
-				}			
+					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"	
+				},
+				"nlp":{
+					"engine": "default"					
+				}
 			},
 			"reaction_engine":{
 				"enabled": true

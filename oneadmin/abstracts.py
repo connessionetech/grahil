@@ -58,10 +58,6 @@ class ServiceBot(object):
         pass
     
     
-    def __read_message(self, params=None):
-        pass
-    
-    
     def write_message(self, params=None):
         pass
     

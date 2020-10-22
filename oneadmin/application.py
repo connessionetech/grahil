@@ -33,6 +33,9 @@ import os
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
+from abstracts import ServiceBot
+from bots import TelegramBot
+from numpy.distutils.fcompiler import none
 
 
 class ModuleRegistry(object):
@@ -88,6 +91,7 @@ class TornadoApplication(tornado.web.Application):
             self.__logmonitor = None
             self.__pubsubhub = None
             self.__pinger = None
+            self.__service_bot = None
             self.__reaction_engine = None
             
             
@@ -185,20 +189,40 @@ class TornadoApplication(tornado.web.Application):
                                 log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
                             
                             self.__logmonitor.registerLogFile(log_target)
+
             
             except Exception as le:
                 self.logger.error("Error processing log monitor configuration. %s", str(le))
-                        
                         
                     
             '''
             Register `log monitor` module
             '''
             self.modules.registerModule("log_monitor", self.__logmonitor);        
-                        
                 
         except Exception as e:
             self.logger.error("Oops!,%s,occurred." + str(e))
+            
+        
+        
+        bot_config =  modules["service_bot"]
+        if bot_config != None and bot_config["enabled"] == True:
+            bot_module_name = bot_config["module"]
+            bot_class_name = bot_config["klass"]
+        
+            try:
+                mod = __import__(bot_module_name, fromlist=[bot_class_name])
+                klass = getattr(mod, bot_class_name)
+                self.__service_bot = klass(bot_config)
+                
+                '''
+                Register `servicebot` module
+                '''
+                self.modules.registerModule("service_bot", self.__service_bot);
+            
+            except ImportError as be:
+                self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
+            
 
 
         

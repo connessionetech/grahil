@@ -33,6 +33,7 @@ from oneadmin.configurations import Configuration
 from tornado.httpserver import HTTPServer
 from oneadmin.application import TornadoApplication
 
+# import cv2
 
 def setup_logging(
     default_path='logging.json',
@@ -147,5 +148,18 @@ def main():
         start_tornado();
     except Exception as e:
             logging.error("Oops!,%s,occurred.", str(e))
+
+
+'''
+videoCaptureObject = cv2.VideoCapture(0)
+result = True
+while(result):
+    ret,frame = videoCaptureObject.read()
+    cv2.imwrite("NewPicture.jpg",frame)
+    result = False
+videoCaptureObject.release()
+cv2.destroyAllWindows()
+'''
+
 
 main()
