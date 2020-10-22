@@ -109,7 +109,7 @@
 			},
 			"target_delegate":{
 				"enabled": true,
-				"module":"oneadmin.modules.Red5ProTargetDelegate",
+				"module":"oneadmin.modules.RPISmartDeviceDelegate",
 				"klass":"TargetDelegate",
 				"conf":{
 				}
@@ -122,7 +122,7 @@
 			},
 			"service_bot": {
 				"enabled": true,
-				"module":"oneadmin.modules.bots",
+				"module":"oneadmin.modules.Bot",
 				"klass":"TelegramBot",
 				"conf":{
 					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"	
