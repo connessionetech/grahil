@@ -39,8 +39,10 @@ import hashlib
 import time
 import urllib
 import json
-from numpy.distutils.fcompiler import none
 from tornado.ioloop import IOLoop
+
+import GPIO.setmode(GPIO.BOARD)
+
 
 class TargetDelegate(TargetProcess):
     '''
@@ -65,8 +67,39 @@ class TargetDelegate(TargetProcess):
         self.setAllowedReadExtensions(['.xml', '.txt', '.ini'])
         self.setAllowedWriteExtensions(['.xml', '.ini'])
         
+        self.__servo__angle = 0;
+
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
         pass
+    
+    
+    
+    '''
+    Initializes the RPI pins
+    '''
+    def __init_rpi_hardware(self):
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(03, GPIO.OUT)
+        self.__pwm=GPIO.PWM(03, 50)
+        self.__servo__angle = 0
+        self.__pwm.start(self.__servo__angle)
+        pass
+    
+    
+    
+    '''
+    Set angle for servo
+    '''
+    def __set_angle(self, angle):
+        duty = angle / 18 + 2
+        GPIO.output(03, True)
+        self.__pwm.ChangeDutyCycle(duty)
+        sleep(1)
+        GPIO.output(03, False)
+        self.__pwm.ChangeDutyCycle(0)
+        
+    
     
     
     
@@ -105,7 +138,32 @@ class TargetDelegate(TargetProcess):
     async def run_diagonistics(self):
         return {}
         pass
-
+    
+    
+    
+    async def do_fulfill_turn_left(self):
+        
+        try:
+            __servo__angle = self.__servo__angle - 1 if self.__servo__angle - 1 >= 0 else 0
+            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            self.__pwm.stop()
+            GPIO.cleanup()
+        except Exception as e:
+            raise TargetServiceError("Unable to set angle " + str(e))
+        
+        
+    
+    async def do_fulfill_turn_right(self):
+        
+        try:
+            __servo__angle = self.__servo__angle + 1 if self.__servo__angle + 1 <= 180 else 180
+            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            self.__pwm.stop()
+            GPIO.cleanup()
+        except Exception as e:
+            raise TargetServiceError("Unable to set angle " + str(e))
+        
+        
 
     
     async def do_fulfill_capture_video(self, name = "output", path = None):

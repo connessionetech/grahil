@@ -35,7 +35,6 @@ from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.abstracts import ServiceBot
 from oneadmin.modules.Bot import TelegramBot
-from numpy.distutils.fcompiler import none
 
 
 class ModuleRegistry(object):
