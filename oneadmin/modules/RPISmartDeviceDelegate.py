@@ -41,7 +41,7 @@ import urllib
 import json
 from tornado.ioloop import IOLoop
 
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
 
   
 
@@ -81,12 +81,13 @@ class TargetDelegate(TargetProcess):
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
     def __init_rpi_hardware(self):
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(3, GPIO.OUT)
+        RPi.GPIO.setmode(GPIO.BOARD)
+        RPi.GPIO.setup(3, GPIO.OUT)
         self.__pwm=GPIO.PWM(3, 50)
         self.__servo__angle = 0
         self.__pwm.start(self.__servo__angle)
         pass
+    
     
     
     '''
@@ -95,10 +96,10 @@ class TargetDelegate(TargetProcess):
     '''
     def __set_angle(self, angle):
         duty = angle / 18 + 2
-        GPIO.output(3, True)
+        RPi.GPIO.output(3, True)
         self.__pwm.ChangeDutyCycle(duty)
         sleep(1)
-        GPIO.output(3, False)
+        RPi.GPIO.output(3, False)
         self.__pwm.ChangeDutyCycle(0)
         
     
@@ -149,7 +150,7 @@ class TargetDelegate(TargetProcess):
             __servo__angle = self.__servo__angle - 1 if self.__servo__angle - 1 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
             self.__pwm.stop()
-            GPIO.cleanup()
+            RPi.GPIO.cleanup()
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -161,7 +162,7 @@ class TargetDelegate(TargetProcess):
             __servo__angle = self.__servo__angle + 1 if self.__servo__angle + 1 <= 180 else 180
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
             self.__pwm.stop()
-            GPIO.cleanup()
+            RPi.GPIO.cleanup()
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
