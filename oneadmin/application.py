@@ -119,6 +119,27 @@ class TornadoApplication(tornado.web.Application):
             Register `pinger` module
             '''
             self.modules.registerModule("pinger", self.__pinger);
+            
+            
+            
+            delegate_conf = modules["target_delegate"];
+            module_name = delegate_conf["module"]
+            class_name = delegate_conf["klass"]
+            
+            try:
+                mod = __import__(module_name, fromlist=[class_name])
+                klass = getattr(mod, class_name)
+                self.__delegate = klass()
+            except ImportError as de:
+                self.logger.warn("Module by name %s was not found and will not be loaded", module_name)
+            
+            '''
+            Register `target_delegate` module
+            '''
+            if self.__delegate != None:
+                self.modules.registerModule("target_delegate", self.__delegate);
+
+            
                         
     
             ''' Conditional instantiation of file manager '''

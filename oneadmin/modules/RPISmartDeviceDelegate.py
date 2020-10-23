@@ -41,8 +41,9 @@ import urllib
 import json
 from tornado.ioloop import IOLoop
 
-import GPIO.setmode(GPIO.BOARD)
+import RPi.GPIO as GPIO
 
+  
 
 class TargetDelegate(TargetProcess):
     '''
@@ -57,7 +58,7 @@ class TargetDelegate(TargetProcess):
         '''
         super().__init__('rpi', root, TargetDelegate.SERVICE_PATH)
         
-        self.setPidProcName(None)  
+        self.setPidProcName(None)
         
         
         log_paths = []
@@ -69,34 +70,35 @@ class TargetDelegate(TargetProcess):
         
         self.__servo__angle = 0;
 
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        # tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
         pass
     
     
     
     '''
-    Initializes the RPI pins
+    Initializes the RPI pins 
+    Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
     def __init_rpi_hardware(self):
         GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(03, GPIO.OUT)
-        self.__pwm=GPIO.PWM(03, 50)
+        GPIO.setup(3, GPIO.OUT)
+        self.__pwm=GPIO.PWM(3, 50)
         self.__servo__angle = 0
         self.__pwm.start(self.__servo__angle)
         pass
     
     
-    
     '''
     Set angle for servo
+    Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
     def __set_angle(self, angle):
         duty = angle / 18 + 2
-        GPIO.output(03, True)
+        GPIO.output(3, True)
         self.__pwm.ChangeDutyCycle(duty)
         sleep(1)
-        GPIO.output(03, False)
+        GPIO.output(3, False)
         self.__pwm.ChangeDutyCycle(0)
         
     
@@ -228,9 +230,9 @@ class TargetDelegate(TargetProcess):
             videoCaptureObject = cv2.VideoCapture(0)
             result = True
             while(result):
-            ret,frame = videoCaptureObject.read()
-            cv2.imwrite(name,frame)
-            result = False
+                ret,frame = videoCaptureObject.read()
+                cv2.imwrite(name,frame)
+                result = False
             videoCaptureObject.release()
             cv2.destroyAllWindows()
             
