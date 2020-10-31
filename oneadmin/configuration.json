@@ -6,7 +6,7 @@
 			"https_port": 8000,
 			"bind_host": "127.0.0.1",
 			"debug_mode": true,
-			"hot_reload":false
+			"hot_reload": false
 		},
 		"ssl": {
 			"enabled": false,
@@ -16,16 +16,16 @@
 		"security": {
 			"jwt_algorithm": "HS256",
 			"jwt_secret": "gs5f4hd6dg4h",
-			"token_expiry_hours": 24 
+			"token_expiry_hours": 24
 		},
-		"modules":{
+		"modules": {
 
 			"sysmon": {
 				"enabled": true,
-				"snapshot_interval_seconds": 3,
+				"snapshot_interval_seconds": 10,
 				"log_push_interval_seconds": 0.4,
 				"nic_stats_per_nic": false,
-				"net_connection_filter":"inet",
+				"net_connection_filter": "inet",
 				"net_connection_count_only": true
 			},
 			"pinger": {
@@ -35,8 +35,7 @@
 			"pubsub": {
 				"enabled": true,
 				"allow_dynamic_topics": true,
-				"topics": [
-					{
+				"topics": [{
 						"name": "/ping",
 						"type": "push_message",
 						"queue_size": 1,
@@ -56,84 +55,172 @@
 					}
 				]
 			},
-			"log_monitor":{
-					"enabled": true,
-					"retry_time_gap_seconds": 5,
-					"max_messages_chunks": 20,
-					"chunks_collector_interval": 10000,
-					"static_targets": [
-						{
-							"name": "red5.log", 
-							"log_file_path": "/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/red5.log",
-							"topic_path": "/logging/red5pro-server-us-7-2-recording/log/red5.log",
-							"enabled": true
-						}
-					]
+			"log_monitor": {
+				"enabled": true,
+				"retry_time_gap_seconds": 5,
+				"max_messages_chunks": 20,
+				"chunks_collector_interval": 10000,
+				"static_targets": [{
+					"name": "red5.log",
+					"log_file_path": "/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/red5.log",
+					"topic_path": "/logging/red5pro-server-us-7-2-recording/log/red5.log",
+					"enabled": true
+				}]
 			},
-			"file_manager":{
-					"enabled": true,
-					"auto_clean_tmp_directories": false,
-					"tmp_download_dir_prefix": "oneadmin_",
-					"report_name_prefix": "report_",
-					"accessible_paths":[
-						"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/",
-						"/home/rajdeeprath/"
-						],
-					"allowed_read_extensions":[
-						".properties", 
-						".xml", 
-						".txt", 
-						".ini",
-						".log"
-						],
-					"allowed_write_extensions":[
-						".properties", 
-						".xml", 
-						".txt", 
-						".ini",
-						".log"
-						],
-					"upload_dir": "/home/rajdeeprath/uploads/",
-					"upload_dir_perm": "0o755",
-					"max_streamed_size": 52428800,
-					"max_upload_size": 52428800,
-					"permits_cleanup_interval_seconds": 30,
-					"permit_expire_time_milliseconds":60000,
-					"max_parallel_uploads":10
+			"file_manager": {
+				"enabled": true,
+				"auto_clean_tmp_directories": false,
+				"tmp_download_dir_prefix": "oneadmin_",
+				"report_name_prefix": "report_",
+				"accessible_paths": [
+					"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/",
+					"/home/rajdeeprath/",
+					"/home/rajdeeprath/github/grahil-py"
+				],
+				"allowed_read_extensions": [
+					".properties",
+					".xml",
+					".txt",
+					".ini",
+					".log"
+				],
+				"allowed_write_extensions": [
+					".properties",
+					".xml",
+					".txt",
+					".ini",
+					".log"
+				],
+				"upload_dir": "/home/rajdeeprath/uploads/",
+				"upload_dir_perm": "0o755",
+				"max_streamed_size": 52428800,
+				"max_upload_size": 52428800,
+				"permits_cleanup_interval_seconds": 30,
+				"permit_expire_time_milliseconds": 60000,
+				"max_parallel_uploads": 10
 			},
 			"presenter": {
 				"enabled": true,
-				"conf":{
-					"default_locale":"en_US"
+				"conf": {
+					"default_locale": "en_US"
 				}
 			},
-			"target_delegate":{
-				"enabled": true,
-				"module":"oneadmin.modules.RPISmartDeviceDelegate",
-				"klass":"TargetDelegate",
-				"conf":{
-				}
+			"target_delegate": {
+				"enabled": false,
+				"module": "oneadmin.modules.RPISmartDeviceDelegate",
+				"klass": "TargetDelegate",
+				"conf": {}
 			},
-			"rpc_gateway":{
+			"rpc_gateway": {
 				"enabled": true
 			},
-			"scheduler":{
+			"scheduler": {
 				"enabled": false
 			},
 			"service_bot": {
 				"enabled": true,
-				"module":"oneadmin.modules.Bot",
-				"klass":"TelegramBot",
-				"conf":{
-					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"	
+				"module": "oneadmin.modules.bot.bots",
+				"klass": "TelegramBot",
+				"conf": {
+					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"
 				},
-				"nlp":{
-					"engine": "default"					
+				"nlp": {
+					"module": "oneadmin.modules.bot.interpreters",
+					"klass": "DefaultInterpreter",
+					"conf": {
+						"knowledge": "",
+						"vocabulary": [
+						{
+							"intent": "greet",
+							"seed": "hello",
+							"keywords": [],
+							"responses": ["nice to meet you"],
+							"action": {
+							}
+						},
+						{
+							"intent": "photo",
+							"seed": "photograph",
+							"keywords": ["show me a photo", "click a photo", "take a pic", "show me what you see", "what do you see", "share a photo", "snap a pic"],
+							"responses": ["here is a photo", "let me get you a snap", "this is what i have"],
+							"action": {
+								"is_sync" : false,
+								"pre_response": "Preparing photo",
+								"method" : "",
+								"parameters" : {
+								}
+							}
+						},
+						{
+							"intent": "video",
+							"seed": "record",
+							"keywords": ["shoot a video", "record a video", "record a moment"],
+							"responses": ["here is a video", "here is a recording", "this is what i have"],
+							"action": {
+								"is_sync" : false,
+								"pre_response": "Preparing video",
+								"method" : "",
+								"parameters" : {
+								}
+							}
+						},
+						{
+							"intent": "stats",
+							"seed": "statistics",
+							"keywords": ["give me some system info", "show system stats", "get system statistics", "share system stats", "show system status"],
+							"responses": ["the stats are looking like this", "here are the stats"],
+							"action": {
+								"is_sync" : true,
+								"pre_response": "",
+								"method" : "",
+								"parameters" : {
+								}
+							}
+						},
+						{
+							"intent": "bye",
+							"seed": "goodbye",
+							"keywords": [],
+							"responses": ["nice talking to you", "hope to see you again", "bye bye and take care"],
+							"action": {
+							}
+						},
+						{
+							"intent": "cpu",
+							"seed": "processor",
+							"keywords": ["show cpu info", "show cpu usage", "show cpu data", "what is the cpu load", "show cpu stats"],
+							"responses": ["here are the cpu stats", "this is what the cpu stats look like"],
+							"action": {
+								"is_sync" : true,
+								"pre_response": "",
+								"method" : "",
+								"parameters" : {
+								}
+							}
+						},
+						{
+							"intent": "ram",
+							"seed": "memory",
+							"keywords": ["show memory info", "show memory stats", "what is the memory load", "how much memory is free", "how much memory is in use"],
+							"responses": ["here are the memory stats", "this is what the memory info looks like"],
+							"action": {
+								"is_sync" : true,
+								"pre_response": "",
+								"method" : "",
+								"parameters" : {
+								}
+							}
+						}
+						]
+					}
 				}
 			},
-			"reaction_engine":{
+			"reaction_engine": {
+				"enabled": true
+			},
+			"action_executor": {
 				"enabled": true
 			}
-		}		
+		}
 	}
 }

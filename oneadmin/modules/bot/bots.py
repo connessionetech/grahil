@@ -21,7 +21,7 @@ class TelegramBot(ServiceBot):
     classdocs
     '''
 
-    def __init__(self, conf):
+    def __init__(self, conf, executor, nlp_engine=None):
         '''
         Constructor
         '''
@@ -30,6 +30,8 @@ class TelegramBot(ServiceBot):
         self.__supports_webhook = False
         self.__uid = None
         self.__conf = conf
+        self.__action_executor = executor
+        self.__nlp_engine = nlp_engine
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__activate_bot)
     
@@ -41,6 +43,8 @@ class TelegramBot(ServiceBot):
             self.__bot = Bot(token=self.__conf['conf']['token'])
             self.__disp = Dispatcher(self.__bot)
             
+            self.__disp.register_message_handler(self.echo)
+            '''
             self.__disp.register_message_handler(self.start_handler, commands={"start", "restart"})    
             self.__disp.register_message_handler(self.text_in_handler, text=['text1', 'text2'])
             self.__disp.register_message_handler(self.text_contains_any_handler, text_contains='example1')
@@ -48,6 +52,7 @@ class TelegramBot(ServiceBot):
             self.__disp.register_message_handler(self.text_contains_all_handler, text_contains=['str1', 'str2'])
             self.__disp.register_message_handler(self.text_startswith_handler, text_startswith=['prefix1', 'prefix2'])
             self.__disp.register_message_handler(self.text_endswith_handler, text_endswith=['postfix1', 'postfix2'])
+            '''
                     
             await self.__read_messages()
             me = await self.__bot.get_me()
@@ -56,7 +61,27 @@ class TelegramBot(ServiceBot):
         except Exception as e:
             self.logger.error("bot init error " + str(e))
         '''finally:
-            await bot.close()''' 
+            await bot.close()'''
+            
+    
+    async def echo(self, message: types.Message):
+        user_response = message.text
+        user_response=user_response.lower()
+        if(user_response!='bye'):
+            if(user_response=='thanks' or user_response=='thank you' ):
+                flag=False
+                response = "You are welcome.."
+            else:
+                act_response = self.__nlp_engine.actionable_response(user_response)
+                if(act_response != None):
+                    response = act_response
+                else:
+                    response = self.__nlp_engine.response(user_response)
+        else:
+            response = {"text": "Bye! take care.."} 
+        
+        await message.answer(response["text"]) 
+
 
 
 

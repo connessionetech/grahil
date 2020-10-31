@@ -20,6 +20,12 @@ import asyncio
 import ntpath
 import os
 
+
+def hasFunction(obj, methodname):
+    invert_op = getattr(obj, methodname, None)
+    return True if callable(invert_op) else False
+
+
 def buildTopicPath(topic, subtopic):
     return topic + "/" + subtopic
 

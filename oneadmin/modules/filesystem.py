@@ -31,7 +31,6 @@ from settings import *
 import datetime as dt
 import shutil
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from smalluuid.smalluuid import SmallUUID
 from datetime import datetime
 from tornado.ioloop import IOLoop
@@ -62,8 +61,6 @@ class FileManager(object):
         self.__allowed_write_extensions = self.__config["allowed_write_extensions"]
         self.__uploads = {}
         self.__filestreams = {}
-         
-        self.executor = ThreadPoolExecutor(max_workers=FileManager.MAX_WORKERS)
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.clean_upload_permits)
         

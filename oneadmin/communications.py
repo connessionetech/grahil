@@ -66,50 +66,25 @@ class RPCGateway(object):
     classdocs
     '''
     
-    def __init__(self, conf, modules):
+    def __init__(self, conf, executor):
         '''
         Constructor
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__task_queue = {}
-        self.__system_modules = modules
-        self.__rulesmanager = None
-        self.__initialize()
+        self.__action_executor = executor        
+        self.__requests = {}
+        self.__mgsqueue = Queue(20)
+        
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         pass
     
-    
-    def __initialize(self):
-        self.__task_queue["start_target"] = Queue(maxsize=5)
-        self.__task_queue["stop_target"] = Queue(maxsize=5)
-        self.__task_queue["restart_target"] = Queue(maxsize=5)
-        self.__task_queue["start_log_recording"] = Queue(maxsize=5)
-        self.__task_queue["stop_log_recording"] = Queue(maxsize=5)
-        self.__task_queue["subscribe_channel"] = Queue(maxsize=5)
-        self.__task_queue["unsubscribe_channel"] = Queue(maxsize=5)
-        self.__task_queue["create_channel"] = Queue(maxsize=5)
-        self.__task_queue["remove_channel"] = Queue(maxsize=5)
-        self.__task_queue["publish_channel"] = Queue(maxsize=5)
-        self.__task_queue["run_diagnostics"] = Queue(maxsize=5)
-        self.__task_queue["browse_fs"] = Queue()
-        self.__task_queue["delete_file"] = Queue(maxsize=3)
-        self.__task_queue["fulfillRequest"] = Queue(maxsize=5)
-        
-        for rpc_task in self.__task_queue:
-            tornado.ioloop.IOLoop.current().spawn_callback(self.__task_processor, rpc_task)
-        pass
-    
-    
-    @property    
-    def rulesmanager(self):
-        return self.__rulesmanager
-        
-    @rulesmanager.setter
-    def rulesmanager(self, __rulesmanager):
-        self.__rulesmanager = __rulesmanager
+
     
     
     def isRPC(self, message):
         return message["type"] == "rpc"
+    
+    
     
     
     async def handleRPC(self, wshandler, message):
@@ -125,408 +100,63 @@ class RPCGateway(object):
         methodname = message["method"]
         
         if message["params"] is None: 
-            args = [] 
+            args = [wshandler] 
         else: 
             args = message["params"]
-         
-        if(methodname in self.__task_queue and hasattr(self, methodname) and callable(getattr(self, methodname))):
-            try:
-                # Add task to relevant queue
-                task_info = {"caller": wshandler, "requestid":requestid, "method": str(methodname), "params": args}
-                task_queue = self.__task_queue[str(methodname)]
-                task_queue.put(task_info)
-            except:
-                raise RPCError("Failed to invoke method " + sys.exc_info())
-        else:
-            raise RPCError("No method found by name " + methodname)
+            args.insert(0, wshandler)
         
+        try:
+        
+            task_info = {"requestid":requestid, "method": str(methodname), "params": args}
+            self.__requests[requestid] = wshandler
+            await self.__action_executor.addTask(task_info)
+        
+        except:
+            if requestid in self.__requests:
+                del self.__requests[requestid]
+                
+            raise RPCError("Failed to invoke method." + sys.exc_info()[0])
+        pass    
+    
+    
+    
+    
+    async def onExecutionResult(self, requestid, result):
+        self.logger.debug("RPC Success")
+        response = formatSuccessRPCResponse(requestid, result)
+        await self.__mgsqueue.put({"requestid": requestid, "message": response})
         pass
     
     
-    '''
-        Task Queue Processor - (Per Task)
-    '''
-    async def __task_processor(self, topic):
+    
+    async def onExecutionerror(self, requestid, e):
+        self.logger.debug("RPC Error")
+        err = str(e)
+        response = formatErrorRPCResponse(requestid, err)
+        await self.__mgsqueue.put({"requestid": requestid, "message": response})
+        pass
+    
+    
+    
+    async def __notifyHandler(self):
         while True:
-            
-            if not topic in self.__task_queue:
-                break
-            
-            # task_info = {"caller": wshandler, "requestid":requestid, "method": str(methodname), "params": args}
-            task_queue = self.__task_queue[topic]
-            response = None
-        
             try:
-                task_definition = await task_queue.get()
                 
-                requestid = task_definition["requestid"]
-                handler = task_definition["caller"]
-                methodname = task_definition["method"]
-                args = task_definition["params"]
+                data = await self.__mgsqueue.get()
+                requestid = data["requestid"]
+                response = data["message"]
+                handler = self.__requests[requestid]  
                 
-                method_to_call = getattr(self, methodname)
-                result = await method_to_call(handler, args)
+                if handler != None and handler.finished == False:
+                    self.logger.debug("write status for requestid " + str(requestid) + " to client")
+                    await handler.submit(response)
+            
+            except Exception as e1:
                 
-                self.logger.debug("RPC Success")
-                response = formatSuccessRPCResponse(requestid, result)
-                
-            except Exception as e:
-                err = "Error executing RPC " + str(e)                
-                self.logger.debug(err)
-                response = formatErrorRPCResponse(requestid, err)
+                self.logger.warn("Unable to write message to client %s", handler.id)
                 
             finally:
-                task_queue.task_done()
-                self.logger.debug("write status for requestid " + str(requestid) + " to client")
-                
-                try:
-                    if handler != None and handler.finished == False:
-                        await handler.submit(response)
-                except Exception as e1:
-                    self.logger.warn("Unable to write message to client %s", handler.id)
-        pass
-    
-    
-    
-    
-    
-    '''
-        Runs system diagnostics and generates report
-    '''
-    async def run_diagnostics(self, handler, params=None):
-        
-        __sysmon = None
-        
-        if self.__system_modules.hasModule("sysmon"):
-            __sysmon = self.__system_modules.getModule("sysmon")
-            
-        if(__sysmon != None):        
-            return await __sysmon.run_system_diagnostics()
-        else:
-            raise ModuleNotFoundError("`sysmon` module does not exist")
-        pass
-    
-    
-    
-    
-    
-    
-    '''
-        Starts recording of a log file by creating a log record rule in reaction engine
-        
-        Payload content =>
-        logname : The name of the log file
-    '''
-    async def start_log_recording(self, handler, params):
-        self.logger.debug("start_log_recording")
-        
-        __logmon = None
-        
-        if self.__system_modules.hasModule("log_monitor"):
-            __logmon = self.__system_modules.getModule("log_monitor")
-        else:
-            raise ModuleNotFoundError("`LogMon` module does not exist")
-        
-        if self.__rulesmanager is not None:
-            log_name = params[0]  
-            log_info = __logmon.getLogInfo(log_name)
-            
-            if hasattr(handler, 'id'):
-                rule_id = handler.id + '-' + log_name
-                topic_path = log_info["topic_path"]                
-                topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
-                filepath = log_info["log_file_path"]
-                    
-                rule = buildLogWriterRule(rule_id, topic_path, filepath)
-                if self.__rulesmanager.hasRule(rule_id):
-                    raise RulesError('Rule for id ' + rule_id + 'already exists')
-                else:
-                    self.__rulesmanager.registerRule(rule)
-                    handler.liveactions['logrecordings'].add(rule_id) # store reference on client WebSocket handler
-                    return rule_id
-        pass
-    
-    
-    
-    
-    
-    
-    '''
-        Stops an ongoing recording of a log file by removing a log record rule in reaction engine
-        
-        Payload content =>
-        logname : The name of the log file
-    '''
-    async def stop_log_recording(self, handler, params):
-        
-        self.logger.debug("stop_log_recording")
-        
-                
-        if self.__rulesmanager is not None:
-            rule_id = params[0]
-            
-            if hasattr(handler, 'id'):                                
-                if self.__rulesmanager.hasRule(rule_id):
-                    self.__rulesmanager.deregisterRule(rule_id)
-                    if rule_id in handler.liveactions['logrecordings']:
-                        handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
-                        return
-        else:
-            raise ModuleNotFoundError("No rules manager assigned")    
-    
-    
-    
-    
-    
-    '''
-        Publishes message to channel
-        
-        Payload content =>
-        topicname : The topic name to publish message at 
-        message : A arbitrary string
-    '''
-    async def publish_channel(self, handler, params):
-        self.logger.debug("publish_channel")
-        
-        __pubsubhub = None
-        
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
-        
-        if(__pubsubhub != None):
-            topicname = params[0]  
-            message = params[1]        
-            __pubsubhub.publish(topicname, message, handler)
-        pass
-           
-            
-    
-    '''
-        Creates a channel
-        
-        Payload content =>
-        channel_info : channel info object (JSON) containing parameters to create new channel
-        {name=<topicname>, type=<topictype>, queue_size=<queue_size>, max_users=<max_users>}
-    '''        
-    async def create_channel(self, handler, params):
-        self.logger.debug("create_channel")
-        
-        __pubsubhub = None
-        
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
-            
-        if(__pubsubhub != None):
-            channel_info = params[0]  
-            channel_info['type'] = "bidirectional"      
-            __pubsubhub.createChannel(channel_info)
-        else:
-            raise ModuleNotFoundError("`PubSub` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Removes a channel
-        
-        Payload content =>
-        topicname : The topic name to remove 
-    '''
-    async def remove_channel(self, handler, params):
-        self.logger.debug("remove_channel")
-        
-        __pubsubhub = None
-        
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
-        
-        if(__pubsubhub != None):
-            channel_name = params[0]        
-            __pubsubhub.removeChannel(channel_name)
-        else:
-            raise ModuleNotFoundError("`PubSub` module does not exist")
-        pass
-
-
-
-    '''
-        subscribes to a channel
-        
-        Payload content =>
-        topicname : The topic name to remove 
-    '''
-    async def subscribe_channel(self, handler, params):
-        self.logger.debug("subscribe_topic")
-        
-        __pubsubhub = None
-        
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
-        
-        if(__pubsubhub != None):
-            topic = params[0]
-            finalparams = params.copy() 
-            if(len(finalparams)>1):       
-                del finalparams[0] 
-                       
-            __pubsubhub.subscribe(topic, finalparams, handler)
-        else:
-            raise ModuleNotFoundError("`PubSub` module does not exist")
-        pass
-    
-    
-    
-    '''
-        unsubscribes from a channel
-        
-        Payload content =>
-        topicname : The topic name to unsubscribe from 
-    '''
-    async def unsubscribe_channel(self, handler, params):
-        self.logger.debug("unsubscribe_topic")
-        
-        __pubsubhub = None
-        
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
-        
-        if(__pubsubhub != None):
-            topic = params[0]       
-            __pubsubhub.unsubscribe(topic, handler)
-        else:
-            raise ModuleNotFoundError("`PubSub` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Starts the target delegate
-        
-        Payload content => NONE 
-    '''
-    async def start_target(self, handler, params):
-        self.logger.debug("start_target")
-        
-        if self.__system_modules.hasModule("target_delegate"):
-            __delegate = self.__system_modules.getModule("target_delegate")
-            await __delegate.start_proc()
-        else:
-            raise ModuleNotFoundError("`TargetDelegate` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Stops the target delegate
-        
-        Payload content => NONE 
-    '''
-    async def stop_target(self, handler, params):
-        self.logger.debug("stop_target")
-        
-        if self.__system_modules.hasModule("target_delegate"):
-            __delegate = self.__system_modules.getModule("target_delegate")
-            await __delegate.stop_proc()
-        else:
-            raise ModuleNotFoundError("`TargetDelegate` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Restarts the target delegate
-        
-        Payload content => NONE 
-    '''
-    async def restart_target(self, handler, params):
-        self.logger.debug("restart_target")
-        
-        __delegate = None
-        if self.__system_modules.hasModule("target_delegate"):
-            __delegate = self.__system_modules.getModule("target_delegate")
-            await __delegate.restart_proc()
-        else:
-            raise ModuleNotFoundError("`TargetDelegate` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Calls arbitrary method in TargetDelegate impl
-        
-        Payload content =>
-        command : method name to invoke
-        params : arbitrary array of parameters  
-    '''
-    async def fulfillRequest(self, handler, params):
-        self.logger.debug("custom RPC call")
-        
-        __delegate = None
-        
-        if self.__system_modules.hasModule("target_delegate"):
-            __delegate = self.__system_modules.getModule("target_delegate")
-            
-        if(__delegate != None):
-            if(len(params)<1):
-                raise Exception("Minimum of one parameter is required for this method call")
-            command = str(params[0])
-            self.logger.debug(command)
-            finalparams = params.copy()
-            del finalparams[0]
-            return __delegate.fulfillRequest(command, finalparams)
-        else:
-            raise ModuleNotFoundError("`TargetDelegate` module does not exist")
-        pass
-    
-    
-    
-    '''
-        Gets filesystem listing for a specified path. 
-        of target delegate.
-        
-        Payload content =>
-        path : Path to scan for files and folders.Path should be a sub path within the access scope.  
-    '''
-    async def browse_fs(self, handler, params):
-        self.logger.info("browse_fs")
-        
-        __filemanager = None
-        
-        if self.__system_modules.hasModule("file_manager"):
-            __filemanager = self.__system_modules.getModule("file_manager")
-        
-        if(__filemanager != None):
-            path = str(params[0])
-            result = await __filemanager.browse_content(path)
-            return result
-        else:
-            raise ModuleNotFoundError("`FileManager` module does not exist")
-        pass
-    
-    
-
-    '''
-        delete file from a specified path.
-        
-        Payload content =>
-        path : Path of file to delete.  
-    '''
-    async def delete_file(self, handler, params):
-        self.logger.info("delete_file")
-        
-        __filemanager = None
-        
-        if self.__system_modules.hasModule("file_manager"):
-            __filemanager = self.__system_modules.getModule("file_manager")
-        
-        if(__filemanager != None):
-            path = str(params[0])
-            result = await __filemanager.deleteFile(path)
-            return result
-        else:
-            raise ModuleNotFoundError("`FileManager` module does not exist")
-        pass
-        
+                self.__mgsqueue.task_done()
 
 
 

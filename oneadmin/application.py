@@ -34,7 +34,8 @@ from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.abstracts import ServiceBot
-from oneadmin.modules.Bot import TelegramBot
+from sysmonitor import SystemMonitor
+from actions import ActionExecutor
 
 
 class ModuleRegistry(object):
@@ -92,6 +93,7 @@ class TornadoApplication(tornado.web.Application):
             self.__pinger = None
             self.__service_bot = None
             self.__reaction_engine = None
+            self.__action__executor = None
             
             
             # Attempt to find out public ip
@@ -186,7 +188,7 @@ class TornadoApplication(tornado.web.Application):
                         "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
                     })
                     
-                    # Register channel
+                    # Register channel per log
                     channel_info = {}
                     channel_info["name"] = log__topic_path  
                     channel_info['type'] = "subscription"
@@ -218,22 +220,77 @@ class TornadoApplication(tornado.web.Application):
             '''
             Register `log monitor` module
             '''
-            self.modules.registerModule("log_monitor", self.__logmonitor);        
+            self.modules.registerModule("log_monitor", self.__logmonitor);
+            
+            
+            
+            
+            stats_config = modules["sysmon"]
+            if stats_config != None and stats_config["enabled"] == True:
+                self.__sysmon = SystemMonitor(stats_config, self.modules)
+                self.__sysmon.callback = self.processSystemStats
+                self.__sysmon.start_monitor()
+            
+            
+            '''
+            Register `sysmon` module
+            '''
+            self.modules.registerModule("sysmon", self.__sysmon);
+            
+                    
                 
         except Exception as e:
             self.logger.error("Oops!,%s,occurred." + str(e))
+        
+        
+        
+        
+        action_config = modules["action_executor"]
+        if action_config != None and action_config["enabled"] == True:
+            self.__action__executor = ActionExecutor(action_config, self.modules)
             
+            
+        
+        # Register reaction engine        
+        reaction_engine_conf = modules["reaction_engine"];
+        if reaction_engine_conf["enabled"] == True:
+            self.__reaction_engine = ReactionEngine(reaction_engine_conf, self.modules)
+            
+            '''
+            Register `reaction_engine` module            
+            self.modules.registerModule("reaction_engine", self.__reaction_engine);
+            '''
+            
+            # Inform pubsubhub of the reaction engine presence
+            self.__pubsubhub.notifyable = self.__reaction_engine
+            self.__action__executor.rulesmanager = self.__reaction_engine
+            
+        
         
         
         bot_config =  modules["service_bot"]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
             bot_class_name = bot_config["klass"]
+            
+            nlp_engine = None
         
             try:
+                
+                try:
+                    nlp_module_name = bot_config["nlp"]["module"]
+                    nlp_module_config = bot_config["nlp"]["conf"]
+                    nlp_class_name = bot_config["nlp"]["klass"]
+                    nlp_mod = __import__(nlp_module_name, fromlist=[nlp_class_name])
+                    nlp_klass = getattr(nlp_mod, nlp_class_name)
+                    nlp_engine = nlp_klass(self.__filemanager, nlp_module_config)
+                except ImportError as be:
+                    self.logger.warn("Module by name " + nlp_module_name + " was not found and will not be loaded")
+                
+                
                 mod = __import__(bot_module_name, fromlist=[bot_class_name])
                 klass = getattr(mod, bot_class_name)
-                self.__service_bot = klass(bot_config)
+                self.__service_bot = klass(bot_config, self.__action__executor, nlp_engine)
                 
                 '''
                 Register `servicebot` module
@@ -248,29 +305,14 @@ class TornadoApplication(tornado.web.Application):
         
         # Initializing rpc gateway
         rpc_gateway_conf = modules["rpc_gateway"]
-        self.__rpc_gateway = RPCGateway(rpc_gateway_conf, self.modules)
+        self.__rpc_gateway = RPCGateway(rpc_gateway_conf, self.__action__executor)
         
         '''
         Register `rpc_gateway` module
         '''
         self.modules.registerModule("rpc_gateway", self.__rpc_gateway)
         
-        
-        # Register reaction engine        
-        reaction_engine_conf = modules["reaction_engine"];
-        if reaction_engine_conf["enabled"] == True:
-            self.__reaction_engine = ReactionEngine(reaction_engine_conf, self.modules)
-            
-            '''
-            Register `reaction_engine` module            
-            self.modules.registerModule("reaction_engine", self.__reaction_engine);
-            '''
-            
-            # Inform pubsubhub of the reaction engine presence
-            self.__pubsubhub.notifyable = self.__reaction_engine
-            self.__rpc_gateway.rulesmanager = self.__reaction_engine
 
-        
         
         # Special settings for debugging and hot reload
         settings["debug"] = conf["server"]["debug_mode"]        
@@ -421,8 +463,7 @@ class TornadoApplication(tornado.web.Application):
         if(error == None):
             self.logger.debug("Log chunk received")
             evt = buildDataEvent({"subject":"Target", "concern": "LogChunk", "content":data}, topic)
-            await self.__pubsubhub.publish(topic, evt)    
-            # await self.__filemanager.write_file_stream("/home/rajdeeprath/sample_frame.log", data)            
+            await self.__pubsubhub.publish(topic, evt)
         else:
             self.logger.error("Log chunk error " + str(error))
         pass
