@@ -141,8 +141,10 @@ class DefaultInterpreter(object):
         # The chatbot prints the response that matches the selected intent
         if key != None:
             response_text = random.choice(self.__responses[key])
+            action = self.__actions[key]
         else:
             response_text = "I am sorry! I don't understand you"
+            action = None
             
-        return {"text": response_text}
+        return {"text": response_text, "action" : action}
     

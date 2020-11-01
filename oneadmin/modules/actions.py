@@ -5,13 +5,10 @@ Created on 31-Oct-2020
 '''
 from tornado.queues import Queue
 import logging
-import sys
 from oneadmin.responsebuilder import formatSuccessRPCResponse, formatErrorRPCResponse
 import tornado
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
-import datetime
-import asyncio
-from utilities import hasFunction
+from tornado.concurrent import asyncio
 
 class ActionExecutor(object):
     '''
@@ -46,6 +43,9 @@ class ActionExecutor(object):
         self.__task_queue["browse_fs"] = Queue()
         self.__task_queue["delete_file"] = Queue(maxsize=3)
         self.__task_queue["fulfillRequest"] = Queue(maxsize=5)
+        self.__task_queue["get_cpu_stats"] = Queue(maxsize=5)
+        self.__task_queue["get_memory_stats"] = Queue(maxsize=5)
+        self.__task_queue["get_system_stats"] = Queue(maxsize=5)
         
         self.__rulesmanager = None
         
@@ -94,7 +94,9 @@ class ActionExecutor(object):
                 break
             
             task_queue = self.__task_queue[topic]
+            
             response = None
+            responder = None
         
             try:
                 task_definition = await task_queue.get()
@@ -107,7 +109,7 @@ class ActionExecutor(object):
                 method_to_call = getattr(self, methodname)
                 result = await method_to_call(args)
                 
-                onsuccess = getattr(obj, 'onExecutionResult', None)
+                onsuccess = getattr(responder, 'onExecutionResult', None)
                 if callable(onsuccess):
                     await onsuccess(requestid, result) 
                 
@@ -116,8 +118,8 @@ class ActionExecutor(object):
                 err = "Error executing task " + str(e)                
                 self.logger.debug(err)
                 
-                onfailure = getattr(obj, 'onExecutionerror', None)
-                if callable(onsuccess):
+                onfailure = getattr(responder, 'onExecutionerror', None)
+                if callable(onfailure):
                     await onfailure(requestid, e)
                 
             finally:
@@ -360,10 +362,45 @@ class ActionExecutor(object):
             self.logger.debug(command)
             finalparams = params.copy()
             finalparams = finalparams[2:]
-            return __delegate.fulfillRequest(command, finalparams)
+            return await __delegate.fulfillRequest(command, finalparams)
         else:
             raise ModuleNotFoundError("`TargetDelegate` module does not exist")
         pass
+    
+    
+    
+    
+    
+    
+    
+        '''
+        Calls arbitrary method in TargetDelegate impl
+        
+        Payload content =>
+        command : method name to invoke
+        params : arbitrary array of parameters  
+        '''
+        def fulfillRequest_sync(self, params):
+            self.logger.debug("custom RPC call")
+            
+            __delegate = None
+            
+            if self.__system_modules.hasModule("target_delegate"):
+                __delegate = self.__system_modules.getModule("target_delegate")
+                
+            if(__delegate != None):
+                if(len(params)<1):
+                    raise Exception("Minimum of one parameter is required for this method call")
+                
+                handler = params[0]
+                command = str(params[1])
+                self.logger.debug(command)
+                finalparams = params.copy()
+                finalparams = finalparams[2:]
+                return __delegate.fulfillRequest_sync(command, finalparams)
+            else:
+                raise ModuleNotFoundError("`TargetDelegate` module does not exist")
+            pass
     
     
     
@@ -491,4 +528,65 @@ class ActionExecutor(object):
                         return
         else:
             raise ModuleNotFoundError("No rules manager assigned")    
+        
+        
+        
+
+    async def get_cpu_stats(self, params):
+        self.logger.debug("get cpu statss")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            result =  __sysmon.getCPUStats()
+            await asyncio.sleep(.5)
+            return result
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
+    
+    
+    
+    async def get_memory_stats(self, params):
+        self.logger.debug("get cpu statss")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            result =  __sysmon.getMemorytats()
+            await asyncio.sleep(.5)
+            return result
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
+    
+    
+    
+    
+    async def get_system_stats(self, params):
+        self.logger.debug("get cpu statss")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            result =  __sysmon.getLastSystemStats()
+            await asyncio.sleep(.5)
+            return result
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
     

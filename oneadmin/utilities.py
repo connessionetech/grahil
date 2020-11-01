@@ -19,6 +19,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import asyncio
 import ntpath
 import os
+import imghdr
+import json
+
+
+
+def isVideoPath(obj):
+    pass
+
+
+def isImagePath(obj):
+    if imghdr.what(str(obj)) != None:
+        return True
+    return False
+
+
+def isJSON(obj):
+    try:
+        json_object = json.loads(str(obj))
+    except ValueError as e:
+        return False
+    return True
 
 
 def hasFunction(obj, methodname):

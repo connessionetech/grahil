@@ -32,6 +32,8 @@ def base64ToString(b):
     return base64.b64decode(b).decode('utf-8')
 
 
+
+
 def formatSuccessRPCResponse(requestid, data, code=200):
     return {
             "requestid": str(requestid),

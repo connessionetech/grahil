@@ -78,7 +78,7 @@ class SystemMonitor(object):
             return{
                 "cpu_count" : psutil.cpu_count(),
                 "cpu_percent" : psutil.cpu_percent(),
-                "timestamp" : 0
+                "timestamp" : self.__current_milli_time()
                 }
         else:
             cpu_info = self.__last_stats["system"]["stats"]["cpu_info"]
@@ -93,7 +93,7 @@ class SystemMonitor(object):
     
     
     
-    def getMemorytats(self, cached=False):
+    def getMemorytats(self, unit = "b", cached=False):
         
         if cached == False:
             
@@ -108,7 +108,7 @@ class SystemMonitor(object):
                 "used_virtual_mem": self.valueAsPerUnit(used_virtual_mem, unit),
                 "free_virtual_mem":self.valueAsPerUnit(free_virtual_mem, unit),
                 "percent_virtual_mem":percent_virtual_mem,
-                "timestamp" : 0
+                "timestamp" : self.__current_milli_time()
                 }
         else:
             mem_info = self.__last_stats["system"]["stats"]["memory_info"]
@@ -120,6 +120,17 @@ class SystemMonitor(object):
                 "timestamp" : self.__last_stats["system"]["time"]
                 }
         
+        pass
+    
+    
+    
+    
+    
+    '''
+    Last generated system stats
+    '''
+    def getLastSystemStats(self):
+        return self.__last_stats
         pass
     
     
@@ -311,7 +322,6 @@ class SystemMonitor(object):
                 }
                 
                 self.__last_stats = stats
-                
             except Exception as e:
                 err = "An error occurred in generating system stats " + str(e)
                 self.logger.warning(err)

@@ -144,11 +144,9 @@
 							"keywords": ["show me a photo", "click a photo", "take a pic", "show me what you see", "what do you see", "share a photo", "snap a pic"],
 							"responses": ["here is a photo", "let me get you a snap", "this is what i have"],
 							"action": {
-								"is_sync" : false,
 								"pre_response": "Preparing photo",
-								"method" : "",
-								"parameters" : {
-								}
+								"method" : "fulfillRequest",
+								"parameters" : ["capture_image", "image.jpg"]
 							}
 						},
 						{
@@ -157,11 +155,9 @@
 							"keywords": ["shoot a video", "record a video", "record a moment"],
 							"responses": ["here is a video", "here is a recording", "this is what i have"],
 							"action": {
-								"is_sync" : false,
 								"pre_response": "Preparing video",
-								"method" : "",
-								"parameters" : {
-								}
+								"method" : "fulfillRequest",
+								"parameters" : ["capture_image", "video.avi"]
 							}
 						},
 						{
@@ -170,11 +166,9 @@
 							"keywords": ["give me some system info", "show system stats", "get system statistics", "share system stats", "show system status"],
 							"responses": ["the stats are looking like this", "here are the stats"],
 							"action": {
-								"is_sync" : true,
-								"pre_response": "",
-								"method" : "",
-								"parameters" : {
-								}
+								"pre_response": "fetching system stats",
+								"method" : "get_system_stats",
+								"parameters" : []
 							}
 						},
 						{
@@ -191,11 +185,9 @@
 							"keywords": ["show cpu info", "show cpu usage", "show cpu data", "what is the cpu load", "show cpu stats"],
 							"responses": ["here are the cpu stats", "this is what the cpu stats look like"],
 							"action": {
-								"is_sync" : true,
-								"pre_response": "",
-								"method" : "",
-								"parameters" : {
-								}
+								"pre_response": "fetching cpu stats",
+								"method" : "get_cpu_stats",
+								"parameters" : []
 							}
 						},
 						{
@@ -204,11 +196,9 @@
 							"keywords": ["show memory info", "show memory stats", "what is the memory load", "how much memory is free", "how much memory is in use"],
 							"responses": ["here are the memory stats", "this is what the memory info looks like"],
 							"action": {
-								"is_sync" : true,
-								"pre_response": "",
-								"method" : "",
-								"parameters" : {
-								}
+								"pre_response": "fetching memory stats",
+								"method" : "get_memory_stats",
+								"parameters" : []
 							}
 						}
 						]

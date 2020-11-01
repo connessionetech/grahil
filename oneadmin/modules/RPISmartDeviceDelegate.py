@@ -24,7 +24,7 @@ from tornado.process import Subprocess, CalledProcessError
 import tornado
 import os
 import re
-from builtins import int
+from builtins import int, str
 from datetime import datetime
 import sys
 from oneadmin.exceptions import TargetServiceError
@@ -40,6 +40,8 @@ import time
 import urllib
 import json
 from tornado.ioloop import IOLoop
+import tempfile
+from numpy.distutils.fcompiler import none
 
 # import RPi.GPIO as GPIO
 
@@ -69,6 +71,10 @@ class TargetDelegate(TargetProcess):
         self.setAllowedWriteExtensions(['.xml', '.ini'])
         
         self.__servo__angle = 0;
+        self.__current_milli_time = lambda: int(round(time() * 1000))
+        
+        self.__tmp_dir = tempfile.TemporaryDirectory()
+        
 
         # tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
@@ -169,24 +175,33 @@ class TargetDelegate(TargetProcess):
         
 
     
-    async def do_fulfill_capture_video(self, name = "output", path = None):
+    async def do_fulfill_capture_video(self, name:str = "output.avi", path:str = None):
         
         try:
-            await IOLoop.current().run_in_executor(None, self.__cv_capture_video, name, path)
+            if path != None:
+                name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
+            else:
+                name = self.__tmp_dir.name + os.path.sep + name
+                
+            return await IOLoop.current().run_in_executor(
+                None, 
+                self.__cv_capture_video, name
+                )
         except Exception as e:
-            raise TargetServiceError("Unable to capture image " + str(e))
+            raise TargetServiceError("Unable to capture video " + str(e))
         
         
     
     
-    def __cv_capture_video(self, name):
+    def __cv_capture_video(self, file:str, maxduration:int = 10000):
         
-        try:
             cap = cv2.VideoCapture(0)
+            
+            start_time = self.__current_milli_time()
             
             # Define the codec and create VideoWriter object
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(name + '.avi',fourcc, 20.0, (640,480))
+            out = cv2.VideoWriter(file,fourcc, 20.0, (640,480))
             
             while(cap.isOpened()):
                 ret, frame = cap.read()
@@ -197,7 +212,9 @@ class TargetDelegate(TargetProcess):
                     out.write(frame)
             
                     cv2.imshow('frame',frame)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                    
+                    # 10 seconds recording only
+                    if self.__current_milli_time() - start_time >= maxduration:
                         break
                 else:
                     break
@@ -207,44 +224,51 @@ class TargetDelegate(TargetProcess):
             out.release()
             cv2.destroyAllWindows()
             
-            asyncio.sleep(.2)
-            
-            # Verify image
-            
-        except Exception as e:
-            raise TargetServiceError("Unable to capture video " + str(e))
-            pass
+            if os.path.exists(file):
+                return file
+            return none
     
     
     
-    async def do_fulfill_capture_image(self, img = "image.jpg", path = None):
+    async def do_fulfill_capture_image(self, name:str = "image.jpg", path:str = None):
         try:
-            await IOLoop.current().run_in_executor(None, self.__cv_capture_image, img, path)
+            
+            if path != None:
+                name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
+            else:
+                name = self.__tmp_dir.name + os.path.sep + name
+            
+            return  await IOLoop.current().run_in_executor(
+                    None,
+                    self.__cv_capture_image, name
+                    )
         except Exception as e:
             raise TargetServiceError("Unable to capture image " + str(e))
                 
     
    
-    def __cv_capture_image(self, name):
+    
+    def __cv_capture_image(self, file:str):
         
-        try:
             videoCaptureObject = cv2.VideoCapture(0)
             result = True
             while(result):
                 ret,frame = videoCaptureObject.read()
-                cv2.imwrite(name,frame)
+                cv2.imwrite(file,frame)
                 result = False
+            
+            # Release everything if job is finished
             videoCaptureObject.release()
             cv2.destroyAllWindows()
             
-        except Exception as e:
-            raise TargetServiceError("Unable to capture image " + str(e))
-            pass
+            if os.path.exists(file):
+                return file
+            return none
 
     
     
     '''
         Sample custom method
     '''
-    def do_fulfill_hello(self, command, params):
+    def do_fulfill_hello(self, params):
         return command + " world"
