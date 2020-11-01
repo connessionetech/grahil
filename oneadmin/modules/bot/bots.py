@@ -135,9 +135,9 @@ class TelegramBot(ServiceBot):
             elif isImagePath(response_data): 
                 img = InputFile(str(response_data), "snapshot.jpg")
                 await self.__bot.send_photo(user_id, img, response_text)
-            
             else:
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
+                
         except exceptions.BotBlocked:
             self.logger.error(f"Target [ID:{user_id}]: blocked by user")
         except exceptions.ChatNotFound:
@@ -149,9 +149,7 @@ class TelegramBot(ServiceBot):
         except exceptions.UserDeactivated:
             self.logger.error(f"Target [ID:{user_id}]: user is deactivated")
         except exceptions.TelegramAPIError:
-            self.logger.exception(f"Target [ID:{user_id}]: failed")
-        except Exception as e:
-            print("hgello")    
+            self.logger.exception(f"Target [ID:{user_id}]: failed") 
         else:
             self.logger.info(f"Target [ID:{user_id}]: success")
             return True

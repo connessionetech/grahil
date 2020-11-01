@@ -29,9 +29,13 @@ def isVideoPath(obj):
 
 
 def isImagePath(obj):
-    if imghdr.what(str(obj)) != None:
-        return True
-    return False
+    
+    try:
+        if imghdr.what(str(obj)) != None:
+            return True
+        return False
+    except Exception as e:
+        return False
 
 
 def isJSON(obj):
