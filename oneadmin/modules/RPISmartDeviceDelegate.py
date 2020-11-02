@@ -197,7 +197,7 @@ class TargetDelegate(TargetProcess):
         
             cap = cv2.VideoCapture(0)
             
-            start_time = self.__current_milli_time()
+            start_time = int(round(time() * 1000))
             
             # Define the codec and create VideoWriter object
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
@@ -214,7 +214,7 @@ class TargetDelegate(TargetProcess):
                     cv2.imshow('frame',frame)
                     
                     # 10 seconds recording only
-                    if self.__current_milli_time() - start_time >= maxduration:
+                    if int(round(time() * 1000)) - start_time >= maxduration:
                         break
                 else:
                     break
@@ -236,7 +236,7 @@ class TargetDelegate(TargetProcess):
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
-                name = self.__tmp_dir.name + os.path.sep + name
+                name = "/home" + os.path.sep + name
             
             return  await IOLoop.current().run_in_executor(
                     None,

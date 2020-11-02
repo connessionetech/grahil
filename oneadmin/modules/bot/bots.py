@@ -88,6 +88,7 @@ class TelegramBot(ServiceBot):
         
         requestid = message.message_id
         methodname = action["method"]
+        
         args = action["parameters"]
         
         pre_response = action["pre_response"]

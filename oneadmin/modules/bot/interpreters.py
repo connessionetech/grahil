@@ -5,9 +5,6 @@ Created on 28-Oct-2020
 '''
 
 import re
-import io
-import os
-import string # to process standard python strings
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -19,6 +16,8 @@ import warnings
 import logging
 import tornado
 import random
+
+import copy
 
 
 
@@ -146,5 +145,5 @@ class DefaultInterpreter(object):
             response_text = "I am sorry! I don't understand you"
             action = None
             
-        return {"text": response_text, "action" : action}
+        return {"text": response_text, "action" : copy.deepcopy(action)}
     

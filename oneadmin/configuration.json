@@ -157,7 +157,7 @@
 							"action": {
 								"pre_response": "Preparing video",
 								"method" : "fulfillRequest",
-								"parameters" : ["capture_image", "video.avi"]
+								"parameters" : ["capture_video", "video.avi"]
 							}
 						},
 						{
