@@ -169,58 +169,57 @@ class TornadoApplication(tornado.web.Application):
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
                 self.__logmonitor = LogMonitor(log_monitor_config)
                 self.__logmonitor.callback = self.processLogLine
-                self.__logmonitor.chunk_callback = self.processLogChunk
-                
+                self.__logmonitor.chunk_callback = self.processLogChunk               
                     
                     
-            try:
-                
-                ''' 
-                Register dynamic log targets of target 
-                '''
-                
-                dynamic_log_targets = []
-                for log_target in dynamic_log_targets:
+                try:
                     
-                    log_key = getLogFileKey(log_target)
-                    log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-                    self.__logmonitor.registerLogFile({
-                        "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
-                    })
+                    ''' 
+                    Register dynamic log targets of target 
+                    '''
                     
-                    # Register channel per log
-                    channel_info = {}
-                    channel_info["name"] = log__topic_path  
-                    channel_info['type'] = "subscription"
-                    channel_info["queue_size"] = 1
-                    channel_info["max_users"]  = 0
-                    self.__pubsubhub.createChannel(channel_info)
-                
-                
-                ''' 
-                Register static log targets of target 
-                '''
-                
-                log_monitor_config["static_targets"]
-                if log_monitor_config["static_targets"] != None:
-                    log_targets = log_monitor_config["static_targets"]
-                    for log_target in log_targets: 
-                        if log_target["enabled"] == True:
-                            
-                            if not log_target["topic_path"]:
-                                log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
-                            
-                            self.__logmonitor.registerLogFile(log_target)
-
-            
-            except Exception as le:
-                self.logger.error("Error processing log monitor configuration. %s", str(le))
+                    dynamic_log_targets = []
+                    for log_target in dynamic_log_targets:
                         
+                        log_key = getLogFileKey(log_target)
+                        log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
+                        self.__logmonitor.registerLogFile({
+                            "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
+                        })
+                        
+                        # Register channel per log
+                        channel_info = {}
+                        channel_info["name"] = log__topic_path  
+                        channel_info['type'] = "subscription"
+                        channel_info["queue_size"] = 1
+                        channel_info["max_users"]  = 0
+                        self.__pubsubhub.createChannel(channel_info)
                     
-            '''
-            Register `log monitor` module
-            '''
-            self.modules.registerModule("log_monitor", self.__logmonitor);
+                    
+                    ''' 
+                    Register static log targets of target 
+                    '''
+                    
+                    log_monitor_config["static_targets"]
+                    if log_monitor_config["static_targets"] != None:
+                        log_targets = log_monitor_config["static_targets"]
+                        for log_target in log_targets: 
+                            if log_target["enabled"] == True:
+                                
+                                if not log_target["topic_path"]:
+                                    log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
+                                
+                                self.__logmonitor.registerLogFile(log_target)
+    
+                
+                except Exception as le:
+                    self.logger.error("Error processing log monitor configuration. %s", str(le))
+                            
+                        
+                '''
+                Register `log monitor` module
+                '''
+                self.modules.registerModule("log_monitor", self.__logmonitor);
             
             
             

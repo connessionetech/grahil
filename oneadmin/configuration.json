@@ -56,8 +56,8 @@
 				]
 			},
 			"log_monitor": {
-				"enabled": true,
-				"retry_time_gap_seconds": 5,
+				"enabled": false,
+				"retry_time_ge_seconds": 5,
 				"max_messages_chunks": 20,
 				"chunks_collector_interval": 10000,
 				"static_targets": [{
