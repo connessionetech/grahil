@@ -5,8 +5,8 @@ Created on 28-Oct-2020
 '''
 
 import re
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+#from sklearn.feature_extraction.text import TfidfVectorizer
+#from sklearn.metrics.pairwise import cosine_similarity
 
 import nltk
 from nltk.stem import WordNetLemmatizer
@@ -46,10 +46,12 @@ class DefaultInterpreter(object):
     
     
     async def __download_corpus(self):
+        '''
         nltk.download('popular', quiet=True) # for downloading packages
         # uncomment the following only the first time
         nltk.download('punkt') # first-time use only
         nltk.download('wordnet') # first-time use only
+        '''
         await self.init_knowledgebase()
         pass
     
@@ -103,6 +105,7 @@ class DefaultInterpreter(object):
     
     
     # Generating response
+    '''
     def response(self, user_response):
         robo_response=''
         self.sent_tokens.append(user_response)
@@ -119,6 +122,7 @@ class DefaultInterpreter(object):
         else:
             robo_response = robo_response+self.sent_tokens[idx]
             return robo_response
+    '''
         
     
     
