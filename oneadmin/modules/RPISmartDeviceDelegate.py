@@ -33,6 +33,8 @@ import json
 from tornado.ioloop import IOLoop
 import tempfile
 import time
+import logging
+import sys
 
 # import RPi.GPIO as GPIO
 
@@ -51,6 +53,7 @@ class TargetDelegate(TargetProcess):
         '''
         super().__init__('rpi', root, TargetDelegate.SERVICE_PATH)
         
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.setPidProcName(None)
         
         
@@ -205,6 +208,8 @@ class TargetDelegate(TargetProcess):
         # close the already opened file
         output.release()
         
+        root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        
         if os.path.exists(file):
             return {
                 "meta": {
@@ -212,10 +217,12 @@ class TargetDelegate(TargetProcess):
                     "duration": maxduration/1000,
                     "width": 640,
                     "height": 480,
-                    "thumb" : os.getcwd() + os.path.sep + "assets/video.png" 
+                    "thumb" : root_path + os.path.sep + "assets/video.png" 
                 },
                     "data" : file
             }
+            
+            
                             
         raise FileNotFoundError("Could not locate recording or recording failed")
     
