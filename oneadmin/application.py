@@ -33,9 +33,8 @@ import os
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
-from oneadmin.abstracts import ServiceBot
-from sysmonitor import SystemMonitor
-from actions import ActionExecutor
+from oneadmin.modules.sysmonitor import SystemMonitor
+from oneadmin.modules.actions import ActionExecutor
 
 
 class ModuleRegistry(object):

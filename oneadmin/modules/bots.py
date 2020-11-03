@@ -6,22 +6,17 @@ Created on 20-Oct-2020
 import logging
 import tornado
 
-
 import json
-from aiogram import Bot
-from oneadmin.abstracts import ServiceBot
 from aiogram import Bot, Dispatcher, types
 from tornado.queues import Queue
 import uuid
-from exceptions import RPCError
-from aiogram.utils import exceptions, executor
-from utilities import isJSON, isVideo, isImage
+from oneadmin.exceptions import *
+from aiogram.utils import exceptions
+from oneadmin.utilities import isVideo, isImage
 from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
-from responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
-
-
-
+from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
+from oneadmin.abstracts import ServiceBot
 
 
 class TelegramBot(ServiceBot):

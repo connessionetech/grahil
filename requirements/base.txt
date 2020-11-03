@@ -12,4 +12,4 @@ croniter==0.3.35
 aiogram==2.10.1
 nltk
 scikit-learn
-filetype=1.0.7
+filetype==1.0.7

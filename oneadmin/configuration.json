@@ -119,13 +119,13 @@
 			},
 			"service_bot": {
 				"enabled": true,
-				"module": "oneadmin.modules.bot.bots",
+				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
 					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"
 				},
 				"nlp": {
-					"module": "oneadmin.modules.bot.interpreters",
+					"module": "oneadmin.modules.interpreters",
 					"klass": "DefaultInterpreter",
 					"conf": {
 						"knowledge": "",
