@@ -20,28 +20,19 @@ import cv2
 from oneadmin.target.TargetProcess import TargetProcess
 from pathlib import Path
 from jproperties import Properties
-from tornado.process import Subprocess, CalledProcessError
 import tornado
 import os
-import re
 from builtins import int, str
-from datetime import datetime
-import sys
 from oneadmin.exceptions import TargetServiceError
 from tornado.concurrent import asyncio
-from aiofile.aio import AIOFile
 import subprocess
 from oneadmin.responsebuilder import buildDataNotificationEvent,\
     buildDataEvent
-from tornado.httpclient import AsyncHTTPClient
-from tornado.httputil import HTTPHeaders
 import hashlib
-import time
-import urllib
 import json
 from tornado.ioloop import IOLoop
 import tempfile
-from numpy.distutils.fcompiler import none
+import time
 
 # import RPi.GPIO as GPIO
 
@@ -195,38 +186,38 @@ class TargetDelegate(TargetProcess):
     
     def __cv_capture_video(self, file:str, maxduration:int = 10000):
         
-            cap = cv2.VideoCapture(0)
+        #Capture video from webcam
+        vid_capture = cv2.VideoCapture(0)        
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        output = cv2.VideoWriter(file,fourcc, 15.0, (640,480))
+        
+        start_time = int(round(time.time() * 1000))
+             
+        while(True):
+            ret,frame = vid_capture.read()
+            output.write(frame)
+            now = int(round(time.time() * 1000))
+            if now - start_time >= maxduration:
+                break
             
-            start_time = int(round(time() * 1000))
-            
-            # Define the codec and create VideoWriter object
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
-            out = cv2.VideoWriter(file,fourcc, 20.0, (640,480))
-            
-            while(cap.isOpened()):
-                ret, frame = cap.read()
-                if ret==True:
-                    frame = cv2.flip(frame,0)
-            
-                    # write the flipped frame
-                    out.write(frame)
-            
-                    cv2.imshow('frame',frame)
-                    
-                    # 10 seconds recording only
-                    if int(round(time() * 1000)) - start_time >= maxduration:
-                        break
-                else:
-                    break
-            
-            # Release everything if job is finished
-            cap.release()
-            out.release()
-            cv2.destroyAllWindows()
-            
-            if os.path.exists(file):
-                return file
-            return none
+        # close the already opened camera
+        vid_capture.release()
+        # close the already opened file
+        output.release()
+        
+        if os.path.exists(file):
+            return {
+                "meta": {
+                    "type": "video",
+                    "duration": maxduration/1000,
+                    "width": 640,
+                    "height": 480,
+                    "thumb" : os.getcwd() + os.path.sep + "assets/video.png" 
+                },
+                    "data" : file
+            }
+                            
+        raise FileNotFoundError("Could not locate recording or recording failed")
     
     
     
@@ -236,7 +227,7 @@ class TargetDelegate(TargetProcess):
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
-                name = "/home" + os.path.sep + name
+                name = self.__tmp_dir.name + os.path.sep + name
             
             return  await IOLoop.current().run_in_executor(
                     None,
@@ -262,8 +253,14 @@ class TargetDelegate(TargetProcess):
             cv2.destroyAllWindows()
             
             if os.path.exists(file):
-                return file
-            return none
+                return {
+                    "meta": {
+                        "type": "image"            
+                    },
+                        "data" : file
+                 }
+            
+            raise FileNotFoundError("Could not locate recording or recording failed")
 
     
     
@@ -271,4 +268,4 @@ class TargetDelegate(TargetProcess):
         Sample custom method
     '''
     def do_fulfill_hello(self, params):
-        return command + " world"
+        return " world"

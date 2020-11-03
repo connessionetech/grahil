@@ -137,3 +137,15 @@ def buildDataEvent(data, topic, category=None):
         }
     pass
 
+
+
+def formatSuccessBotResponse(requestid, data):
+    return data
+    pass
+
+
+
+
+def formatErrorBotResponse(requestid, error):
+    return "An error occurred "  + str(error)
+    pass

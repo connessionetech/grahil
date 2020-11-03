@@ -21,21 +21,31 @@ import ntpath
 import os
 import imghdr
 import json
+import filetype
 
 
-
-def isVideoPath(obj):
-    pass
-
-
-def isImagePath(obj):
+def isVideo(obj):
     
-    try:
-        if imghdr.what(str(obj)) != None:
+    if 'data' in  obj:
+        kind = filetype.guess(obj['data'])
+        if kind is None:
+            return False
+        elif 'video' in kind.mime:
             return True
-        return False
-    except Exception as e:
-        return False
+    
+    return False
+
+
+def isImage(obj):
+    
+    if 'data' in  obj:
+        kind = filetype.guess(obj['data'])
+        if kind is None:
+            return False
+        elif 'image' in kind.mime:
+            return True
+    
+    return False
 
 
 def isJSON(obj):

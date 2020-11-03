@@ -152,7 +152,7 @@
 						{
 							"intent": "video",
 							"seed": "record",
-							"keywords": ["shoot a video", "record a video", "record a moment"],
+							"keywords": ["shoot a video", "record a video", "capture video", "take a video"],
 							"responses": ["here is a video", "here is a recording", "this is what i have"],
 							"action": {
 								"pre_response": "Preparing video",

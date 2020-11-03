@@ -11,14 +11,14 @@ import json
 from aiogram import Bot
 from oneadmin.abstracts import ServiceBot
 from aiogram import Bot, Dispatcher, types
-from numpy.distutils.fcompiler import none
 from tornado.queues import Queue
 import uuid
 from exceptions import RPCError
 from aiogram.utils import exceptions, executor
-from utilities import isJSON, isImagePath
+from utilities import isJSON, isVideo, isImage
 from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
+from responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 
 
 
@@ -125,17 +125,35 @@ class TelegramBot(ServiceBot):
         :return:
         """
         try:
-            # figure out what kind of output we got
-            if isJSON(response_data):
-                await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
+            
+            if isImage(response_data):
+                
+                path = response_data["data"]                
+                img = InputFile(path, "Snapshot")
+                await self.__bot.send_photo(user_id, img, response_text)
+                
+                            
+            elif isVideo(response_data): 
+                path = response_data["data"]
+                duration = None
+                width = None;
+                height = None;
+                thumb = None
+                vid = InputFile(path, "Video")
+                
+                if 'meta' in response_data:
+                    duration = response_data['meta']['duration'] if 'duration' in response_data['meta'] else None
+                    width = response_data['meta']['width'] if 'width' in response_data['meta'] else None
+                    height = response_data['meta']['height'] if 'height' in response_data['meta'] else None
+                    thumb = response_data['meta']['thumb'] if 'thumb' in response_data['meta'] else None
+                
+                await self.__bot.send_video(user_id, vid, duration, width, height, InputFile(thumb), "video")
+                
             
             elif isinstance(response_data,dict):
-                response_data = json.dumps(dict)    
+                response_data = json.dumps(response_data) 
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
             
-            elif isImagePath(response_data): 
-                img = InputFile(str(response_data), "snapshot.jpg")
-                await self.__bot.send_photo(user_id, img, response_text)
             else:
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
                 
@@ -167,7 +185,7 @@ class TelegramBot(ServiceBot):
     
     async def onExecutionResult(self, requestid, result):
         self.logger.debug("Bot RPC Success")
-        response = self.formatSuccessBotResponse(requestid, result)
+        response = formatSuccessBotResponse(requestid, result)
         await self.__mgsqueue.put({"requestid": requestid, "status": "success", "message": response})
         pass
     
@@ -175,8 +193,7 @@ class TelegramBot(ServiceBot):
     
     async def onExecutionerror(self, requestid, e):
         self.logger.debug("Bot RPC Error")
-        err = str(e)
-        response = self.formatErrorBotResponse(requestid, err)
+        response = formatErrorBotResponse(requestid, e)
         await self.__mgsqueue.put({"requestid": requestid, "status": "error", "message": response})
         pass
     
@@ -238,16 +255,7 @@ class TelegramBot(ServiceBot):
     
 
 
-    def formatSuccessBotResponse(self, requestid, data):
-        return str(data)
-        pass
-    
-    
-    
-    
-    def formatErrorBotResponse(self, requestid, error):
-        return "An error occurred "  + str(error)
-        pass
+
     
         
     
