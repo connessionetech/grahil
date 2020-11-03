@@ -106,7 +106,7 @@
 				}
 			},
 			"target_delegate": {
-				"enabled": false,
+				"enabled": true,
 				"module": "oneadmin.modules.RPISmartDeviceDelegate",
 				"klass": "TargetDelegate",
 				"conf": {}

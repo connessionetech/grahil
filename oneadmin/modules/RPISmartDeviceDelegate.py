@@ -18,16 +18,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import cv2
 from oneadmin.target.TargetProcess import TargetProcess
-from pathlib import Path
 import tornado
 import os
 from builtins import int, str
 from oneadmin.exceptions import TargetServiceError
-from tornado.concurrent import asyncio
-import subprocess
-from oneadmin.responsebuilder import buildDataNotificationEvent,\
-    buildDataEvent
-import json
 from tornado.ioloop import IOLoop
 import tempfile
 import time
