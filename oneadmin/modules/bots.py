@@ -74,6 +74,8 @@ class TelegramBot(ServiceBot):
             
     async def handleBotRPC(self, response, message: types.Message):
         
+        self.logger.info("got message")
+        
         action = response["action"]
         
         
@@ -294,5 +296,6 @@ class TelegramBot(ServiceBot):
         return self.__webhook_secret
     
     
-    def deactivate(self):
+    async def deactivate(self):
+        await self.__bot.close()
         pass
