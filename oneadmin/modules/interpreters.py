@@ -9,8 +9,6 @@ import re
 #from sklearn.metrics.pairwise import cosine_similarity
 
 import nltk
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import wordnet
 
 import warnings
 import logging
@@ -49,9 +47,9 @@ class DefaultInterpreter(object):
         '''
         nltk.download('popular', quiet=True) # for downloading packages
         # uncomment the following only the first time
-        nltk.download('punkt') # first-time use only
-        nltk.download('wordnet') # first-time use only
+        nltk.download('punkt') # first-time use only       
         '''
+        nltk.download('wordnet') # first-time use only
         await self.init_knowledgebase()
         pass
     
@@ -71,7 +69,7 @@ class DefaultInterpreter(object):
                 responses = item["responses"]
                 action = item["action"]
                 synonyms=[]
-                for syn in wordnet.synsets(seed):
+                for syn in nltk.corpus.wordnet.synsets(seed):
                     for lem in syn.lemmas():
                         # Remove any special characters from synonym strings
                         lem_name = re.sub('[^a-zA-Z0-9 \n\.]', ' ', lem.name())
