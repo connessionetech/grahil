@@ -151,7 +151,7 @@
 						},
 						{
 							"intent": "video",
-							"seed": "record",
+							"seed": "video",
 							"keywords": ["shoot a video", "record a video", "capture video", "take a video"],
 							"responses": ["here is a video", "here is a recording", "this is what i have"],
 							"action": {
@@ -198,6 +198,17 @@
 							"action": {
 								"pre_response": "fetching memory stats",
 								"method" : "get_memory_stats",
+								"parameters" : []
+							}
+						},
+						{
+							"intent": "time",
+							"seed": "now",
+							"keywords": ["tell me the time", "what is the time", "what time is it now", "show current time", "whats the time", "current time"],
+							"responses": ["here you are..", "today's date and time...", "it is.."],
+							"action": {
+								"pre_response": "let me check...",
+								"method" : "get_system_time",
 								"parameters" : []
 							}
 						}

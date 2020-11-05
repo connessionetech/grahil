@@ -43,9 +43,10 @@ class ActionExecutor(object):
         self.__task_queue["browse_fs"] = Queue()
         self.__task_queue["delete_file"] = Queue(maxsize=3)
         self.__task_queue["fulfillRequest"] = Queue(maxsize=5)
-        self.__task_queue["get_cpu_stats"] = Queue(maxsize=5)
-        self.__task_queue["get_memory_stats"] = Queue(maxsize=5)
-        self.__task_queue["get_system_stats"] = Queue(maxsize=5)
+        self.__task_queue["get_cpu_stats"] = Queue()
+        self.__task_queue["get_memory_stats"] = Queue()
+        self.__task_queue["get_system_stats"] = Queue()
+        self.__task_queue["get_system_time"] = Queue()
         
         self.__rulesmanager = None
         
@@ -583,6 +584,25 @@ class ActionExecutor(object):
             
         if(__sysmon != None):        
             result =  __sysmon.getLastSystemStats()
+            await asyncio.sleep(.5)
+            return result
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
+    
+    
+    async def get_system_time(self, params):
+        self.logger.debug("get cpu statss")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            result =  __sysmon.getSystemTime()
             await asyncio.sleep(.5)
             return result
         else:
