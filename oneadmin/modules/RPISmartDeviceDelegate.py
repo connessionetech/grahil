@@ -42,6 +42,7 @@ class TargetDelegate(TargetProcess):
     
     SERVICE_PATH = None
     SERVO1 = 17
+    SERVO2 = 27
 
     def __init__(self, root=None, params=None):
         '''
@@ -60,7 +61,9 @@ class TargetDelegate(TargetProcess):
         self.setAllowedReadExtensions(['.xml', '.txt', '.ini'])
         self.setAllowedWriteExtensions(['.xml', '.ini'])
         
-        self.__servo__angle = 0;
+        self.__servo__angle_v = 0;
+        self.__servo__angle_h = 0;
+        
         self.__current_milli_time = lambda: int(round(time() * 1000))
         
         self.__tmp_dir = tempfile.TemporaryDirectory()
@@ -78,11 +81,18 @@ class TargetDelegate(TargetProcess):
     '''
     async def __init_rpi_hardware(self):
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(TargetDelegate.SERVO1, GPIO.OUT)
-        self.__pwm = GPIO.PWM(TargetDelegate.SERVO1, 50)
-        self.__pwm.start(0)
         
-        await IOLoop.current().run_in_executor(None, self.__set_angle, 45)
+        GPIO.setup(TargetDelegate.SERVO1, GPIO.OUT)
+        GPIO.setup(TargetDelegate.SERVO2, GPIO.OUT)
+        
+        self.__pwm = GPIO.PWM(TargetDelegate.SERVO1, 50)
+        self.__pwm_2 = GPIO.PWM(TargetDelegate.SERVO2, 50)
+        
+        self.__pwm.start(0)
+        self.__pwm_2.start(0)
+        
+        await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, 45)
+        await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, 0)
         pass
     
     
@@ -91,9 +101,9 @@ class TargetDelegate(TargetProcess):
     Set angle for servo
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
-    def __set_angle(self, angle):
+    def __set_horizontal_angle(self, angle):
         
-        self.__servo__angle = angle
+        self.__servo__angle_v = angle
         self.logger.info(" => " + str(angle))
         duty = float(angle)/10 + 2.5
         GPIO.output(TargetDelegate.SERVO1, True)
@@ -101,6 +111,21 @@ class TargetDelegate(TargetProcess):
         time.sleep(1)
         GPIO.output(TargetDelegate.SERVO1, False)
         self.__pwm.ChangeDutyCycle(0)
+        pass
+    
+    
+    
+    
+    def __set_vertical_angle(self, angle):
+        
+        self.__servo__angle_h = angle
+        self.logger.info(" => " + str(angle))
+        duty = float(angle)/10 + 2.5
+        GPIO.output(TargetDelegate.SERVO2, True)
+        self.__pwm_2.ChangeDutyCycle(duty)
+        time.sleep(1)
+        GPIO.output(TargetDelegate.SERVO2, False)
+        self.__pwm_2.ChangeDutyCycle(0)
         pass
     
     
@@ -123,29 +148,29 @@ class TargetDelegate(TargetProcess):
         #duty = angle / 18 + 2
         #RPi.GPIO.output(3, True)
         self.__gpio_start()
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         time.sleep(1)
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         time.sleep(1)
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         time.sleep(1)
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         time.sleep(1)
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         time.sleep(1)
-        self.__set_angle(20)
+        self.__set_horizontal_angle(20)
         time.sleep(1)
-        self.__set_angle(40)
+        self.__set_horizontal_angle(40)
         
         self.__gpio_done()
         
@@ -195,8 +220,8 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn left")
-            __servo__angle = self.__servo__angle - 22 if self.__servo__angle - 22 >= 0 else 0
-            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            __servo__angle = self.__servo__angle_v - 22 if self.__servo__angle_v - 22 >= 0 else 0
+            await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -208,8 +233,8 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn right")
-            __servo__angle = self.__servo__angle + 22 if self.__servo__angle + 22 <= 90 else 90
-            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            __servo__angle = self.__servo__angle_v + 22 if self.__servo__angle_v + 22 <= 90 else 90
+            await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -220,8 +245,8 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn left")
-            __servo__angle = self.__servo__angle - 22 if self.__servo__angle - 22 >= 0 else 0
-            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            __servo__angle = self.__servo__angle_h - 22 if self.__servo__angle_h - 22 >= 0 else 0
+            await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -232,8 +257,8 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn right")
-            __servo__angle = self.__servo__angle + 22 if self.__servo__angle + 22 <= 90 else 90
-            await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
+            __servo__angle = self.__servo__angle_h + 22 if self.__servo__angle_h + 22 <= 90 else 90
+            await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         

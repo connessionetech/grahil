@@ -210,11 +210,12 @@ class TelegramBot(ServiceBot):
                 
                 if handler != None:
                     self.logger.debug("write status for requestid " + str(requestid) + " to client")
+                    self.logger.info("response =" + response)
                     await self.respond_to_message(subject, post_response, response)
                                 
             except Exception as e1:
                 
-                self.logger.warn("Unable to write message to client %s", handler.id)
+                self.logger.warn("Unable to write message to client %s, reason %s", handler.id, str(e1))
                 
             finally:
                 self.__mgsqueue.task_done()

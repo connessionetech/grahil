@@ -240,7 +240,7 @@
 							"keywords": ["look up", "move up"],
 							"responses": ["done"],
 							"action": {
-								"pre_response": "turning left",
+								"pre_response": "looking up",
 								"method" : "fulfillRequest",
 								"parameters" : ["turn_up"]
 							}
