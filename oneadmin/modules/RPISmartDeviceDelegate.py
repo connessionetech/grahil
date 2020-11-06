@@ -27,8 +27,8 @@ import time
 import logging
 import sys
 from oneadmin.abstracts import TargetProcess
-
-# import RPi.GPIO as GPIO
+from tornado.concurrent import asyncio
+#import RPi.GPIO as GPIO
 
 
   
@@ -39,6 +39,8 @@ class TargetDelegate(TargetProcess):
     '''    
     
     SERVICE_PATH = None
+    a = 10
+    b = 2
 
     def __init__(self, root=None, params=None):
         '''
@@ -76,9 +78,9 @@ class TargetDelegate(TargetProcess):
     def __init_rpi_hardware(self):
         RPi.GPIO.setmode(GPIO.BOARD)
         RPi.GPIO.setup(3, GPIO.OUT)
-        self.__pwm=GPIO.PWM(3, 50)
+        self.__pwm = RPi.GPIO.PWM(TargetDelegate.P_SERVO, TargetDelegate.fPWM)
         self.__servo__angle = 0
-        self.__pwm.start(self.__servo__angle)
+        self.__pwm.start(self.__servo__angle)        
         pass
     
     
@@ -88,12 +90,7 @@ class TargetDelegate(TargetProcess):
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
     def __set_angle(self, angle):
-        duty = angle / 18 + 2
-        RPi.GPIO.output(3, True)
-        self.__pwm.ChangeDutyCycle(duty)
-        sleep(1)
-        RPi.GPIO.output(3, False)
-        self.__pwm.ChangeDutyCycle(0)
+        pass
         
     
     
@@ -140,7 +137,7 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_left(self):
         
         try:
-            __servo__angle = self.__servo__angle - 1 if self.__servo__angle - 1 >= 0 else 0
+            __servo__angle = self.__servo__angle - 20 if self.__servo__angle - 20 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
             self.__pwm.stop()
             RPi.GPIO.cleanup()
@@ -152,7 +149,7 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_right(self):
         
         try:
-            __servo__angle = self.__servo__angle + 1 if self.__servo__angle + 1 <= 180 else 180
+            __servo__angle = self.__servo__angle + 20 if self.__servo__angle + 20 <= 180 else 180
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
             self.__pwm.stop()
             RPi.GPIO.cleanup()
@@ -227,7 +224,7 @@ class TargetDelegate(TargetProcess):
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
-                name = self.__tmp_dir.name + os.path.sep + name
+                name = '/home/pi/grahil-py'+ os.path.sep + name
             
             return  await IOLoop.current().run_in_executor(
                     None,
@@ -242,11 +239,17 @@ class TargetDelegate(TargetProcess):
     def __cv_capture_image(self, file:str):
         
             videoCaptureObject = cv2.VideoCapture(0)
-            result = True
-            while(result):
+            i = 0
+            n = 6
+            while(i<n):
                 ret,frame = videoCaptureObject.read()
+                time.sleep(1)
+                i = i+1
+                if i<(n-1):
+                    continue
+                
                 cv2.imwrite(file,frame)
-                result = False
+                                
             
             # Release everything if job is finished
             videoCaptureObject.release()
