@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import cv2
-from oneadmin.target.TargetProcess import TargetProcess
 import tornado
 import os
 from builtins import int, str
@@ -27,8 +26,10 @@ import tempfile
 import time
 import logging
 import sys
+from oneadmin.abstracts import TargetProcess
 
 # import RPi.GPIO as GPIO
+
 
   
 
