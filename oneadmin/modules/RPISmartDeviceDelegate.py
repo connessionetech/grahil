@@ -28,7 +28,9 @@ import logging
 import sys
 from oneadmin.abstracts import TargetProcess
 from tornado.concurrent import asyncio
-#import RPi.GPIO as GPIO
+
+
+import RPi.GPIO as GPIO
 
 
   
@@ -39,8 +41,7 @@ class TargetDelegate(TargetProcess):
     '''    
     
     SERVICE_PATH = None
-    a = 10
-    b = 2
+    SERVO1 = 17
 
     def __init__(self, root=None, params=None):
         '''
@@ -65,7 +66,7 @@ class TargetDelegate(TargetProcess):
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
 
-        # tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
         pass
     
@@ -75,13 +76,14 @@ class TargetDelegate(TargetProcess):
     Initializes the RPI pins 
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
-    def __init_rpi_hardware(self):
-        RPi.GPIO.setmode(GPIO.BOARD)
-        RPi.GPIO.setup(3, GPIO.OUT)
-        self.__pwm = RPi.GPIO.PWM(TargetDelegate.P_SERVO, TargetDelegate.fPWM)
+    async def __init_rpi_hardware(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(TargetDelegate.SERVO1, GPIO.OUT)
+        self.__pwm = GPIO.PWM(TargetDelegate.SERVO1, 50)
         self.__servo__angle = 0
-        self.__pwm.start(self.__servo__angle)        
+        self.__gpio_start(self.__servo__angle)               
         pass
+    
     
     
     
@@ -90,9 +92,45 @@ class TargetDelegate(TargetProcess):
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
     def __set_angle(self, angle):
+        self.__servo__angle = angle
+        self.logger.info(" => " + str(self.__servo__angle))
+        duty = float(self.__servo__angle)/10 + 2.5
+        self.__pwm.ChangeDutyCycle(duty)
         pass
-        
     
+    
+    
+    def __gpio_start(self):
+        self.__pwm.start(1)
+        pass
+    
+    
+    
+    def __gpio_done(self):
+        self.__pwm.stop()
+        GPIO.cleanup()
+        pass
+    
+    
+    
+
+    def __demo(self):
+        #duty = angle / 18 + 2
+        #RPi.GPIO.output(3, True)
+        self.__set_angle(0)
+        time.sleep(1)
+        self.__set_angle(45)
+        time.sleep(1)
+        self.__set_angle(0)
+        time.sleep(1)
+        self.__set_angle(45)
+        time.sleep(1)
+        self.__set_angle(0)
+        time.sleep(1)
+        self.__set_angle(45)
+        time.sleep(1)
+        self.__gpio_done()
+        
     
     
     
@@ -134,27 +172,33 @@ class TargetDelegate(TargetProcess):
     
     
     
+    
+    
     async def do_fulfill_turn_left(self):
         
         try:
-            __servo__angle = self.__servo__angle - 20 if self.__servo__angle - 20 >= 0 else 0
+            __servo__angle = self.__servo__angle - 22 if self.__servo__angle - 22 >= 0 else 0
+            self.__gpio_start()
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
-            self.__pwm.stop()
-            RPi.GPIO.cleanup()
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
+        finally:
+            self.__gpio_done()
         
         
+    
+    
     
     async def do_fulfill_turn_right(self):
         
         try:
-            __servo__angle = self.__servo__angle + 20 if self.__servo__angle + 20 <= 180 else 180
+            __servo__angle = self.__servo__angle + 22 if self.__servo__angle + 22 <= 90 else 90
+            self.__gpio_start()
             await IOLoop.current().run_in_executor(None, self.__set_angle, __servo__angle)
-            self.__pwm.stop()
-            RPi.GPIO.cleanup()
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
+        finally:
+            self.__gpio_done()
         
         
 

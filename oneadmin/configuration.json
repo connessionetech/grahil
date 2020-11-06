@@ -211,6 +211,28 @@
 								"method" : "get_system_time",
 								"parameters" : []
 							}
+						},
+						{
+							"intent": "left",
+							"seed": "left",
+							"keywords": ["turn left", "move left"],
+							"responses": ["turned left", "moved"],
+							"action": {
+								"pre_response": "turning left",
+								"method" : "fulfillRequest",
+								"parameters" : ["turn_left"]
+							}
+						},
+												{
+							"intent": "right",
+							"seed": "right",
+							"keywords": ["turn right", "move right"],
+							"responses": ["turned right", "moved"],
+							"action": {
+								"pre_response": "turning right",
+								"method" : "fulfillRequest",
+								"parameters" : ["turn_right"]
+							}
 						}
 						]
 					}
