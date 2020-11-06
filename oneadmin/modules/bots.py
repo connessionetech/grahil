@@ -152,6 +152,8 @@ class TelegramBot(ServiceBot):
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
             
             else:
+                if response_data == None:
+                    response_data = ""
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
                 
         except exceptions.BotBlocked:

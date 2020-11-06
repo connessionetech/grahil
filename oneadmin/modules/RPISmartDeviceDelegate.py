@@ -241,7 +241,7 @@ class TargetDelegate(TargetProcess):
         
         
     
-    async def do_fulfill_turn_up(self):
+    async def do_fulfill_turn_down(self):
         
         try:
             self.logger.info("Turn left")
@@ -253,7 +253,7 @@ class TargetDelegate(TargetProcess):
         
     
     
-    async def do_fulfill_turn_down(self):
+    async def do_fulfill_turn_up(self):
         
         try:
             self.logger.info("Turn right")
