@@ -215,7 +215,7 @@
 						{
 							"intent": "left",
 							"seed": "left",
-							"keywords": ["turn left", "move left"],
+							"keywords": ["turn left", "look left"],
 							"responses": ["turned left", "moved"],
 							"action": {
 								"pre_response": "turning left",
@@ -226,12 +226,34 @@
 												{
 							"intent": "right",
 							"seed": "right",
-							"keywords": ["turn right", "move right"],
+							"keywords": ["turn right", "look right"],
 							"responses": ["turned right", "moved"],
 							"action": {
 								"pre_response": "turning right",
 								"method" : "fulfillRequest",
 								"parameters" : ["turn_right"]
+							}
+						},
+						{
+							"intent": "up",
+							"seed": "up",
+							"keywords": ["look up", "move up"],
+							"responses": ["done"],
+							"action": {
+								"pre_response": "turning left",
+								"method" : "fulfillRequest",
+								"parameters" : ["turn_up"]
+							}
+						},
+												{
+							"intent": "down",
+							"seed": "down",
+							"keywords": ["look down", "move down"],
+							"responses": ["done"],
+							"action": {
+								"pre_response": "looking down",
+								"method" : "fulfillRequest",
+								"parameters" : ["turn_down"]
 							}
 						}
 						]
