@@ -30,7 +30,7 @@ from oneadmin.abstracts import TargetProcess
 from tornado.concurrent import asyncio
 
 
-# import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 
   
@@ -69,8 +69,7 @@ class TargetDelegate(TargetProcess):
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
 
-        #tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         pass
     
     
