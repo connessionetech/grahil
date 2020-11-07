@@ -245,7 +245,7 @@
 								"parameters" : ["turn_up"]
 							}
 						},
-												{
+						{
 							"intent": "down",
 							"seed": "down",
 							"keywords": ["look down", "move down"],
@@ -254,6 +254,17 @@
 								"pre_response": "looking down",
 								"method" : "fulfillRequest",
 								"parameters" : ["turn_down"]
+							}
+						},
+						{
+							"intent": "test",
+							"seed": "test",
+							"keywords": ["run test"],
+							"responses": ["done"],
+							"action": {
+								"pre_response": "running test",
+								"method" : "fulfillRequest",
+								"parameters" : ["test"]
 							}
 						}
 						]

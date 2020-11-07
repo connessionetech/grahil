@@ -74,8 +74,6 @@ class TelegramBot(ServiceBot):
             
     async def handleBotRPC(self, response, message: types.Message):
         
-        self.logger.info("got message")
-        
         action = response["action"]
         
         
@@ -123,7 +121,11 @@ class TelegramBot(ServiceBot):
         """
         try:
             
-            if isImage(response_data):
+            if response_data == None:
+                response_data = ""
+                await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
+            
+            elif isImage(response_data):
                 
                 path = response_data["data"]                
                 img = InputFile(path, "Snapshot")
@@ -152,8 +154,6 @@ class TelegramBot(ServiceBot):
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
             
             else:
-                if response_data == None:
-                    response_data = ""
                 await self.__bot.send_message(user_id, response_text + "\n\r\n\r" + response_data, disable_notification=disable_notification)
                 
         except exceptions.BotBlocked:
@@ -169,7 +169,7 @@ class TelegramBot(ServiceBot):
         except exceptions.TelegramAPIError:
             self.logger.exception(f"Target [ID:{user_id}]: failed") 
         else:
-            self.logger.info(f"Target [ID:{user_id}]: success")
+            self.logger.debug(f"Target [ID:{user_id}]: success")
             return True
         return False 
     
@@ -212,7 +212,6 @@ class TelegramBot(ServiceBot):
                 
                 if handler != None:
                     self.logger.debug("write status for requestid " + str(requestid) + " to client")
-                    self.logger.info("response =" + response)
                     await self.respond_to_message(subject, post_response, response)
                                 
             except Exception as e1:

@@ -30,7 +30,7 @@ from oneadmin.abstracts import TargetProcess
 from tornado.concurrent import asyncio
 
 
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
 
 
   
@@ -69,7 +69,7 @@ class TargetDelegate(TargetProcess):
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
 
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
         pass
     
@@ -279,6 +279,14 @@ class TargetDelegate(TargetProcess):
                 )
         except Exception as e:
             raise TargetServiceError("Unable to capture video " + str(e))
+        
+        
+        
+    async def do_fulfill_test(self, name:str = "output.avi", path:str = None):
+        try:
+            self.logger.info("test")
+        except Exception as e:
+            raise TargetServiceError("Unable to capture video " + str(e))   
         
         
     
