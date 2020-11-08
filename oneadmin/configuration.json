@@ -257,14 +257,14 @@
 							}
 						},
 						{
-							"intent": "test",
-							"seed": "test",
-							"keywords": ["run test"],
-							"responses": ["done"],
+							"intent": "weather",
+							"seed": "weather",
+							"keywords": ["get weather info", "show temperature", "show humidity"],
+							"responses": ["here is what the environment feels like"],
 							"action": {
-								"pre_response": "running test",
+								"pre_response": "fetching weather report",
 								"method" : "fulfillRequest",
-								"parameters" : ["test"]
+								"parameters" : ["get_humidity_temperature"]
 							}
 						}
 						]

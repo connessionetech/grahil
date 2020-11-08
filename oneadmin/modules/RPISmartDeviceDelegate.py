@@ -31,6 +31,7 @@ from tornado.concurrent import asyncio
 
 
 import RPi.GPIO as GPIO
+import Adafruit_DHT
 
 
   
@@ -43,6 +44,10 @@ class TargetDelegate(TargetProcess):
     SERVICE_PATH = None
     SERVO1 = 17
     SERVO2 = 27
+    DHT_PIN = 4
+    DHT_SENSOR = Adafruit_DHT.DHT22
+    
+    
 
     def __init__(self, root=None, params=None):
         '''
@@ -84,6 +89,9 @@ class TargetDelegate(TargetProcess):
         GPIO.setup(TargetDelegate.SERVO1, GPIO.OUT)
         GPIO.setup(TargetDelegate.SERVO2, GPIO.OUT)
         
+        
+        
+                
         self.__pwm = GPIO.PWM(TargetDelegate.SERVO1, 50)
         self.__pwm_2 = GPIO.PWM(TargetDelegate.SERVO2, 50)
         
@@ -92,6 +100,7 @@ class TargetDelegate(TargetProcess):
         
         await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, 45)
         await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, 0)
+        
         pass
     
     
@@ -214,12 +223,28 @@ class TargetDelegate(TargetProcess):
     
     
     
+    async def do_fulfill_get_humidity_temperature(self):
+        
+        try:
+           humidity, temperature = Adafruit_DHT.read_retry(TargetDelegate.DHT_SENSOR, TargetDelegate.DHT_PIN)
+           if humidity is not None and temperature is not None:
+               return {
+                "temperature": str(round(temperature, 1)) + " deg C",
+                "humidity" : str(round(humidity, 1)) + " %",
+                }
+           else:
+               raise TargetServiceError("Unable to get temperature and humidity info " + str(e))
+        except Exception as e:
+            raise TargetServiceError("Error getting temperature and humidity info " + str(e))
+    
+    
+    
     
     async def do_fulfill_turn_left(self):
         
         try:
             self.logger.info("Turn left")
-            __servo__angle = self.__servo__angle_v - 22 if self.__servo__angle_v - 22 >= 0 else 0
+            __servo__angle = self.__servo__angle_v - 11 if self.__servo__angle_v - 11 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
@@ -232,7 +257,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn right")
-            __servo__angle = self.__servo__angle_v + 22 if self.__servo__angle_v + 22 <= 90 else 90
+            __servo__angle = self.__servo__angle_v + 11 if self.__servo__angle_v + 11 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
@@ -244,7 +269,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn left")
-            __servo__angle = self.__servo__angle_h - 22 if self.__servo__angle_h - 22 >= 0 else 0
+            __servo__angle = self.__servo__angle_h - 5 if self.__servo__angle_h - 5 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
@@ -256,7 +281,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.info("Turn right")
-            __servo__angle = self.__servo__angle_h + 22 if self.__servo__angle_h + 22 <= 90 else 90
+            __servo__angle = self.__servo__angle_h + 5 if self.__servo__angle_h + 5 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
