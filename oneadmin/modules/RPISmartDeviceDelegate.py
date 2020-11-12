@@ -28,6 +28,9 @@ import logging
 import sys
 from oneadmin.abstracts import TargetProcess
 from tornado.concurrent import asyncio
+from tornado.process import Subprocess
+import signal
+import subprocess
 
 
 import RPi.GPIO as GPIO
@@ -69,12 +72,17 @@ class TargetDelegate(TargetProcess):
         self.__servo__angle_v = 0;
         self.__servo__angle_h = 0;
         
+        self.__max_stream_time = 30
+        
         self.__current_milli_time = lambda: int(round(time() * 1000))
         
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
-
+        self.__streaming_process = None
+        self.__streaming = None
+        
         tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.do_fulfill_start_streaming)
         pass
     
     
@@ -88,9 +96,6 @@ class TargetDelegate(TargetProcess):
         
         GPIO.setup(TargetDelegate.SERVO1, GPIO.OUT)
         GPIO.setup(TargetDelegate.SERVO2, GPIO.OUT)
-        
-        
-        
                 
         self.__pwm = GPIO.PWM(TargetDelegate.SERVO1, 50)
         self.__pwm_2 = GPIO.PWM(TargetDelegate.SERVO2, 50)
@@ -223,19 +228,61 @@ class TargetDelegate(TargetProcess):
     
     
     
+    async def do_fulfill_start_streaming(self):
+        
+        try:
+            cmd = ["/usr/bin/ffmpeg", "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "200k", "-pix_fmt", "yuv420p", "-f", "flv", "rtmp://a.rtmp.youtube.com/live2/jg9q-hfeg-t7g2-x6bz-8f3c"]
+            self.__streaming_process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=subprocess.STDOUT, universal_newlines=True)
+            self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
+            IOLoop.instance().add_timeout(time.time() + self.__max_stream_time, self.do_fulfill_stop_streaming)
+            
+            while True:
+                line = await self.__streaming_process.stdout.read_until_regex(b"\r\n|\r|\n")
+                line_str:str = line.decode("utf-8") 
+                self.logger.info(line_str)
+                if "frame=" in line_str:
+                    self.__streaming = True
+                    pass            
+        except Exception as e:
+            self.__streaming = False    
+        pass
+    
+    
+    
+    def __ffmpeg_closed(self, param=None):
+        self.logger.debug("closed")
+        self.__streaming = False 
+        pass
+    
+    
+    
+    async def do_fulfill_stop_streaming(self):
+        
+        try:
+            if self.__streaming == True:
+                pid = self.__streaming_process.pid
+                os.kill(pid, signal.SIGTERM)
+        except Exception as e:
+            self.logger.error("Error terminating process gracefully %s", str(e))   
+        finally:
+            self.__streaming = False
+    
+    
+    
+    
     async def do_fulfill_get_humidity_temperature(self):
         
         try:
-           humidity, temperature = Adafruit_DHT.read_retry(TargetDelegate.DHT_SENSOR, TargetDelegate.DHT_PIN)
-           if humidity is not None and temperature is not None:
-               return {
+            humidity, temperature = Adafruit_DHT.read_retry(TargetDelegate.DHT_SENSOR, TargetDelegate.DHT_PIN)
+            if humidity is not None and temperature is not None:
+                return {
                 "temperature": str(round(temperature, 1)) + " deg C",
                 "humidity" : str(round(humidity, 1)) + " %",
                 }
-           else:
-               raise TargetServiceError("Unable to get temperature and humidity info " + str(e))
+            else:
+                raise TargetServiceError("Unable to get temperature and humidity info")
         except Exception as e:
-            raise TargetServiceError("Error getting temperature and humidity info " + str(e))
+                raise TargetServiceError("Error getting temperature and humidity info " + str(e))
     
     
     
