@@ -34,7 +34,10 @@ import subprocess
 
 
 import RPi.GPIO as GPIO
+import numpy as np
 import Adafruit_DHT
+from responsebuilder import buildDataNotificationEvent
+
 
 
   
@@ -52,15 +55,17 @@ class TargetDelegate(TargetProcess):
     
     
 
-    def __init__(self, root=None, params=None):
+    def __init__(self, conf=None):
         '''
         Constructor
         '''
-        super().__init__('rpi', root, TargetDelegate.SERVICE_PATH)
+        super().__init__('rpi', None, TargetDelegate.SERVICE_PATH)
         
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.setPidProcName(None)
         
+        self.__conf = conf
+        
+        self.setPidProcName(None)
         
         log_paths = []
         # log_paths.append(os.path.join(root, "log/red5.log"))
@@ -103,10 +108,56 @@ class TargetDelegate(TargetProcess):
         self.__pwm.start(0)
         self.__pwm_2.start(0)
         
-        await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, 45)
-        await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, 0)
+        self.pwm_range = np.linspace(2.0,12.0)
+        self.pwm_span = self.pwm_range[-1]-self.pwm_range[0]
+        self.ang_range = np.linspace(0.0,180.0)
+        self.ang_span = self.ang_range[-1]-self.ang_range[0]
         
+        self.cycles = np.linspace(0.0,180.0,20) # duty cycles vector
+        self.cycles = np.append(np.append(0.0,self.cycles),np.linspace(180.0,0.0,20)) # reverse duty cycles
+        
+        #prev_ang = 75 # angle to start
+        #self.__pwm.start(self.angle_to_duty(prev_ang)) # start servo at 0 degrees
+        await IOLoop.current().run_in_executor(None, self.__reset)
         pass
+    
+    
+    
+    def angle_to_duty(self, ang):
+        # rounding to approx 0.01 - the max resolution
+        # (based on 10-bits, 2%-12% PWM period)
+        print('Duty Cycle: '+str(round((((ang - self.ang_range[0])/self.ang_span)*self.pwm_span)+self.pwm_range[0],1)))
+        return round((((ang - self.ang_range[0])/self.ang_span)*self.pwm_span)+self.pwm_range[0],1)
+
+    
+    
+    def cust_delay(self, ang, prev_ang):
+        # minimum delay using max speed 0.1s/60 deg
+        return (10.0/6.0)*(abs(ang-prev_ang))/1000.0
+
+    
+    
+    def change_to_angle(self, prev_ang, curr_ang):
+        self.__pwm.ChangeDutyCycle(self.angle_to_duty(curr_ang))
+        time.sleep(self.cust_delay(curr_ang,prev_ang))
+        self.__pwm.ChangeDutyCycle(0) # reduces jitter
+        return
+    
+    
+    
+    def __reset(self):
+        self.__set_horizontal_angle(45)
+        self.__set_vertical_angle(0)
+        pass
+    
+    
+    
+    def __increment(self, x):
+        return x + 1
+    
+    
+    def __decrement(self, x):
+        return x - 1
     
     
     
@@ -116,14 +167,25 @@ class TargetDelegate(TargetProcess):
     '''
     def __set_horizontal_angle(self, angle):
         
-        self.__servo__angle_v = angle
-        self.logger.info(" => " + str(angle))
-        duty = float(angle)/10 + 2.5
-        GPIO.output(TargetDelegate.SERVO1, True)
-        self.__pwm.ChangeDutyCycle(duty)
-        time.sleep(1)
-        GPIO.output(TargetDelegate.SERVO1, False)
-        self.__pwm.ChangeDutyCycle(0)
+        newpos = angle
+        oldpos = self.__servo__angle_v
+        
+        
+        if oldpos < newpos:
+            move = self.__increment
+        else:
+            move = self.__decrement
+        
+        
+        while (abs(oldpos - newpos) != 0):
+            self.logger.debug("oldpos = " + str(oldpos) + " and " + "newpos=" + str(newpos))
+            oldpos = move(oldpos)
+            duty = float(oldpos)/10 + 2.5
+            self.__pwm.ChangeDutyCycle(duty)
+            time.sleep(.2)
+            self.__pwm.ChangeDutyCycle(0)
+        
+        self.__servo__angle_v = newpos
         pass
     
     
@@ -131,35 +193,46 @@ class TargetDelegate(TargetProcess):
     
     def __set_vertical_angle(self, angle):
         
-        self.__servo__angle_h = angle
-        self.logger.info(" => " + str(angle))
-        duty = float(angle)/10 + 2.5
-        GPIO.output(TargetDelegate.SERVO2, True)
-        self.__pwm_2.ChangeDutyCycle(duty)
-        time.sleep(1)
-        GPIO.output(TargetDelegate.SERVO2, False)
-        self.__pwm_2.ChangeDutyCycle(0)
+        newpos = angle
+        oldpos = self.__servo__angle_h
+        
+        
+        if oldpos < newpos:
+            move = self.__increment
+        else:
+            move = self.__decrement
+        
+        
+        while (abs(oldpos - newpos) != 0):
+            self.logger.debug("oldpos = " + str(oldpos) + " and " + "newpos=" + str(newpos))
+            oldpos = move(oldpos)
+            duty = float(oldpos)/10 + 2.5        
+            self.__pwm_2.ChangeDutyCycle(duty)
+            time.sleep(.2)
+            self.__pwm_2.ChangeDutyCycle(0) 
+        
+               
+        self.__servo__angle_h = newpos
         pass
-    
-    
-    
-    def __gpio_start(self):
-        self.__pwm.start(1)
-        pass
-    
-    
-    
-    def __gpio_done(self):
-        self.__pwm.stop()
-        # GPIO.cleanup()
-        pass
-    
+        
     
     
 
     def __demo(self):
+        '''
         #duty = angle / 18 + 2
         #RPi.GPIO.output(3, True)
+        print("__demo")
+        while True:
+            try:
+                for ii in range(0,len(self.cycles)):
+                    self.change_to_angle(self.cycles[ii-1],self.cycles[ii])
+                break  
+            except KeyboardInterrupt:
+                break # if CTRL+C is pressed
+        '''
+
+        '''
         self.__gpio_start()
         self.__set_horizontal_angle(20)
         time.sleep(1)
@@ -186,6 +259,8 @@ class TargetDelegate(TargetProcess):
         self.__set_horizontal_angle(40)
         
         self.__gpio_done()
+        '''
+        pass
         
     
     
@@ -231,27 +306,42 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_start_streaming(self):
         
         try:
-            cmd = ["/usr/bin/ffmpeg", "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "200k", "-pix_fmt", "yuv420p", "-f", "flv", "rtmp://a.rtmp.youtube.com/live2/jg9q-hfeg-t7g2-x6bz-8f3c"]
+            publish_url = self.__conf["youtube_endpoint"] + "/" + self.__conf["youtube_streamkey"]
+            cmd = [self.__conf["ffmpeg_path"], "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "200k", "-pix_fmt", "yuv420p", "-f", "flv", publish_url]
             self.__streaming_process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=subprocess.STDOUT, universal_newlines=True)
             self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
             IOLoop.instance().add_timeout(time.time() + self.__max_stream_time, self.do_fulfill_stop_streaming)
-            
-            while True:
-                line = await self.__streaming_process.stdout.read_until_regex(b"\r\n|\r|\n")
-                line_str:str = line.decode("utf-8") 
-                self.logger.info(line_str)
-                if "frame=" in line_str:
-                    self.__streaming = True
-                    pass            
+            tornado.ioloop.IOLoop.current().spawn_callback(self.__start_streaming)
         except Exception as e:
             self.__streaming = False    
         pass
     
     
     
-    def __ffmpeg_closed(self, param=None):
+    
+    async def __start_streaming(self):
+        
+        try:
+            while True:
+                    line = await self.__streaming_process.stdout.read_until_regex(b"\r\n|\r|\n")
+                    line_str:str = line.decode("utf-8") 
+                    #self.logger.info(line_str)
+                    if "frame=" in line_str:
+                        if self.__streaming == False:
+                            self.__streaming = True
+                            evt = buildDataNotificationEvent({"subject":"Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming, "url": self.__conf["youtube_playback_url"]}}, "/events/target/camera/state", "Target camera is now streaming")
+                            await self.eventcallback(evt)
+                        pass 
+        except Exception as e:
+            self.__streaming = False
+    
+    
+    
+    async def __ffmpeg_closed(self, param=None):
         self.logger.debug("closed")
         self.__streaming = False 
+        evt = buildDataNotificationEvent({"subject":"Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, "/events/target/camera/state", "Target camera has stopped streaming")
+        await self.eventcallback(evt)
         pass
     
     
@@ -290,8 +380,8 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_left(self):
         
         try:
-            self.logger.info("Turn left")
-            __servo__angle = self.__servo__angle_v - 11 if self.__servo__angle_v - 11 >= 0 else 0
+            self.logger.debug("Turn left")
+            __servo__angle = self.__servo__angle_v - 5 if self.__servo__angle_v - 5 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
@@ -303,8 +393,8 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_right(self):
         
         try:
-            self.logger.info("Turn right")
-            __servo__angle = self.__servo__angle_v + 11 if self.__servo__angle_v + 11 <= 90 else 90
+            self.logger.debug("Turn right")
+            __servo__angle = self.__servo__angle_v + 5 if self.__servo__angle_v + 5 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
@@ -315,7 +405,7 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_down(self):
         
         try:
-            self.logger.info("Turn left")
+            self.logger.debug("Turn left")
             __servo__angle = self.__servo__angle_h - 5 if self.__servo__angle_h - 5 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:
@@ -327,7 +417,7 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_turn_up(self):
         
         try:
-            self.logger.info("Turn right")
+            self.logger.debug("Turn right")
             __servo__angle = self.__servo__angle_h + 5 if self.__servo__angle_h + 5 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
         except Exception as e:

@@ -101,7 +101,7 @@ class TornadoApplication(tornado.web.Application):
          
             # Initializing pubsub hub
             pubsub_conf = modules["pubsub"]
-            self.__pubsubhub = PubSubHub(pubsub_conf)
+            self.__pubsubhub = PubSubHub(pubsub_conf["conf"])
             self.__pubsubhub.activate_message_flush()
             
             '''
@@ -112,7 +112,8 @@ class TornadoApplication(tornado.web.Application):
                 
                 
             # Register Pinger modules for websocket clients
-            self.__pinger = Pinger(modules["pinger"])
+            pinger_conf = modules["pinger"]
+            self.__pinger = Pinger(pinger_conf["conf"])
             self.__pinger.callback = self.processPing
             self.__pinger.start()       
                  
@@ -131,7 +132,10 @@ class TornadoApplication(tornado.web.Application):
                 try:
                     mod = __import__(module_name, fromlist=[class_name])
                     klass = getattr(mod, class_name)
-                    self.__delegate = klass()
+                    self.__delegate = klass(delegate_conf["conf"])
+                    
+                    if self.__delegate is not None:
+                        self.__delegate.eventcallback = self.handleDelegateEvents
                 except ImportError as de:
                     self.logger.warn("Module by name %s was not found and will not be loaded", module_name)
                 
@@ -152,11 +156,11 @@ class TornadoApplication(tornado.web.Application):
                 accessible_paths = []
                 
                 ''' Get static declared accessible paths from configuration '''
-                accessible_static_paths = filemanager_config["accessible_paths"]
+                accessible_static_paths = filemanager_config["conf"]["accessible_paths"]
                 for accessible_static_path in accessible_static_paths:
                     accessible_paths.append(accessible_static_path)
                 
-                self.__filemanager = FileManager(filemanager_config, accessible_paths)
+                self.__filemanager = FileManager(filemanager_config["conf"], accessible_paths)
                 
                 '''
                 Register `file_manager` module
@@ -167,7 +171,7 @@ class TornadoApplication(tornado.web.Application):
             # Register log monitor module
             log_monitor_config = modules["log_monitor"]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
-                self.__logmonitor = LogMonitor(log_monitor_config)
+                self.__logmonitor = LogMonitor(log_monitor_config["conf"])
                 self.__logmonitor.callback = self.processLogLine
                 self.__logmonitor.chunk_callback = self.processLogChunk               
                     
@@ -226,7 +230,7 @@ class TornadoApplication(tornado.web.Application):
             
             stats_config = modules["sysmon"]
             if stats_config != None and stats_config["enabled"] == True:
-                self.__sysmon = SystemMonitor(stats_config, self.modules)
+                self.__sysmon = SystemMonitor(stats_config["conf"], self.modules)
                 self.__sysmon.callback = self.processSystemStats
                 self.__sysmon.start_monitor()
             
@@ -246,14 +250,14 @@ class TornadoApplication(tornado.web.Application):
         
         action_config = modules["action_executor"]
         if action_config != None and action_config["enabled"] == True:
-            self.__action__executor = ActionExecutor(action_config, self.modules)
+            self.__action__executor = ActionExecutor(action_config["conf"], self.modules)
             
             
         
         # Register reaction engine        
         reaction_engine_conf = modules["reaction_engine"];
         if reaction_engine_conf["enabled"] == True:
-            self.__reaction_engine = ReactionEngine(reaction_engine_conf, self.modules)
+            self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
             
             '''
             Register `reaction_engine` module            
@@ -261,7 +265,7 @@ class TornadoApplication(tornado.web.Application):
             '''
             
             # Inform pubsubhub of the reaction engine presence
-            self.__pubsubhub.notifyable = self.__reaction_engine
+            self.__pubsubhub.addNotifyable(self.__reaction_engine)
             self.__action__executor.rulesmanager = self.__reaction_engine
             
         
@@ -291,6 +295,8 @@ class TornadoApplication(tornado.web.Application):
                 klass = getattr(mod, bot_class_name)
                 self.__service_bot = klass(bot_config, self.__action__executor, nlp_engine)
                 
+                self.__pubsubhub.addNotifyable(self.__service_bot)
+                
                 '''
                 Register `servicebot` module
                 '''
@@ -304,7 +310,7 @@ class TornadoApplication(tornado.web.Application):
         
         # Initializing rpc gateway
         rpc_gateway_conf = modules["rpc_gateway"]
-        self.__rpc_gateway = RPCGateway(rpc_gateway_conf, self.__action__executor)
+        self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__executor)
         
         '''
         Register `rpc_gateway` module
@@ -331,7 +337,7 @@ class TornadoApplication(tornado.web.Application):
     '''
         Gets system wide capabilities
     '''
-    def get_system_capabilities(self):
+    def notget_system_capabilities(self):
         
         modules = self.__config["modules"]
         

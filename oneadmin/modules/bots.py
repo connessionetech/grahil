@@ -17,10 +17,10 @@ from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 from oneadmin.abstracts import ServiceBot
+from abstracts import Notifyable
 
 
-class TelegramBot(ServiceBot):
-    
+class TelegramBot(ServiceBot, Notifyable):
     
     dp = None;
     
@@ -69,6 +69,15 @@ class TelegramBot(ServiceBot):
             self.logger.error("bot init error " + str(e))
         '''finally:
             await bot.close()'''
+            
+    
+    
+    '''
+        Receives event notifications
+    '''        
+    async def notifyEvent(self, event):
+        self.logger.debug(json.dumps(event))
+        pass  
             
             
             

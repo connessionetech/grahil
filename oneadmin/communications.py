@@ -178,7 +178,7 @@ class PubSubHub(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__config = config
         self.__channels = {}
-        self.__notifyable = None
+        self.__notifyables = []
         self._initialize()
         
     def _initialize(self):
@@ -215,18 +215,28 @@ class PubSubHub(object):
     def channels(self):
         return self.__channels
         
+    
     @channels.setter
     def channels(self, _channels):
-        self.__channels = _channels
+        self.__channels = _channels        
+        
+        
+    def addNotifyable(self, notifyable):
+        self.__notifyables.append(notifyable)
+        
+        
+    def removeNotifyable(self, notifyable):
+        self.__notifyables.remove(notifyable)
         
         
     @property    
-    def notifyable(self):
-        return self.__notifyable
-        
-    @notifyable.setter
-    def notifyable(self, notifyable):
-        self.__notifyable = notifyable
+    def notifyables(self):
+        return self.__notifyables
+    
+    
+    @notifyables.setter
+    def notifyables(self, notifyables):
+        self.__notifyables = notifyables
         
         
     def subscribe(self, topicname, client):
@@ -408,12 +418,13 @@ class PubSubHub(object):
                         await clients.submit(message)                
                                 
                 try:
-                    # Notify reaction engine
-                    if self.__notifyable != None and self.__isValidReactableEvent(message) == True:
-                        await self.__notifyable.notifyEvent(message)
+                    # Notify notifyables
+                    if self.__isValidReactableEvent(message) == True:
+                        for notifyable in self.__notifyables:
+                            await notifyable.notifyEvent(message)
                 except Exception as e:
-                        err = "An error occurred in reaction engine while reacting to this event." + str(e)
-                        self.logger.error(err)
+                        err = "An error occurred notifying %s while reacting to this event.%s"
+                        self.logger.error(err, str(notifyable), str(e))
                 
             except:
                 logging.error("Oops!,%s,occurred.", sys.exc_info()[0])

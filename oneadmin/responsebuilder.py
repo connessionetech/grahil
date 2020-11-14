@@ -74,6 +74,8 @@ def formatProgressResponse(permit, data):
             "timestamp":int(datetime.datetime.utcnow().timestamp())
             }
 
+
+
 def formatErrorResponse(message, code):
     return {
             "status": "error",
@@ -119,7 +121,7 @@ def buildDataNotificationEvent(data, topic, msg, code=4, category=None):
             "message": msg,
             "code": code,
             "data": data,
-            "topic": topic,
+            "topic": "/events/" + topic,
             "category": category,
             "timestamp": int(datetime.datetime.utcnow().timestamp())
         }
@@ -131,7 +133,7 @@ def buildDataEvent(data, topic, category=None):
     return {
             "type": "DataEvent",
             "data": data,
-            "topic": topic,
+            "topic": "/events/" + topic,
             "category": category,
             "timestamp": int(datetime.datetime.utcnow().timestamp())
         }
