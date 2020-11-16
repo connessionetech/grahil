@@ -33,9 +33,9 @@ import signal
 import subprocess
 
 
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import numpy as np
-import Adafruit_DHT
+#import Adafruit_DHT
 from responsebuilder import buildDataNotificationEvent
 
 
@@ -51,7 +51,7 @@ class TargetDelegate(TargetProcess):
     SERVO1 = 17
     SERVO2 = 27
     DHT_PIN = 4
-    DHT_SENSOR = Adafruit_DHT.DHT22
+    DHT_SENSOR = 0#Adafruit_DHT.DHT22
     
     
 
@@ -77,7 +77,7 @@ class TargetDelegate(TargetProcess):
         self.__servo__angle_v = 0;
         self.__servo__angle_h = 0;
         
-        self.__max_stream_time = 30
+        self.__max_stream_time = 60
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         
@@ -86,8 +86,7 @@ class TargetDelegate(TargetProcess):
         self.__streaming_process = None
         self.__streaming = None
         
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
-        #tornado.ioloop.IOLoop.current().spawn_callback(self.do_fulfill_start_streaming)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         pass
     
     
@@ -309,7 +308,6 @@ class TargetDelegate(TargetProcess):
             publish_url = self.__conf["youtube_endpoint"] + "/" + self.__conf["youtube_streamkey"]
             cmd = [self.__conf["ffmpeg_path"], "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "200k", "-pix_fmt", "yuv420p", "-f", "flv", publish_url]
             self.__streaming_process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=subprocess.STDOUT, universal_newlines=True)
-            self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
             IOLoop.instance().add_timeout(time.time() + self.__max_stream_time, self.do_fulfill_stop_streaming)
             tornado.ioloop.IOLoop.current().spawn_callback(self.__start_streaming)
         except Exception as e:
@@ -327,9 +325,10 @@ class TargetDelegate(TargetProcess):
                     line_str:str = line.decode("utf-8") 
                     #self.logger.info(line_str)
                     if "frame=" in line_str:
-                        if self.__streaming == False:
+                        if not self.__streaming:
                             self.__streaming = True
-                            evt = buildDataNotificationEvent({"subject":"Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming, "url": self.__conf["youtube_playback_url"]}}, "/events/target/camera/state", "Target camera is now streaming")
+                            self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
+                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming, "url": self.__conf["youtube_playback_url"]}}, topic="/events", msg="Target camera has started streaming")
                             await self.eventcallback(evt)
                         pass 
         except Exception as e:
@@ -339,9 +338,8 @@ class TargetDelegate(TargetProcess):
     
     async def __ffmpeg_closed(self, param=None):
         self.logger.debug("closed")
-        self.__streaming = False 
-        evt = buildDataNotificationEvent({"subject":"Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, "/events/target/camera/state", "Target camera has stopped streaming")
-        await self.eventcallback(evt)
+        self.__streaming = False
+        await self.report_stop_streaming() 
         pass
     
     
@@ -349,13 +347,21 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_stop_streaming(self):
         
         try:
-            if self.__streaming == True:
+            if self.__streaming:
                 pid = self.__streaming_process.pid
                 os.kill(pid, signal.SIGTERM)
+                await asyncio.sleep(2)
         except Exception as e:
             self.logger.error("Error terminating process gracefully %s", str(e))   
         finally:
             self.__streaming = False
+            await self.report_stop_streaming()
+            
+    
+    async def report_stop_streaming(self):
+        evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
+        await self.eventcallback(evt)
+        pass
     
     
     
@@ -445,7 +451,9 @@ class TargetDelegate(TargetProcess):
         
     async def do_fulfill_test(self, name:str = "output.avi", path:str = None):
         try:
-            self.logger.info("test")
+            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
+            await self.eventcallback(evt)           
+            
         except Exception as e:
             raise TargetServiceError("Unable to capture video " + str(e))   
         

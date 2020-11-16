@@ -22,6 +22,38 @@ import json
 import filetype
 
 
+
+
+def is_data_notification_event(evt):
+    
+    if "type" in evt:
+        if evt["type"] == "DataNotificationEvent":
+                return True
+    
+    return False
+
+
+
+def is_notification_event(evt):
+    
+    if "type" in evt:
+        if evt["type"] == "NotificationEvent":
+                return True
+    
+    return False
+
+
+
+def is_data_event(evt):
+    
+    if "type" in evt:
+        if evt["type"] == "DataEvent":
+                return True
+    
+    return False
+
+
+
 def isVideo(obj):
     
     if 'data' in  obj:

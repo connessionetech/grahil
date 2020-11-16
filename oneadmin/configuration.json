@@ -122,8 +122,8 @@
 				"conf": {
 					"ffmpeg_path" : "/usr/bin/ffmpeg",
 					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
-					"youtube_streamkey" : "jg9q-hfeg-t7g2-x6bz-8f3c",
-					"youtube_playback_url" : "https://youtu.be/p5fsAYWXIpw"
+					"youtube_streamkey" : "3j43-rrdb-g14p-h0mu-dj95",
+					"youtube_playback_url" : "https://youtu.be/CDBcC6ZWnZQ"
 				}
 			},
 			"rpc_gateway": {
@@ -282,6 +282,39 @@
 								"pre_response": "fetching weather report",
 								"method" : "fulfillRequest",
 								"parameters" : ["get_humidity_temperature"]
+							}
+						},
+						{
+							"intent": "test",
+							"seed": "test",
+							"keywords": ["do test", "run test"],
+							"responses": ["running test"],
+							"action": {
+								"pre_response": "running test",
+								"method" : "fulfillRequest",
+								"parameters" : ["test"]
+							}
+						},
+						{
+							"intent": "publish",
+							"seed": "publish",
+							"keywords": ["start streaming", "start publishing", "publish camera"],
+							"responses": ["initialized stream"],
+							"action": {
+								"pre_response": "startingt",
+								"method" : "fulfillRequest",
+								"parameters" : ["start_streaming"]
+							}
+						},
+						{
+							"intent": "unpublish",
+							"seed": "unpublish",
+							"keywords": ["stop streaming", "stop publishing", "publish camera"],
+							"responses": ["deinitialized stream"],
+							"action": {
+								"pre_response": "stopping",
+								"method" : "fulfillRequest",
+								"parameters" : ["stop_streaming"]
 							}
 						}
 						]

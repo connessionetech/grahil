@@ -49,13 +49,14 @@ class DefaultInterpreter(object):
         # uncomment the following only the first time
         nltk.download('punkt') # first-time use only       
         '''
-        #nltk.download('wordnet') # first-time use only
+        
+        try:
+            nltk.data.find("corpora/wordnet")
+        except LookupError:
+            nltk.download('wordnet')
+        
         await self.init_knowledgebase()
         pass
-    
-    
-    def isReady(self):
-        return True
     
     
     async def init_knowledgebase(self):

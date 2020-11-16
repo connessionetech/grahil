@@ -354,7 +354,7 @@ class PubSubHub(object):
     
     
     '''
-        Publishes event data to a events channel
+        Publishes event data to a events channel - "/events"
     '''
     async def publish_event(self, event):
         if PubSubHub.EVENTS in self.channels:
@@ -369,7 +369,7 @@ class PubSubHub(object):
     '''
     def __isValidEvent(self, event):
         # validate event object and place in queue
-        if hasattr(event, "name") and hasattr(event, "category") and hasattr(event, "data"):
+        if "type" in event and "category" in event and "data" in event:
             return True
         return False
     
@@ -413,7 +413,7 @@ class PubSubHub(object):
                 
                 clients = channel[3] #set
                 if len(clients) > 0:
-                    self.logger.debug("Pushing message %s to %s subscribers...".format(message, len(clients)))
+                    self.logger.debug("Pushing message %s to %s subscribers...",format(message), len(clients))
                     for clients in clients:
                         await clients.submit(message)                
                                 

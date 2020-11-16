@@ -18,6 +18,7 @@ from aiogram.types.input_file import InputFile
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 from oneadmin.abstracts import ServiceBot
 from abstracts import Notifyable
+from utilities import is_notification_event, is_data_notification_event
 
 
 class TelegramBot(ServiceBot, Notifyable):
@@ -41,9 +42,12 @@ class TelegramBot(ServiceBot, Notifyable):
         self.__nlp_engine = nlp_engine
         self.__requests = {}
         self.__mgsqueue = Queue()
+        self.__eventsqueue = Queue()
         self.id = str(uuid.uuid4())
+        self.__bot_master = None
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__activate_bot)
     
     
@@ -54,8 +58,9 @@ class TelegramBot(ServiceBot, Notifyable):
             self.__bot = Bot(token=self.__conf['conf']['token'])
             self.__disp = Dispatcher(self.__bot)
             
-            self.__disp.register_message_handler(self.handleMessages)
+            
             self.__disp.register_message_handler(self.start_handler, commands={"start", "restart"})
+            self.__disp.register_message_handler(self.handleMessages)
             
             '''    
             self.__disp.register_message_handler(self.text_startswith_handler, text_startswith=['prefix1', 'prefix2'])
@@ -77,18 +82,15 @@ class TelegramBot(ServiceBot, Notifyable):
     '''        
     async def notifyEvent(self, event):
         self.logger.debug(json.dumps(event))
+        if is_data_notification_event(event) or is_notification_event(event):
+            await self.__eventsqueue.put(event)        
         pass  
-            
+    
             
             
     async def handleBotRPC(self, response, message: types.Message):
         
         action = response["action"]
-        
-        
-        #if(not self.isBotRPC(message)):
-        #    raise RPCError("Invalid message type. Not a RPC'")
-        
         
         requestid = message.message_id
         methodname = action["method"]
@@ -208,6 +210,31 @@ class TelegramBot(ServiceBot, Notifyable):
     
     
     
+    async def __event_processor(self):
+        while True:
+            
+            try:
+                event = await self.__eventsqueue.get()
+                await self.sendEventAsMessage(event)                
+            except Exception as e1:
+                self.logger.warn("Unable to write message to client reason %s", str(e1))
+                pass
+            finally:
+                self.__eventsqueue.task_done()            
+        pass
+    
+    
+    
+    async def sendEventAsMessage(self, event):
+        if self.__bot_master:
+            response_text = event["message"] if "message" in event else event["type"]
+            response_data = event["data"]
+            await self.send_message(self.__bot_master, response_text, response_data)
+        pass
+    
+    
+    
+    
     async def __notifyHandler(self):
         while True:
             try:
@@ -258,13 +285,12 @@ class TelegramBot(ServiceBot, Notifyable):
 
 
 
+
     async def start_handler(self, event: types.Message):
+        self.__bot_master = event.from_user.id
         await event.answer(f"Hello, {event.from_user.get_mention(as_html=True)} 👋!",parse_mode=types.ParseMode.HTML)
     
-
-
-
-    
+   
         
     
     '''
