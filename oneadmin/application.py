@@ -35,6 +35,9 @@ from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.modules.sysmonitor import SystemMonitor
 from oneadmin.modules.actions import ActionExecutor
+import socket
+import asyncio
+import json
 
 
 class ModuleRegistry(object):
@@ -93,10 +96,19 @@ class TornadoApplication(tornado.web.Application):
             self.__service_bot = None
             self.__reaction_engine = None
             self.__action__executor = None
+            self.__external_ip = None
             
             
-            # Attempt to find out public ip
-            self.__discoverHost()    
+            # Attempt to find out public ip            
+            while True:
+                if self.__has_internet():
+                    self.__discoverHost()
+                    break
+                
+                self.logger.info("No network connection. Waiting for connection...")
+                asyncio.sleep(10)
+                    
+            
             
          
             # Initializing pubsub hub
@@ -506,24 +518,37 @@ class TornadoApplication(tornado.web.Application):
     def modules(self):
         return self.__module_registry
     
+    
+    
+    
+    
+    def __has_internet(self, host="8.8.8.8", port=53, timeout=3):
+        """
+        Host: 8.8.8.8 (google-public-dns-a.google.com)
+        OpenPort: 53/tcp
+        Service: domain (DNS/TCP)
+        """
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except socket.error as ex:
+            return False
+    
+    
     '''
     Looks up external IP using public services
     '''
     def __discoverHost(self):
         
-        self.__external_ip = None
         try:
-            self.__external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
-            if(self.__external_ip == None):
-                raise Exception("IP could not be evaluated using %s", "https://ident.me")
+            
+            with urllib.request.urlopen("http://ip.jsontest.com/") as url:
+                data = url.read().decode('utf-8')
+                res = json.loads(data)
+                self.__external_ip = res["ip"]
         except Exception as ex:
-            try:
-                self.logger.warn(ex)
-                self.__external_ip = get('https://api.ipify.org').text
-                if(self.__external_ip == None):
-                    raise Exception("IP could not be evaluated using %s", "https://api.ipify.org")
-            except Exception as ex1:
-                self.logger.warn(ex1)
+            self.logger.warn(ex1)
 
     
     '''
