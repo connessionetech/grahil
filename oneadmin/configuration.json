@@ -139,7 +139,8 @@
 				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
-					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU"
+					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU",
+					"master_user_id": 494506384
 				},
 				"nlp": {
 					"module": "oneadmin.modules.interpreters",

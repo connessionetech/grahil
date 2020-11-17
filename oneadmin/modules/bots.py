@@ -63,14 +63,26 @@ class TelegramBot(ServiceBot, Notifyable):
             self.__disp.register_message_handler(self.start_handler, commands={"start", "restart"})
             self.__disp.register_message_handler(self.handleMessages)
             
+            
+            ''' Assign master user if specified '''
+            if "master_user_id" in self.__conf['conf']:
+                if self.__conf['conf']["master_user_id"] != "":
+                    self.__bot_master = self.__conf['conf']["master_user_id"]
+                    self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
+                    await self.send_message(self.__bot_master, "I am ready!")                
+                    
+            
             '''    
             self.__disp.register_message_handler(self.text_startswith_handler, text_startswith=['prefix1', 'prefix2'])
             '''
+            
                     
             await self.__read_messages()
-            me = await self.__bot.get_me()
-            self.__uid =  me.username
-            self.logger.debug(f"🤖 Hello, I'm {me.first_name}.\nHave a nice Day!")
+            #me = await self.__bot.get_me()
+            #self.__uid =  me.username
+            #self.logger.debug(f"🤖 Hello, I'm {me.first_name}.\nHave a nice Day!")
+            
+            
         except Exception as e:
             self.logger.error("bot init error " + str(e))
         '''finally:
@@ -289,7 +301,6 @@ class TelegramBot(ServiceBot, Notifyable):
 
     async def start_handler(self, event: types.Message):
         self.__bot_master = event.from_user.id
-        self.logger.info(self.__bot_master)
         await event.answer(f"Hello, {event.from_user.get_mention(as_html=True)} 👋!",parse_mode=types.ParseMode.HTML)
     
    
