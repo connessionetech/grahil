@@ -78,12 +78,17 @@ IFS=' '
 
 echo $old_version_num
 
-
+# Check version and upgrade
 if [[ "$new_version_num" -gt "$old_version_num" ]]; then
-        sleep 1   
+    sleep 1
+    echo "Stopping program"
+    sudo systemctl stop grahil.service
+    sleep 10
 	cd $program_dir
-	ls
-	#git pull     
+	git pull
+	sleep 1
+	echo "Starting program"
+    sudo systemctl start grahil.service     
 fi
 
 
