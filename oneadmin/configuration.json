@@ -324,7 +324,7 @@
 							"responses": ["Restarted"],
 							"action": {
 								"pre_response": "Restarting..",
-								"method" : "reboot_systsem",
+								"method" : "reboot_system",
 								"parameters" : []
 							}
 						},

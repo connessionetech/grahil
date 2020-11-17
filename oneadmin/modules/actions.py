@@ -631,7 +631,7 @@ class ActionExecutor(object):
     
     
     
-    async def reboot_systsem(self, params):
+    async def reboot_system(self, params):
         self.logger.debug("reboot system")
         
         __sysmon = None
