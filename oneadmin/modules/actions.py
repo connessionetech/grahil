@@ -47,6 +47,9 @@ class ActionExecutor(object):
         self.__task_queue["get_memory_stats"] = Queue()
         self.__task_queue["get_system_stats"] = Queue()
         self.__task_queue["get_system_time"] = Queue()
+        self.__task_queue["force_gc"] = Queue()
+        self.__task_queue["reboot_system"] = Queue()
+        
         
         self.__rulesmanager = None
         
