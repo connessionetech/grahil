@@ -122,9 +122,10 @@ class ReactionEngine(Notifyable):
             try:
                 event = await self.__events.get()
                 tornado.ioloop.IOLoop.current().spawn_callback(self.process_event_with_rules, event)
-                self.__events.task_done()
             except Exception as e:  
                 self.logger.error("Error processing event. " + str(e))
+            finally:
+                self.__events.task_done()
         pass
     
     

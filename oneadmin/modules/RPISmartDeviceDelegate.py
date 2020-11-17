@@ -21,26 +21,25 @@ import tornado
 import os
 from builtins import int, str
 from oneadmin.exceptions import TargetServiceError
+from oneadmin.responsebuilder import buildDataNotificationEvent  
+from oneadmin.abstracts import TargetProcess
+
 from tornado.ioloop import IOLoop
+from tornado.concurrent import asyncio
+from tornado.process import Subprocess
+
 import tempfile
 import time
 import logging
 import sys
-from oneadmin.abstracts import TargetProcess
-from tornado.concurrent import asyncio
-from tornado.process import Subprocess
 import signal
 import subprocess
 
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import numpy as np
-#import Adafruit_DHT
-from responsebuilder import buildDataNotificationEvent
+import Adafruit_DHT
 
-
-
-  
 
 class TargetDelegate(TargetProcess):
     '''
@@ -51,7 +50,7 @@ class TargetDelegate(TargetProcess):
     SERVO1 = 17
     SERVO2 = 27
     DHT_PIN = 4
-    DHT_SENSOR = 0#Adafruit_DHT.DHT22
+    DHT_SENSOR = Adafruit_DHT.DHT22
     
     
 
@@ -86,7 +85,7 @@ class TargetDelegate(TargetProcess):
         self.__streaming_process = None
         self.__streaming = None
         
-        #tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         pass
     
     

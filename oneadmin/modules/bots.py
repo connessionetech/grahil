@@ -17,8 +17,8 @@ from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 from oneadmin.abstracts import ServiceBot
-from abstracts import Notifyable
-from utilities import is_notification_event, is_data_notification_event
+from oneadmin.abstracts import Notifyable
+from oneadmin.utilities import is_notification_event, is_data_notification_event
 
 
 class TelegramBot(ServiceBot, Notifyable):

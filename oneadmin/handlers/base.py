@@ -404,10 +404,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         pass
     
     
+    ''' Warning : check for need of task-done '''
     async def run(self):
         while not self.finished:
-            message = await self.messages.get()
-            self.send(message)
+            try:
+                message = await self.messages.get()
+                self.send(message)
+            except Exception as e:
+                pass
+            finally:
+                self.messages.task_done()
 
 
     def send(self, message):
