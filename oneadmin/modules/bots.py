@@ -7,6 +7,7 @@ import logging
 import tornado
 
 import json
+import sys
 from aiogram import Bot, Dispatcher, types
 from tornado.queues import Queue
 import uuid

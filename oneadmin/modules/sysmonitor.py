@@ -160,7 +160,8 @@ class SystemMonitor(object):
     Reboot system
     '''
     def rebootSystem(self):
-        os.system("shutdown /r /t 1") 
+        #os.system("shutdown /r /t 1") 
+        os.popen("shutdown -r -t 05")
         pass
     
     
