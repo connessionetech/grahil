@@ -24,6 +24,7 @@ import tornado
 import platform
 import datetime
 import os
+import gc
 
 class SystemMonitor(object):
     
@@ -127,6 +128,16 @@ class SystemMonitor(object):
     
     
     '''
+    Force GC
+    '''
+    def force_gc(self):
+        gc.collect()
+        pass
+    
+    
+    
+    
+    '''
     Last generated system stats
     '''
     def getLastSystemStats(self):
@@ -136,12 +147,22 @@ class SystemMonitor(object):
     
     
     
-        '''
+    '''
     Last generated system stats
     '''
     def getSystemTime(self):
         return self.__last_stats['system_datetime'] if 'system_datetime' in self.__last_stats else datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
         pass
+    
+    
+    
+    '''
+    Reboot system
+    '''
+    def rebootSystem(self):
+        os.system("shutdown /r /t 1") 
+        pass
+    
     
     
     

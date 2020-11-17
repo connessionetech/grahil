@@ -90,7 +90,3 @@ if [[ "$new_version_num" -gt "$old_version_num" ]]; then
 	echo "Starting program"
     sudo systemctl start grahil.service     
 fi
-
-
-
-

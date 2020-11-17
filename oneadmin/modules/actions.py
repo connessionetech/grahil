@@ -572,6 +572,23 @@ class ActionExecutor(object):
     
     
     
+    async def force_gc(self, params):
+        self.logger.debug("force gc")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            __sysmon.force_gc()
+            await asyncio.sleep(.5)
+            return
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
     
     
     async def get_system_stats(self, params):
@@ -603,6 +620,24 @@ class ActionExecutor(object):
             
         if(__sysmon != None):        
             result =  __sysmon.getSystemTime()
+            await asyncio.sleep(.5)
+            return result
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
+    
+    async def reboot_systsem(self, params):
+        self.logger.debug("reboot system")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")
+            
+        if(__sysmon != None):        
+            result =  __sysmon.rebootSystem()
             await asyncio.sleep(.5)
             return result
         else:

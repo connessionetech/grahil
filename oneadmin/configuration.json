@@ -316,6 +316,28 @@
 								"method" : "fulfillRequest",
 								"parameters" : ["stop_streaming"]
 							}
+						},
+						{
+							"intent": "reboot",
+							"seed": "reboot",
+							"keywords": ["restart", "reset"],
+							"responses": ["Restarted"],
+							"action": {
+								"pre_response": "Restarting..",
+								"method" : "reboot_systsem",
+								"parameters" : []
+							}
+						},
+												{
+							"intent": "recycle",
+							"seed": "recycle",
+							"keywords": ["garbage collect", "reclaim"],
+							"responses": ["gc done!"],
+							"action": {
+								"pre_response": "Reclaiming memory..",
+								"method" : "force_gc",
+								"parameters" : []
+							}
 						}
 						]
 					}
