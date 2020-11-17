@@ -1,34 +1,34 @@
 #!/bin/bash
 
-version_file=https://github.com/connessionetech/grahil-py/blob/develop/oneadmin/version.py
+version_file=https://raw.githubusercontent.com/connessionetech/grahil-py/pi-deploy/oneadmin/version.py
 repo=https://github.com/connessionetech/grahil-py
-branch=develop
+branch=pi-deploy
 program_dir=/home/rajdeeprath/github/grahil-py
 version_current=/home/rajdeeprath/github/grahil-py/oneadmin/version.py
 blank=""
 target="__version__ = "
+new_version_file="version_new.ini"
+old_version_file="version_old.ini" 
+version="0.0.0"
 
 
 # Online version check
 
-
-curl -o version_new.ini https://raw.githubusercontent.com/connessionetech/grahil-py/develop/oneadmin/version.py
-input="version_new.ini"
-version="0.0.0"
+curl -o version_new.ini $version_file
 new_version_num=
 while IFS= read -r line
 do
   if [[ $line = __version__* ]]
    then
-     version="${line/$target/$blank}" 
+     version_found="${line/$target/$blank}" 
      break
   fi
 
-done < "$input"
+done < "$new_version_file"
 
 
 IFS='.'
-read -ra ADDR <<< "$version"
+read -ra ADDR <<< "$version_found"
 count=0
 ver_num=""
 for i in "${ADDR[@]}"; do # access each element of array
@@ -48,23 +48,21 @@ sleep 1
 
 # offline version check
 
-
-version="0.0.0"
-cp "$version_current" "./version_old.ini"
+cp "$version_current" "$old_version_file"
 while IFS= read -r line
 do
   if [[ $line = __version__* ]]
    then
-     version="${line/$target/$blank}" 
+     version_found_old="${line/$target/$blank}" 
      break
   fi
 
-done < "$input"
+done < "$old_version_file"
 
 
 old_version_num=
 IFS='.'
-read -ra ADDR <<< "$version"
+read -ra ADDR <<< "$version_found_old"
 count=0
 ver_num=""
 for i in "${ADDR[@]}"; do # access each element of array
@@ -77,6 +75,8 @@ done
 IFS=' '
 
 echo $old_version_num
+
+rm version_old.ini && rm version_new.ini
 
 # Check version and upgrade
 if [[ "$new_version_num" -gt "$old_version_num" ]]; then
