@@ -289,6 +289,7 @@ class TelegramBot(ServiceBot, Notifyable):
 
     async def start_handler(self, event: types.Message):
         self.__bot_master = event.from_user.id
+        self.logger.info(self.__bot_master)
         await event.answer(f"Hello, {event.from_user.get_mention(as_html=True)} 👋!",parse_mode=types.ParseMode.HTML)
     
    
