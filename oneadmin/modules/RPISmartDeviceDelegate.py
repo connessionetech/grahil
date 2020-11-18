@@ -76,7 +76,7 @@ class TargetDelegate(TargetProcess):
         self.__servo__angle_v = 0;
         self.__servo__angle_h = 0;
         
-        self.__max_stream_time = 60
+        self.__max_stream_time = 120
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         
@@ -388,6 +388,9 @@ class TargetDelegate(TargetProcess):
             self.logger.debug("Turn left")
             __servo__angle = self.__servo__angle_v - 5 if self.__servo__angle_v - 5 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
+            return {
+                    "horizontal_angle" : __servo__angle
+                    }
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -401,6 +404,9 @@ class TargetDelegate(TargetProcess):
             self.logger.debug("Turn right")
             __servo__angle = self.__servo__angle_v + 5 if self.__servo__angle_v + 5 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
+            return {
+                    "horizontal_angle" : __servo__angle
+                    }
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -413,6 +419,9 @@ class TargetDelegate(TargetProcess):
             self.logger.debug("Turn left")
             __servo__angle = self.__servo__angle_h - 5 if self.__servo__angle_h - 5 >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
+            return {
+                    "vertical_angle" : __servo__angle
+                    }
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
@@ -425,6 +434,9 @@ class TargetDelegate(TargetProcess):
             self.logger.debug("Turn right")
             __servo__angle = self.__servo__angle_h + 5 if self.__servo__angle_h + 5 <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
+            return {
+                    "vertical_angle" : __servo__angle
+                    }
         except Exception as e:
             raise TargetServiceError("Unable to set angle " + str(e))
         
