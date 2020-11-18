@@ -129,7 +129,7 @@ class TelegramBot(ServiceBot, Notifyable):
             if requestid in self.__requests:
                 del self.__requests[requestid]
                 
-            raise RPCError("Failed to invoke method." + sys.exc_info()[0])
+            raise RPCError("Failed to invoke method." + str(sys.exc_info()[0]))
         pass   
     
     

@@ -76,7 +76,7 @@ class TargetDelegate(TargetProcess):
         self.__servo__angle_v = 0;
         self.__servo__angle_h = 0;
         
-        self.__max_stream_time = 120
+        self.__max_stream_time = self.__conf["max_stream_time_seconds"] if "max_stream_time_seconds" in self.__conf else 120
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         
@@ -518,7 +518,7 @@ class TargetDelegate(TargetProcess):
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
-                name = '/home/pi/grahil-py'+ os.path.sep + name
+                name = self.__tmp_dir.name + os.path.sep + name
             
             return  await IOLoop.current().run_in_executor(
                     None,

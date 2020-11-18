@@ -23,6 +23,7 @@
 			"sysmon": {
 				"enabled": true,
 				"conf" : {
+					"system_user" : "root",					
 					"snapshot_interval_seconds": 10,
 					"log_push_interval_seconds": 0.4,
 					"nic_stats_per_nic": false,
@@ -78,6 +79,7 @@
 			"file_manager": {
 				"enabled": true,
 				"conf" : {
+					"updater_dir" : "updater",
 					"auto_clean_tmp_directories": false,
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
@@ -120,10 +122,11 @@
 				"module": "oneadmin.modules.RPISmartDeviceDelegate",
 				"klass": "TargetDelegate",
 				"conf": {
+					"max_stream_time_seconds": 120, 
 					"ffmpeg_path" : "/usr/bin/ffmpeg",
 					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
 					"youtube_streamkey" : "3j43-rrdb-g14p-h0mu-dj95",
-					"youtube_playback_url" : "https://youtu.be/CDBcC6ZWnZQ"
+					"youtube_playback_url" : "https://www.youtube.com/watch?v=yKnU9TozG40"
 				}
 			},
 			"rpc_gateway": {
@@ -222,7 +225,7 @@
 						{
 							"intent": "time",
 							"seed": "now",
-							"keywords": ["tell me the time", "what is the time", "what time is it now", "show current time", "whats the time", "current time"],
+							"keywords": ["show time", "tell me the time", "whats the time", "what is the time", "what time is it now", "show current time", "whats the time", "current time"],
 							"responses": ["here you are..", "today's date and time...", "it is.."],
 							"action": {
 								"pre_response": "let me check...",
@@ -277,23 +280,12 @@
 						{
 							"intent": "weather",
 							"seed": "weather",
-							"keywords": ["get weather info", "show temperature", "show humidity"],
-							"responses": ["here is what the environment feels like"],
+							"keywords": ["what is the humidity level", "what is the temperature", "get weather info", "show temperature", "show humidity"],
+							"responses": ["here is what it feels like"],
 							"action": {
 								"pre_response": "fetching weather report",
 								"method" : "fulfillRequest",
 								"parameters" : ["get_humidity_temperature"]
-							}
-						},
-						{
-							"intent": "test",
-							"seed": "test",
-							"keywords": ["do test", "run test"],
-							"responses": ["running test"],
-							"action": {
-								"pre_response": "running test",
-								"method" : "fulfillRequest",
-								"parameters" : ["test"]
 							}
 						},
 						{
@@ -329,7 +321,7 @@
 								"parameters" : []
 							}
 						},
-												{
+						{
 							"intent": "recycle",
 							"seed": "recycle",
 							"keywords": ["garbage collect", "reclaim"],
@@ -337,6 +329,17 @@
 							"action": {
 								"pre_response": "Reclaiming memory..",
 								"method" : "force_gc",
+								"parameters" : []
+							}
+						},
+						{
+							"intent": "update",
+							"seed": "update",
+							"keywords": ["schedule update", "update", "update now"],
+							"responses": ["Update scheduled"],
+							"action": {
+								"pre_response": "Scheduling update",
+								"method" : "schedule_update",
 								"parameters" : []
 							}
 						}

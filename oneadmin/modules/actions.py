@@ -49,6 +49,8 @@ class ActionExecutor(object):
         self.__task_queue["get_system_time"] = Queue()
         self.__task_queue["force_gc"] = Queue()
         self.__task_queue["reboot_system"] = Queue()
+        self.__task_queue["schedule_update"] = Queue()
+        
         
         
         self.__rulesmanager = None
@@ -645,6 +647,29 @@ class ActionExecutor(object):
             return result
         else:
             raise ModuleNotFoundError("`sysmon` module does not exist")
+        pass
+    
+    
+    
+    
+    async def schedule_update(self, params):
+        self.logger.debug("schedule update")
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("file_manager"):
+            __file_manager = self.__system_modules.getModule("file_manager")
+            if(__file_manager != None):
+                __updater_script = await __file_manager.get_updater_script()
+            
+                if self.__system_modules.hasModule("sysmon"):
+                    __sysmon = self.__system_modules.getModule("sysmon")
+                    if(__sysmon != None):
+                        return __sysmon.schedule__update(__updater_script)
+                else:
+                    raise ModuleNotFoundError("`sysmon` module does not exist")
+        else:
+                    raise ModuleNotFoundError("`file_manager` module does not exist")
         pass
     
     

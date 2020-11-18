@@ -25,6 +25,9 @@ import platform
 import datetime
 import os
 import gc
+from pathlib import Path
+
+from crontab import CronTab
 
 class SystemMonitor(object):
     
@@ -45,6 +48,10 @@ class SystemMonitor(object):
         self.__callback = None
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
+        
+        # must specify logged in user in config for contab to work
+        self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else None 
+        
     pass
         
 
@@ -124,6 +131,22 @@ class SystemMonitor(object):
         pass
     
     
+    
+    
+    
+    '''
+    Schedules updater script for execution -> N minutes from now and returns
+    '''
+    def schedule__update(self, updater_script):
+        
+        self.__crontab.remove_all(comment='updater')
+        os.chmod(updater_script, 0o755)
+        sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1) 
+        job = self.__crontab.new(command=updater_script)
+        job.setall(sch_time)
+        job.set_comment("updater")
+        self.__crontab.write()
+        return sch_time.strftime("%m/%d/%Y, %H:%M:%S")
     
     
     

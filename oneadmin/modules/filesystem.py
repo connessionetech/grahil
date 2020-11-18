@@ -64,22 +64,10 @@ class FileManager(object):
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.clean_upload_permits)
         
-        if config["auto_clean_tmp_directories"] != None and config["auto_clean_tmp_directories"] != False:
+        if self.__config["auto_clean_tmp_directories"] != None and self.__config["auto_clean_tmp_directories"] != False:
             tornado.ioloop.IOLoop.current().spawn_callback(self.clean_tmp_downloads)
-    
-    
-    
-    '''
-    async def initialize(self):
         
-        reports_directory = settings["reports_folder"]
-        
-        if not path.exists(reports_directory):
-            dirname = os.path.basename(os.path.normpath(reports_directory))
-            dirpath = os.path.dirname(os.path.normpath(reports_directory))
-            await self.create_directory(dirpath, dirname)
-        pass   
-    '''
+        pass  
             
     
     
@@ -674,7 +662,7 @@ class FileManager(object):
     
     def __create_directory_async(self, file, permissions):
         try:
-            file.mkdir(permissions, parents);
+            os.mkdir(file, permissions) 
         except Exception as e:
             raise FileSystemOperationError("Unable to create resource at path " + str(file.absolute()) + ".Cause " + str(e))
         pass
@@ -768,4 +756,31 @@ class FileManager(object):
                 
         except Exception as ex1:
             raise FileSystemOperationError("Could not write to file " + filename + "." +  str(ex1))
+        
+    
+    
+    async def get_updater_script(self):
+        
+        root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        updater_script = os.path.join(root_path,  "updater.sh")        
+        home = str(Path.home())
+        updater_folder=os.path.join(home, self.__config["updater_dir"])
+        
+        if not os.path.isdir(updater_folder):
+            await IOLoop.current().run_in_executor(
+                None, self.__create_directory_async, 
+                updater_folder, 0o755
+                )        
+            
+        updater_script = os.path.join(root_path, "updater.sh")
+        updater_script_executable = os.path.join(updater_folder, "updater.sh")
+        
+        if not os.path.isfile(updater_script_executable):
+            await IOLoop.current().run_in_executor(
+                    None,
+                    self.__copy_file_async, updater_script, updater_script_executable
+                    )
+            
+        return updater_script_executable
+            
     
