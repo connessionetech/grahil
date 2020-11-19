@@ -142,7 +142,7 @@ class SystemMonitor(object):
         self.__crontab.remove_all(comment='updater')
         os.chmod(updater_script, 0o755)
         sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1) 
-        job = self.__crontab.new(command=updater_script + " >> /home/pi/updater/updater.log 2>&1")
+        job = self.__crontab.new(command="/home/pi/updater/updater.sh >> /home/pi/updater/updater.log 2>&1")
         job.setall(sch_time)
         job.set_comment("updater")
         self.__crontab.write()
