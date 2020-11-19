@@ -70,7 +70,7 @@ class TelegramBot(ServiceBot, Notifyable):
                     self.__bot_master = self.__conf['conf']["master_user_id"]
                     self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
                     version = await self.__action_executor.get_software_version()
-                    await self.send_message(self.__bot_master, "Bot version:"+version+". I am listening..")                
+                    await self.send_message(self.__bot_master, "Bot version:"+version+"\nI am listening..")                
                     
             
             '''    
