@@ -146,7 +146,7 @@ class SystemMonitor(object):
         if "updater_cron_tab_command" not in self.__conf:
             raise ValueError("cron tab command not specified")
         
-        job = self.__crontab.new(command=self.__conf["updater_cron_tab_command"])
+        job = self.__crontab.new(command=self.__config["updater_cron_tab_command"])
         job.setall(sch_time)
         job.set_comment("updater")
         self.__crontab.write()
