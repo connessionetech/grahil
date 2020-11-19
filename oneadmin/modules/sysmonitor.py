@@ -138,15 +138,21 @@ class SystemMonitor(object):
     '''
     Schedules updater script for execution -> N minutes from now and returns
     '''
-    def schedule__update(self, cron_command=None):
+    def schedule__update(self, updater_script):
         
         self.__crontab.remove_all(comment='updater')
         sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1)
         
-        if "updater_cron_tab_command" not in self.__conf:
-            raise ValueError("cron tab command not specified")
+        os.chmod(updater_script, 0o755)
         
-        job = self.__crontab.new(command=self.__config["updater_cron_tab_command"])
+        args = ""
+        if "updater_cron_tab_args" in self.__config:
+            args = self.__config["updater_cron_tab_args"]
+        
+        cmd = str(updater_script) + " " + str(args)
+        self.logger.info("Setting : %s for crontab", cmd)
+        
+        job = self.__crontab.new(command=cmd)
         job.setall(sch_time)
         job.set_comment("updater")
         self.__crontab.write()
