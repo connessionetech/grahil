@@ -141,7 +141,6 @@ class SystemMonitor(object):
     def schedule__update(self, cron_command=None):
         
         self.__crontab.remove_all(comment='updater')
-        os.chmod(updater_script, 0o755)
         sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1)
         
         if "updater_cron_tab_command" not in self.__conf:
