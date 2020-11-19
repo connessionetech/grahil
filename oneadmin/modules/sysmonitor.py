@@ -28,6 +28,7 @@ import gc
 from pathlib import Path
 
 from crontab import CronTab
+from oneadmin.version import __version__
 
 class SystemMonitor(object):
     
@@ -50,7 +51,7 @@ class SystemMonitor(object):
         self.__last_stats = None
         
         # must specify logged in user in config for contab to work
-        self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else None 
+        self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else True 
         
     pass
         
@@ -137,12 +138,16 @@ class SystemMonitor(object):
     '''
     Schedules updater script for execution -> N minutes from now and returns
     '''
-    def schedule__update(self, updater_script):
+    def schedule__update(self, cron_command=None):
         
         self.__crontab.remove_all(comment='updater')
         os.chmod(updater_script, 0o755)
-        sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1) 
-        job = self.__crontab.new(command="/home/pi/updater/updater.sh >> /home/pi/updater/updater.log 2>&1")
+        sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1)
+        
+        if "updater_cron_tab_command" not in self.__conf:
+            raise ValueError("cron tab command not specified")
+        
+        job = self.__crontab.new(command=self.__conf["updater_cron_tab_command"])
         job.setall(sch_time)
         job.set_comment("updater")
         self.__crontab.write()
@@ -156,6 +161,18 @@ class SystemMonitor(object):
     def force_gc(self):
         gc.collect()
         pass
+    
+    
+    
+    
+        
+    '''
+    get version from version.py
+    '''
+    def getVersion(self):
+        return __version__
+        pass
+    
     
     
     

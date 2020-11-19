@@ -23,7 +23,8 @@
 			"sysmon": {
 				"enabled": true,
 				"conf" : {
-					"system_user" : "pi",					
+					"system_user" : "pi",
+					"updater_cron_tab_command" : "/home/pi/updater/updater.sh >> /home/pi/updater/updater.log 2>&1",					
 					"snapshot_interval_seconds": 10,
 					"log_push_interval_seconds": 0.4,
 					"nic_stats_per_nic": false,
@@ -79,7 +80,6 @@
 			"file_manager": {
 				"enabled": true,
 				"conf" : {
-					"updater_dir" : "updater",
 					"auto_clean_tmp_directories": false,
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",

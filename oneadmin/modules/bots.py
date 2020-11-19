@@ -69,7 +69,8 @@ class TelegramBot(ServiceBot, Notifyable):
                 if self.__conf['conf']["master_user_id"] != "":
                     self.__bot_master = self.__conf['conf']["master_user_id"]
                     self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
-                    await self.send_message(self.__bot_master, "I am ready!")                
+                    version = await self.__action_executor.get_software_version()
+                    await self.send_message(self.__bot_master, "Bot version:"+version+". I am listening..")                
                     
             
             '''    

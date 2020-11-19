@@ -758,7 +758,7 @@ class FileManager(object):
             raise FileSystemOperationError("Could not write to file " + filename + "." +  str(ex1))
         
     
-    
+    '''
     async def get_updater_script(self):
         
         root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -782,5 +782,6 @@ class FileManager(object):
                     )
             
         return updater_script_executable
+    '''
             
     
