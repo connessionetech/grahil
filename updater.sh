@@ -3,12 +3,12 @@
 version_file=https://raw.githubusercontent.com/connessionetech/grahil-py/pi-deploy/oneadmin/version.py
 repo=https://github.com/connessionetech/grahil-py
 branch=pi-deploy
-program_dir=/home/rajdeeprath/github/grahil-py
-version_current=/home/rajdeeprath/github/grahil-py/oneadmin/version.py
+program_dir=/home/pi/grahil-py
+version_current="$program_dir/oneadmin/version.py"
 blank=""
 target="__version__ = "
-new_version_file="version_new.ini"
-old_version_file="version_old.ini" 
+new_version_file="$program_dir/version_new.ini"
+old_version_file="$program_dir/version_old.ini" 
 version="0.0.0"
 
 cd $program_dir
@@ -42,6 +42,7 @@ done
 IFS=' '
 
 echo $new_version_num
+eval new_version_num=$new_version_num
 
 
 sleep 1
@@ -76,18 +77,21 @@ done
 IFS=' '
 
 echo $old_version_num
+eval old_version_num=$old_version_num
+
 
 rm version_old.ini && rm version_new.ini
+
 
 # Check version and upgrade
 if [[ "$new_version_num" -gt "$old_version_num" ]]; then
     sleep 1
     echo "Stopping program"
     sudo systemctl stop grahil.service
-    sleep 10
-	cd $program_dir
-	git pull
-	sleep 1
-	echo "Starting program"
+    sleep 5
+    cd $program_dir
+    git pull
+    sleep 1
+    echo "Starting program"
     sudo systemctl start grahil.service     
 fi
