@@ -23,7 +23,7 @@
 			"sysmon": {
 				"enabled": true,
 				"conf" : {
-					"system_user" : "root",					
+					"system_user" : "pi",					
 					"snapshot_interval_seconds": 10,
 					"log_push_interval_seconds": 0.4,
 					"nic_stats_per_nic": false,

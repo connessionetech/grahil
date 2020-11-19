@@ -11,6 +11,7 @@ new_version_file="version_new.ini"
 old_version_file="version_old.ini" 
 version="0.0.0"
 
+cd $program_dir
 
 # Online version check
 
