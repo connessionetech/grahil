@@ -760,10 +760,21 @@ class FileManager(object):
     
     async def get_updater_script(self):
         
+        # Add restriction here to prevent path injection
+        
         root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         updater_script = os.path.join(root_path,  "updater.sh")        
-        home = str(Path.home())
-        updater_folder=os.path.join(home, self.__config["updater_dir_name"])
+        home = str(os.path.expanduser('~'))
+        
+        if "updater_dir" not in self.__config:
+            raise ValueError("updater location not specified")
+        
+        updater_dir = str(self.__config["updater_dir"])
+        
+        if os.path.sep in updater_dir:
+            updater_folder = updater_dir
+        else:
+            updater_folder=os.path.join(home, self.__config["updater_dir"])
         
         if not os.path.isdir(updater_folder):
             await IOLoop.current().run_in_executor(
@@ -781,5 +792,3 @@ class FileManager(object):
                     )
             
         return updater_script_executable
-            
-    

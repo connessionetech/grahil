@@ -109,7 +109,7 @@
 					"permits_cleanup_interval_seconds": 30,
 					"permit_expire_time_milliseconds": 60000,
 					"max_parallel_uploads": 10,
-					"updater_dir_name": "updater"  
+					"updater_dir": "/home/pi/updater"  
 				}
 			},
 			"presenter": {
