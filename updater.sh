@@ -1,6 +1,6 @@
 #!/bin/bash
-
-version_file=https://raw.githubusercontent.com/connessionetech/grahil-py/pi-deploy/oneadmin/version.py
+time=$(($(date +%s%N)/1000000))
+version_file="https://raw.githubusercontent.com/connessionetech/grahil-py/pi-deploy/oneadmin/version.py?t=$time"
 repo=https://github.com/connessionetech/grahil-py
 branch=pi-deploy
 program_dir=/home/pi/grahil-py
@@ -80,7 +80,7 @@ echo $old_version_num
 eval old_version_num=$old_version_num
 
 
-rm version_old.ini && rm version_new.ini
+rm $old_version_file && rm $new_version_file
 
 
 # Check version and upgrade
