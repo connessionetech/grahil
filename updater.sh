@@ -90,6 +90,7 @@ if [[ "$new_version_num" -gt "$old_version_num" ]]; then
     sudo systemctl stop grahil.service
     sleep 5
     cd $program_dir
+    git checkout -- .
     git pull
     sleep 1
     echo "Starting program"
