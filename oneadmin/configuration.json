@@ -123,11 +123,10 @@
 				"module": "oneadmin.modules.RPISmartDeviceDelegate",
 				"klass": "TargetDelegate",
 				"conf": {
-					"max_stream_time_seconds": 120, 
+					"max_stream_time_seconds": 300, 
 					"ffmpeg_path" : "/usr/bin/ffmpeg",
 					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
-					"youtube_streamkey" : "3j43-rrdb-g14p-h0mu-dj95",
-					"youtube_playback_url" : "https://www.youtube.com/watch?v=yKnU9TozG40"
+					"youtube_streamkey" : "3j43-rrdb-g14p-h0mu-dj95"
 				}
 			},
 			"rpc_gateway": {
@@ -293,9 +292,9 @@
 							"intent": "publish",
 							"seed": "publish",
 							"keywords": ["start streaming", "start publishing", "publish camera"],
-							"responses": ["initialized stream"],
+							"responses": ["initialized"],
 							"action": {
-								"pre_response": "startingt",
+								"pre_response": "starting stream",
 								"method" : "fulfillRequest",
 								"parameters" : ["start_streaming"]
 							}

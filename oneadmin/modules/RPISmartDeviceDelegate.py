@@ -84,6 +84,10 @@ class TargetDelegate(TargetProcess):
         
         self.__streaming_process = None
         self.__streaming = None
+        self.__taking_snapshot = False
+        self.__taking_video = False
+        
+        self.__horizontal_step_size = 10
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         pass
@@ -305,7 +309,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             publish_url = self.__conf["youtube_endpoint"] + "/" + self.__conf["youtube_streamkey"]
-            cmd = [self.__conf["ffmpeg_path"], "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "200k", "-pix_fmt", "yuv420p", "-f", "flv", publish_url]
+            cmd = [self.__conf["ffmpeg_path"], "-threads", "2", "-f", "lavfi", "-thread_queue_size", "512", "-i", "anullsrc=r16000:cl=stereo", "-re", "-thread_queue_size", "512", "-i", "/dev/video0", "-c:a", "aac", "-strict", "experimental", "-b:a", "128k", "-ar", "44100", "-s", "640x480", "-vcodec", "libx264", "-x264-params", "keyint=120:scenecut=0", "-vb", "250k", "-pix_fmt", "yuv420p", "-f", "flv", publish_url]
             self.__streaming_process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=subprocess.STDOUT, universal_newlines=True)
             IOLoop.instance().add_timeout(time.time() + self.__max_stream_time, self.do_fulfill_stop_streaming)
             tornado.ioloop.IOLoop.current().spawn_callback(self.__start_streaming)
@@ -327,7 +331,7 @@ class TargetDelegate(TargetProcess):
                         if not self.__streaming:
                             self.__streaming = True
                             self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
-                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming, "url": self.__conf["youtube_playback_url"]}}, topic="/events", msg="Target camera has started streaming")
+                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has started streaming")
                             await self.eventcallback(evt)
                         pass 
         except Exception as e:
@@ -337,8 +341,7 @@ class TargetDelegate(TargetProcess):
     
     async def __ffmpeg_closed(self, param=None):
         self.logger.debug("closed")
-        self.__streaming = False
-        await self.report_stop_streaming() 
+        await self.on_streaming_stopped() 
         pass
     
     
@@ -353,13 +356,15 @@ class TargetDelegate(TargetProcess):
         except Exception as e:
             self.logger.error("Error terminating process gracefully %s", str(e))   
         finally:
-            self.__streaming = False
-            await self.report_stop_streaming()
+            await self.on_streaming_stopped()
             
     
-    async def report_stop_streaming(self):
-        evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
-        await self.eventcallback(evt)
+    
+    async def on_streaming_stopped(self):
+        if self.__streaming:
+            self.__streaming = False
+            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
+            await self.eventcallback(evt)
         pass
     
     
@@ -386,7 +391,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.debug("Turn left")
-            __servo__angle = self.__servo__angle_v - 5 if self.__servo__angle_v - 5 >= 0 else 0
+            __servo__angle = self.__servo__angle_v - self.__horizontal_step_size if self.__servo__angle_v - self.__horizontal_step_size >= 0 else 0
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
             return {
                     "horizontal_angle" : __servo__angle
@@ -402,7 +407,7 @@ class TargetDelegate(TargetProcess):
         
         try:
             self.logger.debug("Turn right")
-            __servo__angle = self.__servo__angle_v + 5 if self.__servo__angle_v + 5 <= 90 else 90
+            __servo__angle = self.__servo__angle_v + self.__horizontal_step_size if self.__servo__angle_v + self.__horizontal_step_size <= 90 else 90
             await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
             return {
                     "horizontal_angle" : __servo__angle
@@ -446,6 +451,12 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_capture_video(self, name:str = "output.avi", path:str = None):
         
         try:
+            
+            if self.__taking_snapshot:
+                raise BlockingIOError("Device is already performing an operation")
+            
+            self.__taking_snapshot = True
+            
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
@@ -457,6 +468,9 @@ class TargetDelegate(TargetProcess):
                 )
         except Exception as e:
             raise TargetServiceError("Unable to capture video " + str(e))
+        finally:
+            self.__taking_snapshot = False
+        
         
         
         
@@ -515,6 +529,11 @@ class TargetDelegate(TargetProcess):
     async def do_fulfill_capture_image(self, name:str = "image.jpg", path:str = None):
         try:
             
+            if self.__taking_snapshot:
+                raise BlockingIOError("Device is already performing an operation")
+            
+            self.__taking_snapshot = True
+            
             if path != None:
                 name = (path + name) if path.endswith("/") else (path + os.path.sep + name)
             else:
@@ -526,6 +545,9 @@ class TargetDelegate(TargetProcess):
                     )
         except Exception as e:
             raise TargetServiceError("Unable to capture image " + str(e))
+        
+        finally:
+            self.__taking_snapshot = False
                 
     
    
