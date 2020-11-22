@@ -120,7 +120,7 @@ class TargetDelegate(TargetProcess):
         
         #prev_ang = 75 # angle to start
         #self.__pwm.start(self.angle_to_duty(prev_ang)) # start servo at 0 degrees
-        await IOLoop.current().run_in_executor(None, self.__reset)
+        await self.__reset()
         pass
     
     
@@ -147,9 +147,9 @@ class TargetDelegate(TargetProcess):
     
     
     
-    def __reset(self):
-        self.__set_horizontal_angle(45)
-        self.__set_vertical_angle(0)
+    async def __reset(self):
+        await self.__set_horizontal_angle(45)
+        await self.__set_vertical_angle(0)
         pass
     
     
@@ -167,7 +167,7 @@ class TargetDelegate(TargetProcess):
     Set angle for servo
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/
     '''
-    def __set_horizontal_angle(self, angle):
+    async def __set_horizontal_angle(self, angle):
         
         newpos = angle
         oldpos = self.__servo__angle_v
@@ -184,7 +184,7 @@ class TargetDelegate(TargetProcess):
             oldpos = move(oldpos)
             duty = float(oldpos)/10 + 2.5
             self.__pwm.ChangeDutyCycle(duty)
-            time.sleep(.2)
+            await asyncio.sleep(.2)
             self.__pwm.ChangeDutyCycle(0)
         
         self.__servo__angle_v = newpos
@@ -193,7 +193,7 @@ class TargetDelegate(TargetProcess):
     
     
     
-    def __set_vertical_angle(self, angle):
+    async def __set_vertical_angle(self, angle):
         
         newpos = angle
         oldpos = self.__servo__angle_h
@@ -210,7 +210,7 @@ class TargetDelegate(TargetProcess):
             oldpos = move(oldpos)
             duty = float(oldpos)/10 + 2.5        
             self.__pwm_2.ChangeDutyCycle(duty)
-            time.sleep(.2)
+            await asyncio.sleep(.2)
             self.__pwm_2.ChangeDutyCycle(0) 
         
                
@@ -392,7 +392,8 @@ class TargetDelegate(TargetProcess):
         try:
             self.logger.debug("Turn left")
             __servo__angle = self.__servo__angle_v - self.__horizontal_step_size if self.__servo__angle_v - self.__horizontal_step_size >= 0 else 0
-            await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
+            await self.__set_horizontal_angle(__servo__angle)
+            # await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
             return {
                     "horizontal_angle" : __servo__angle
                     }
@@ -408,7 +409,8 @@ class TargetDelegate(TargetProcess):
         try:
             self.logger.debug("Turn right")
             __servo__angle = self.__servo__angle_v + self.__horizontal_step_size if self.__servo__angle_v + self.__horizontal_step_size <= 90 else 90
-            await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
+            await self.__set_horizontal_angle(__servo__angle)
+            # await IOLoop.current().run_in_executor(None, self.__set_horizontal_angle, __servo__angle)
             return {
                     "horizontal_angle" : __servo__angle
                     }
@@ -423,7 +425,8 @@ class TargetDelegate(TargetProcess):
         try:
             self.logger.debug("Turn left")
             __servo__angle = self.__servo__angle_h - 5 if self.__servo__angle_h - 5 >= 0 else 0
-            await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
+            await self.__set_vertical_angle(__servo__angle)
+            # await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
             return {
                     "vertical_angle" : __servo__angle
                     }
@@ -438,7 +441,8 @@ class TargetDelegate(TargetProcess):
         try:
             self.logger.debug("Turn right")
             __servo__angle = self.__servo__angle_h + 5 if self.__servo__angle_h + 5 <= 90 else 90
-            await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
+            await self.__set_vertical_angle(__servo__angle)
+            # await IOLoop.current().run_in_executor(None, self.__set_vertical_angle, __servo__angle)
             return {
                     "vertical_angle" : __servo__angle
                     }
