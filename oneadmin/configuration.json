@@ -356,6 +356,11 @@
 				"enabled": true,
 				"conf" : {
 				}
+			},
+			"action_dispatcher": {
+				"enabled": true,
+				"conf" : {
+				}
 			}
 		}
 	}

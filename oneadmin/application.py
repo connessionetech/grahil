@@ -31,16 +31,18 @@ from tornado import autoreload
 import os
 
 
-from oneadmin.core.constants import *
 
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.modules.sysmonitor import SystemMonitor
 from oneadmin.modules.actions import ActionExecutor
-from oneadmin.grahil_core import ModuleRegistry
+from oneadmin.core.grahil_core import ModuleRegistry
 import socket
 import asyncio
+from oneadmin.core.constants import *
+from core.components import ActionDispatcher
+from core.constants import ACTION_DISPATCHER_MODULE
 
 
 
@@ -230,14 +232,21 @@ class TornadoApplication(tornado.web.Application):
         
         
         ''' Action executor'''
+        '''
         action_config = modules[ACTION_EXECUTOR_MODULE]
         if action_config != None and action_config["enabled"] == True:
             self.__action__executor = ActionExecutor(action_config["conf"], self.modules)
+        '''
+        
+        action_config = modules[ACTION_DISPATCHER_MODULE]
+        if action_config != None and action_config["enabled"] == True:
+            self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
             
             
         
         ''' Reaction engine -> to send commands to reaction engine use pubsub '''
         # Register reaction engine
+        '''
         reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
             self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
@@ -245,9 +254,10 @@ class TornadoApplication(tornado.web.Application):
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.addNotifyable(self.__reaction_engine)
             self.__action__executor.rulesmanager = self.__reaction_engine            
-        
+        '''
         
         ''' Bot -> to send commands to bot use pubsub '''
+        '''
         bot_config =  modules[BOT_SERVICE_MODULE]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
@@ -274,14 +284,12 @@ class TornadoApplication(tornado.web.Application):
                 
                 self.__pubsubhub.addNotifyable(self.__service_bot)
                 
-                '''
-                Register `servicebot` module
-                '''
+                # Register `servicebot` module'
                 self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot);
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-            
+            '''
 
 
         

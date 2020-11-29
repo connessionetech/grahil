@@ -6,92 +6,70 @@ Created on 25-Nov-2020
 from version import __version__
 from typing import List 
 from typing import Text
-from core import grahil_types
+from oneadmin.core import grahil_types
 
 from tornado.concurrent import asyncio
 from core.constants import TARGET_DELEGATE_MODULE, FILE_MANAGER_MODULE,\
     SYSTEM_MODULE, PUBSUBHUB_MODULE
 
+ACTION_PREFIX = "action_"
 
-ACTION_GET_SOFTWARE_VERSION_NAME = "action_get_software_version"
+ACTION_GET_SOFTWARE_VERSION_NAME = ACTION_PREFIX + "get_software_version"
 
-ACTION_REBOOT_SYSTEM_NAME = "action_reboot_system"
+ACTION_REBOOT_SYSTEM_NAME = ACTION_PREFIX + "reboot_system"
 
-ACTION_GET_SYSTEM_TIME_NAME = "action_get_system_time"
+ACTION_GET_SYSTEM_TIME_NAME = ACTION_PREFIX + "get_system_time"
 
-ACTION_FORCE_GARBAGE_COLLECTION_NAME = "action_force_garbage_collection"
+ACTION_FORCE_GARBAGE_COLLECTION_NAME = ACTION_PREFIX + "force_garbage_collection"
 
-ACTION_GET_SYSTEM_STATS_NAME = "action_get_system_stats"
+ACTION_GET_SYSTEM_STATS_NAME = ACTION_PREFIX + "get_system_stats"
 
-ACTION_GET_MEMORY_STATS_NAME = "action_get_memory_stats"
+ACTION_GET_MEMORY_STATS_NAME = ACTION_PREFIX + "get_memory_stats"
 
-ACTION_GET_CPU_STATS_NAME = "action_get_cpu_stats"
+ACTION_GET_CPU_STATS_NAME = ACTION_PREFIX + "get_cpu_stats"
 
-ACTION_START_LOG_RECORDING_NAME = "action_start_log_recording"
+ACTION_START_LOG_RECORDING_NAME = ACTION_PREFIX + "start_log_recording"
 
-ACTION_STOP_LOG_RECORDING_NAME = "action_stop_log_recording"
+ACTION_STOP_LOG_RECORDING_NAME = ACTION_PREFIX + "stop_log_recording"
 
-ACTION_CREATE_FOLDER_NAME = "action_create_folder"
+ACTION_CREATE_FOLDER_NAME = ACTION_PREFIX + "create_folder"
 
-ACTION_DELETE_FOLDER_NAME = "action_delete_folder"
+ACTION_DELETE_FOLDER_NAME = ACTION_PREFIX + "delete_folder"
 
-ACTION_DELETE_FILE_NAME = "action_delete_file"
+ACTION_DELETE_FILE_NAME = ACTION_PREFIX + "delete_file"
 
-ACTION_COPY_FILE_NAME = "action_copy_file"
+ACTION_COPY_FILE_NAME = ACTION_PREFIX + "copy_file"
 
-ACTION_MOVE_FILE_NAME = "action_move_file"
+ACTION_MOVE_FILE_NAME = ACTION_PREFIX + "move_file"
 
-ACTION_DOWNLOAD_FILE_NAME = "action_download_file"
+ACTION_DOWNLOAD_FILE_NAME = ACTION_PREFIX + "download_file"
 
-ACTION_BROWSE_FILE_SYSTEM_NAME = "action_browse_fs"
+ACTION_BROWSE_FILE_SYSTEM_NAME = ACTION_PREFIX + "browse_fs"
 
-ACTION_INVOKE_ON_TARGET_NAME = "action_fulfill_target_request"
+ACTION_INVOKE_ON_TARGET_NAME = ACTION_PREFIX + "fulfill_target_request"
 
-ACTION_RESTART_TARGET_NAME = "action_restart_target"
+ACTION_RESTART_TARGET_NAME = ACTION_PREFIX + "restart_target"
 
-ACTION_STOP_TARGET_NAME = "action_stop_target"
+ACTION_STOP_TARGET_NAME = ACTION_PREFIX + "stop_target"
 
-ACTION_START_TARGET_NAME = "action_start_target"
+ACTION_START_TARGET_NAME = ACTION_PREFIX + "start_target"
 
-ACTION_SUBSCRIBE_CHANNEL_NAME = "action_subscribe_channel"
+ACTION_SUBSCRIBE_CHANNEL_NAME = ACTION_PREFIX + "subscribe_channel"
 
-ACTION_UNSUBSCRIBE_CHANNEL_NAME = "action_unsubscribe_channel"
+ACTION_UNSUBSCRIBE_CHANNEL_NAME = ACTION_PREFIX + "unsubscribe_channel"
 
-ACTION_REMOVE_CHANNEL_NAME = "action_remove_channel"
+ACTION_REMOVE_CHANNEL_NAME = ACTION_PREFIX + "remove_channel"
 
-ACTION_CREATE_CHANNEL_NAME = "action_create_channel"
+ACTION_CREATE_CHANNEL_NAME = ACTION_PREFIX + "create_channel"
 
-ACTION_PUBLISH_CHANNEL_NAME = "action_publish_channel"
+ACTION_PUBLISH_CHANNEL_NAME = ACTION_PREFIX + "publish_channel"
 
-ACTION_RUN_DIAGNOSTICS_NAME = "action_run_diagnostics"
+ACTION_RUN_DIAGNOSTICS_NAME = ACTION_PREFIX + "run_diagnostics"
 
-ACTION_EXECUTE_HTTP_CALL_NAME = "action_execute_http_call"
-
-
-
-
-
-'''
-Returns instances of builtin actions
-'''
-def builtin_actions() -> List[Action]:
-    return [ActionGetSoftwareVersion(), ActionRebootSystem()]
+ACTION_EXECUTE_HTTP_CALL_NAME = ACTION_PREFIX + "execute_http_call"
 
 
 
-
-def builtin_action_names() -> List[Text]:
-    return [a.name() for a in builtin_actions()]
-
-
-
-
-def action_from_name(name:Text) -> Action:
-    defaults = {a.name(): a for a in builtin_actions()}
-    if name in defaults:
-        return defaults.get(name)
-    
-    return None
 
 
 class Action(object):
@@ -125,6 +103,31 @@ class Action(object):
 
 
 '''
+Returns instances of builtin actions
+'''
+def builtin_actions() -> List[Action]:
+    return [ActionGetSoftwareVersion(), ActionRebootSystem()]
+
+
+
+
+def builtin_action_names() -> List[Text]:
+    return [a.name() for a in builtin_actions()]
+
+
+
+
+def action_from_name(name:Text) -> Action:
+    defaults = {a.name(): a for a in builtin_actions()}
+    if name in defaults:
+        return defaults.get(name)
+    
+    return None
+
+
+
+
+'''
 Retreives grahil version
 '''
 class ActionGetSoftwareVersion(Action):
@@ -139,7 +142,7 @@ class ActionGetSoftwareVersion(Action):
     Abstract method, must be defined in concrete implementation. action names must be unique
     '''
     def name(self) -> Text:
-        return ACTION_GET_SOFTWARE_VERSION
+        return ACTION_GET_SOFTWARE_VERSION_NAME
     
     
     

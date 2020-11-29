@@ -303,15 +303,7 @@ class TelegramBot(ServiceBot, Notifyable):
     async def start_handler(self, event: types.Message):
         self.__bot_master = event.from_user.id
         await event.answer(f"Hello, {event.from_user.get_mention(as_html=True)} 👋!",parse_mode=types.ParseMode.HTML)
-    
-   
-        
-    
-    '''
-    # if the text starts with any string from the list
-    async def text_startswith_handler(self, message: types.Message):
-    '''
-        
+           
                 
     
     async def __read_messages(self, params=None):

@@ -4,8 +4,6 @@ Created on 26-Nov-2020
 @author: root
 '''
 
-from typing_extensions import Final
-
 
 SYSTEM_MODULE = "sysmon"
 
@@ -28,3 +26,5 @@ BOT_SERVICE_MODULE = "service_bot"
 REACTION_ENGINE_MODULE = "reaction_engine"
 
 ACTION_EXECUTOR_MODULE = "action_executor"
+
+ACTION_DISPATCHER_MODULE = "action_dispatcher"
