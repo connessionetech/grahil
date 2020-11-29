@@ -1,0 +1,30 @@
+'''
+Created on 26-Nov-2020
+
+@author: root
+'''
+
+from typing_extensions import Final
+
+
+SYSTEM_MODULE = "sysmon"
+
+FILE_MANAGER_MODULE = "file_manager"
+
+PUBSUBHUB_MODULE = "pubsub"
+
+LOG_MANAGER_MODULE = "log_monitor"
+
+PINGER_MODULE = "pinger"
+
+TARGET_DELEGATE_MODULE = "target_delegate"
+
+RPC_GATEWAY_MODULE = "rpc_gateway"
+
+SCHEDULER_MODULE = "scheduler"
+
+BOT_SERVICE_MODULE = "service_bot"
+
+REACTION_ENGINE_MODULE = "reaction_engine"
+
+ACTION_EXECUTOR_MODULE = "action_executor"

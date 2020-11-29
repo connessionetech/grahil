@@ -25,10 +25,12 @@ import platform
 import datetime
 import os
 import gc
+import json
 from pathlib import Path
 
 from crontab import CronTab
 from oneadmin.version import __version__
+from tornado.httpclient import AsyncHTTPClient
 
 class SystemMonitor(object):
     
@@ -49,22 +51,41 @@ class SystemMonitor(object):
         self.__callback = None
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
+        self.__external_ip = None
         
         # must specify logged in user in config for contab to work
         self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else True 
-        
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
     pass
+
+
+
+
+    async def __discoverHost(self):
+         
+        http_client = AsyncHTTPClient()
+        try:
+            response = await http_client.fetch("http://ip.jsontest.com/")
+            data = json.loads(response.body)
+            self.__external_ip = data["ip"]
+            self.logger.info("IP = %s", self.__external_ip)
+        except Exception as e:
+            err = "An error occurred in discovering public IP " + str(e)
+            self.logger.warning(err)
         
 
 
+    
     def start_monitor(self):
         tornado.ioloop.IOLoop.current().spawn_callback(self.generateSystemStats)
     pass
 
 
+    
     @property
     def callback(self):
         return self.__callback
+    
     
     @callback.setter
     def callback(self, fun):
@@ -596,3 +617,5 @@ class SystemMonitor(object):
     def __merge_dict(self, dict1, dict2): 
         res = {**dict1, **dict2} 
         return res
+    
+    

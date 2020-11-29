@@ -23,7 +23,7 @@
 			"sysmon": {
 				"enabled": true,
 				"conf" : {
-					"system_user" : "pi",
+					"system_user" : "rajdeeprath",
 					"updater_cron_tab_args" : ">> /home/pi/updater/updater.log 2>&1",					
 					"snapshot_interval_seconds": 10,
 					"log_push_interval_seconds": 0.4,
@@ -142,7 +142,7 @@
 				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
-					"token": "965650191:AAH1_Hwums2YHMBHSecngvtCMd6ykZgu8kU",
+					"token": "1419938809:AAHlze7ZGsWcnOBe5iOnS7L12YBlnY5emU0",
 					"master_user_id": 494506384
 				},
 				"nlp": {

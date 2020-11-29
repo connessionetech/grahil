@@ -30,49 +30,18 @@ from settings import settings
 from tornado import autoreload
 import os
 
+
+from oneadmin.core.constants import *
+
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.modules.sysmonitor import SystemMonitor
 from oneadmin.modules.actions import ActionExecutor
+from oneadmin.grahil_core import ModuleRegistry
 import socket
 import asyncio
-import json
 
-
-class ModuleRegistry(object):
-    
-    def __init__(self):
-        
-        self.__registry = {}        
-        pass
-    
-    
-    def registerModule(self, name, reference):
-        if name not in self.__registry.keys():
-            self.__registry[name] = reference;
-        pass
-    
-    
-    def deregisterModule(self, name):
-        if name in self.__registry.keys():
-            del self.__registry[name]
-        pass
-    
-    
-    def getModule(self, name):
-        if name in self.__registry.keys():
-            return self.__registry[name]
-        else:
-            return None
-        pass
-    
-    
-    def hasModule(self, name):
-        if name in self.__registry.keys():
-            return True
-        else:
-            return False
 
 
 class TornadoApplication(tornado.web.Application):
@@ -99,20 +68,18 @@ class TornadoApplication(tornado.web.Application):
             self.__external_ip = None
             
             
-            # Attempt to find out public ip            
+            # Attempt to find out public ip
             while True:
                 if self.__has_internet():
-                    self.__discoverHost()
                     break
                 
                 self.logger.info("No network connection. Waiting for connection...")
                 asyncio.sleep(10)
-                    
-            
+                
             
          
             # Initializing pubsub hub
-            pubsub_conf = modules["pubsub"]
+            pubsub_conf = modules[PUBSUBHUB_MODULE]
             self.__pubsubhub = PubSubHub(pubsub_conf["conf"])
             self.__pubsubhub.activate_message_flush()
             
@@ -120,11 +87,12 @@ class TornadoApplication(tornado.web.Application):
             Register `pubsub` module
             '''
             if self.__pubsubhub != None:
-                self.modules.registerModule("pubsub", self.__pubsubhub)
+                self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub)
                 
                 
-            # Register Pinger modules for websocket clients
-            pinger_conf = modules["pinger"]
+                
+            ''' Initializing pinger module used for sending keep-alive heartbeat to socket connections'''
+            pinger_conf = modules[PINGER_MODULE]
             self.__pinger = Pinger(pinger_conf["conf"])
             self.__pinger.callback = self.processPing
             self.__pinger.start()       
@@ -132,11 +100,34 @@ class TornadoApplication(tornado.web.Application):
             '''
             Register `pinger` module
             '''
-            self.modules.registerModule("pinger", self.__pinger);
+            self.modules.registerModule(PINGER_MODULE, self.__pinger);
             
             
             
-            delegate_conf = modules["target_delegate"];
+            
+            ''' Conditional instantiation of file manager '''
+            # Register filemanager module
+            filemanager_config = modules[FILE_MANAGER_MODULE]
+            if filemanager_config != None and filemanager_config["enabled"] == True:
+                
+                accessible_paths = []
+                
+                ''' Get static declared accessible paths from configuration '''
+                accessible_static_paths = filemanager_config["conf"]["accessible_paths"]
+                for accessible_static_path in accessible_static_paths:
+                    accessible_paths.append(accessible_static_path)
+                
+                self.__filemanager = FileManager(filemanager_config["conf"], accessible_paths)
+                
+                '''
+                Register `file_manager` module
+                '''
+                self.modules.registerModule(FILE_MANAGER_MODULE, self.__filemanager);
+            
+            
+            
+            ''' Conditional instantiation of {target} handler '''
+            delegate_conf = modules[TARGET_DELEGATE_MODULE];
             if delegate_conf != None and delegate_conf["enabled"] == True:
                 module_name = delegate_conf["module"]
                 class_name = delegate_conf["klass"]
@@ -155,33 +146,13 @@ class TornadoApplication(tornado.web.Application):
                 Register `target_delegate` module
                 '''
                 if self.__delegate != None:
-                    self.modules.registerModule("target_delegate", self.__delegate);
+                    self.modules.registerModule(TARGET_DELEGATE_MODULE, self.__delegate);
 
             
-                        
-    
-            ''' Conditional instantiation of file manager '''
-            # Register filemanager module
-            filemanager_config = modules["file_manager"]
-            if filemanager_config != None and filemanager_config["enabled"] == True:
-                
-                accessible_paths = []
-                
-                ''' Get static declared accessible paths from configuration '''
-                accessible_static_paths = filemanager_config["conf"]["accessible_paths"]
-                for accessible_static_path in accessible_static_paths:
-                    accessible_paths.append(accessible_static_path)
-                
-                self.__filemanager = FileManager(filemanager_config["conf"], accessible_paths)
-                
-                '''
-                Register `file_manager` module
-                '''
-                self.modules.registerModule("file_manager", self.__filemanager);
-            
-            
+
+
             # Register log monitor module
-            log_monitor_config = modules["log_monitor"]
+            log_monitor_config = modules[LOG_MANAGER_MODULE]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
                 self.__logmonitor = LogMonitor(log_monitor_config["conf"])
                 self.__logmonitor.callback = self.processLogLine
@@ -235,22 +206,21 @@ class TornadoApplication(tornado.web.Application):
                 '''
                 Register `log monitor` module
                 '''
-                self.modules.registerModule("log_monitor", self.__logmonitor);
+                self.modules.registerModule(LOG_MANAGER_MODULE, self.__logmonitor);
             
             
             
-            
-            stats_config = modules["sysmon"]
+            stats_config = modules[SYSTEM_MODULE]
             if stats_config != None and stats_config["enabled"] == True:
                 self.__sysmon = SystemMonitor(stats_config["conf"], self.modules)
-                self.__sysmon.callback = self.processSystemStats
+                self.__sysmon.callback = self.processSystemStats # receive stats data from module   
                 self.__sysmon.start_monitor()
             
             
             '''
             Register `sysmon` module
             '''
-            self.modules.registerModule("sysmon", self.__sysmon);
+            self.modules.registerModule(SYSTEM_MODULE, self.__sysmon);
             
                     
                 
@@ -259,31 +229,26 @@ class TornadoApplication(tornado.web.Application):
         
         
         
-        
-        action_config = modules["action_executor"]
+        ''' Action executor'''
+        action_config = modules[ACTION_EXECUTOR_MODULE]
         if action_config != None and action_config["enabled"] == True:
             self.__action__executor = ActionExecutor(action_config["conf"], self.modules)
             
             
         
-        # Register reaction engine        
-        reaction_engine_conf = modules["reaction_engine"];
+        ''' Reaction engine -> to send commands to reaction engine use pubsub '''
+        # Register reaction engine
+        reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
             self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
-            
-            '''
-            Register `reaction_engine` module            
-            self.modules.registerModule("reaction_engine", self.__reaction_engine);
-            '''
-            
+                        
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.addNotifyable(self.__reaction_engine)
-            self.__action__executor.rulesmanager = self.__reaction_engine
-            
+            self.__action__executor.rulesmanager = self.__reaction_engine            
         
         
-        
-        bot_config =  modules["service_bot"]
+        ''' Bot -> to send commands to bot use pubsub '''
+        bot_config =  modules[BOT_SERVICE_MODULE]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
             bot_class_name = bot_config["klass"]
@@ -312,7 +277,7 @@ class TornadoApplication(tornado.web.Application):
                 '''
                 Register `servicebot` module
                 '''
-                self.modules.registerModule("service_bot", self.__service_bot);
+                self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot);
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
@@ -320,14 +285,15 @@ class TornadoApplication(tornado.web.Application):
 
 
         
+        ''' Registering RPC engine for Webclients '''
         # Initializing rpc gateway
-        rpc_gateway_conf = modules["rpc_gateway"]
+        rpc_gateway_conf = modules[RPC_GATEWAY_MODULE]
         self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__executor)
         
         '''
         Register `rpc_gateway` module
         '''
-        self.modules.registerModule("rpc_gateway", self.__rpc_gateway)
+        self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
         
 
         
@@ -338,9 +304,6 @@ class TornadoApplication(tornado.web.Application):
         # Watch configuration files
         self.addwatchfiles(settings["app_configuration"])
         self.addwatchfiles(settings["users_configuration"])
-        
-        
-
         
         
         tornado.web.Application.__init__(self, url_patterns, **settings)
@@ -534,21 +497,7 @@ class TornadoApplication(tornado.web.Application):
             return True
         except socket.error as ex:
             return False
-    
-    
-    '''
-    Looks up external IP using public services
-    '''
-    def __discoverHost(self):
         
-        try:
-            
-            with urllib.request.urlopen("http://ip.jsontest.com/") as url:
-                data = url.read().decode('utf-8')
-                res = json.loads(data)
-                self.__external_ip = res["ip"]
-        except Exception as ex:
-            self.logger.warn(ex1)
 
     
     '''
