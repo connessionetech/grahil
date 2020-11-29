@@ -36,9 +36,9 @@ import signal
 import subprocess
 
 
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import numpy as np
-import Adafruit_DHT
+#import Adafruit_DHT
 
 
 class TargetDelegate(TargetProcess):
@@ -50,7 +50,7 @@ class TargetDelegate(TargetProcess):
     SERVO1 = 17
     SERVO2 = 27
     DHT_PIN = 4
-    DHT_SENSOR = Adafruit_DHT.DHT22
+    DHT_SENSOR = 0#Adafruit_DHT.DHT22
     
     
 
@@ -89,7 +89,7 @@ class TargetDelegate(TargetProcess):
         
         self.__horizontal_step_size = 10
         
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.__init_rpi_hardware)
         pass
     
     
@@ -331,7 +331,7 @@ class TargetDelegate(TargetProcess):
                         if not self.__streaming:
                             self.__streaming = True
                             self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
-                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has started streaming")
+                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has started streaming")
                             await self.eventcallback(evt)
                         pass 
         except Exception as e:
@@ -363,7 +363,7 @@ class TargetDelegate(TargetProcess):
     async def on_streaming_stopped(self):
         if self.__streaming:
             self.__streaming = False
-            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
+            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has stopped streaming")
             await self.eventcallback(evt)
         pass
     
@@ -480,7 +480,7 @@ class TargetDelegate(TargetProcess):
         
     async def do_fulfill_test(self, name:str = "output.avi", path:str = None):
         try:
-            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, topic="/events", msg="Target camera has stopped streaming")
+            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has stopped streaming")
             await self.eventcallback(evt)           
             
         except Exception as e:
