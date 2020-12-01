@@ -22,8 +22,35 @@ import os
 import logging
 import asyncio
 from abc import abstractmethod
+from builtins import int, str
+from core.events import EventType
 
-class TargetProcess(object):
+
+
+class IEventDispatcher(object):
+    
+    def __init__(self, handler=None):
+        self.__eventHandler = None if handler == None else handler
+        pass
+    
+    
+    @property
+    def eventhandler(self):
+        return self.__eventHandler
+    
+    @eventhandler.setter
+    def eventhandler(self, handler):
+        self.__eventHandler = handler
+
+
+    async def dispatchevent(self, event:EventType, auxdata:None) -> None:
+        
+        if self.__eventHandler:
+            await self.__eventHandler(event, auxdata)
+        pass
+
+
+class TargetProcess(IEventDispatcher):
     '''
     classdocs
     '''
@@ -406,7 +433,7 @@ class Notifyable(object):
 
 
 
-class ServiceBot(object):
+class ServiceBot(IEventDispatcher):
     '''
     classdocs
     '''
@@ -467,4 +494,20 @@ class ServiceBot(object):
     def get_webhook_secret(self):
         return self.__webhook_secret
         
+
+
+class IIntentProvider:
+
+    def onIntentProcessResult(self, requestid:str, result:object) -> None:
+        pass
+
+
+    def onIntentProcessError(self, e:object, message:str = None) -> None:
+        pass
+    
+    
+    def onIntentProcessupdate(self, requestid:str, update:object, message:str = None) -> None:
+        pass
+    
+    
     

@@ -43,6 +43,8 @@ import asyncio
 from oneadmin.core.constants import *
 from core.components import ActionDispatcher
 from core.constants import ACTION_DISPATCHER_MODULE
+from core.events import EventType
+from scipy.integrate._ivp.ivp import handle_events
 
 
 
@@ -66,7 +68,7 @@ class TornadoApplication(tornado.web.Application):
             self.__pinger = None
             self.__service_bot = None
             self.__reaction_engine = None
-            self.__action__executor = None
+            self.__action__dispatcher = None
             self.__external_ip = None
             
             
@@ -97,6 +99,7 @@ class TornadoApplication(tornado.web.Application):
             pinger_conf = modules[PINGER_MODULE]
             self.__pinger = Pinger(pinger_conf["conf"])
             self.__pinger.callback = self.processPing
+            self.__pinger.eventhandler = handle_events
             self.__pinger.start()       
                  
             '''
@@ -120,6 +123,7 @@ class TornadoApplication(tornado.web.Application):
                     accessible_paths.append(accessible_static_path)
                 
                 self.__filemanager = FileManager(filemanager_config["conf"], accessible_paths)
+                self.__filemanager.eventhandler = self.handle_event
                 
                 '''
                 Register `file_manager` module
@@ -141,6 +145,7 @@ class TornadoApplication(tornado.web.Application):
                     
                     if self.__delegate is not None:
                         self.__delegate.eventcallback = self.handleDelegateEvents
+                        self.__delegate.eventhandler = handle_events
                 except ImportError as de:
                     self.logger.warn("Module by name %s was not found and will not be loaded", module_name)
                 
@@ -158,7 +163,8 @@ class TornadoApplication(tornado.web.Application):
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
                 self.__logmonitor = LogMonitor(log_monitor_config["conf"])
                 self.__logmonitor.callback = self.processLogLine
-                self.__logmonitor.chunk_callback = self.processLogChunk               
+                self.__logmonitor.chunk_callback = self.processLogChunk
+                self.__logmonitor.eventhandler = handle_events               
                     
                     
                 try:
@@ -215,7 +221,8 @@ class TornadoApplication(tornado.web.Application):
             stats_config = modules[SYSTEM_MODULE]
             if stats_config != None and stats_config["enabled"] == True:
                 self.__sysmon = SystemMonitor(stats_config["conf"], self.modules)
-                self.__sysmon.callback = self.processSystemStats # receive stats data from module   
+                self.__sysmon.callback = self.processSystemStats # receive stats data from module 
+                self.__sysmon.eventhandler = self.handle_event
                 self.__sysmon.start_monitor()
             
             
@@ -250,6 +257,7 @@ class TornadoApplication(tornado.web.Application):
         reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
             self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
+            self.__reaction_engine.eventhandler = handle_events
                         
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.addNotifyable(self.__reaction_engine)
@@ -257,7 +265,7 @@ class TornadoApplication(tornado.web.Application):
         '''
         
         ''' Bot -> to send commands to bot use pubsub '''
-        '''
+        
         bot_config =  modules[BOT_SERVICE_MODULE]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
@@ -280,7 +288,8 @@ class TornadoApplication(tornado.web.Application):
                 
                 mod = __import__(bot_module_name, fromlist=[bot_class_name])
                 klass = getattr(mod, bot_class_name)
-                self.__service_bot = klass(bot_config, self.__action__executor, nlp_engine)
+                self.__service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
+                self.__service_bot.eventhandler = handle_events
                 
                 self.__pubsubhub.addNotifyable(self.__service_bot)
                 
@@ -289,14 +298,14 @@ class TornadoApplication(tornado.web.Application):
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-            '''
+                
 
 
         
         ''' Registering RPC engine for Webclients '''
         # Initializing rpc gateway
         rpc_gateway_conf = modules[RPC_GATEWAY_MODULE]
-        self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__executor)
+        self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__dispatcher)
         
         '''
         Register `rpc_gateway` module
@@ -434,7 +443,18 @@ class TornadoApplication(tornado.web.Application):
         else:
             self.logger.error("System monitor error " + str(error))
         pass
+    
+    
+    
+    '''
+    Handles arbitrary events from for all event dispatching modules
+    ''' 
+    async def handle_event(self, event:EventType, auxdata=None):
+        self.logger.info("handle_event for " + str(event["name"]))
+        pass
         
+        
+    
     
     async def processLogLine(self, logname, topic, data, error=None):
         if(error == None):

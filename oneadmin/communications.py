@@ -26,9 +26,10 @@ import datetime
 import asyncio
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
+from abstracts import IEventDispatcher
 
 
-class Pinger(object):
+class Pinger(IEventDispatcher):
     
     def __init__(self, conf):
         self.__conf = conf;

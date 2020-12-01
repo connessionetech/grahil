@@ -39,10 +39,11 @@ from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
 from oneadmin.modules.reactions.filesystem_reactions import copy_file
 from apscheduler.triggers.cron import CronTrigger
+from abstracts import IEventDispatcher
 
 
 
-class ReactionEngine(Notifyable):
+class ReactionEngine(IEventDispatcher, Notifyable):
     
     
 
@@ -50,6 +51,7 @@ class ReactionEngine(Notifyable):
         '''
         Constructor
         '''
+        super().__init__()
         
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf

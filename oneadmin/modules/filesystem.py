@@ -38,8 +38,9 @@ import tempfile
 import os.path
 from os import path
 from _collections import deque
+from abstracts import IEventDispatcher
 
-class FileManager(object):
+class FileManager(IEventDispatcher):
     '''
     classdocs
     '''
@@ -50,6 +51,8 @@ class FileManager(object):
         '''
         Constructor
         '''
+        super().__init__()
+        
         self.logger = logging.getLogger(self.__class__.__name__)        
         self.__config = config
         

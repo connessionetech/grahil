@@ -8,8 +8,9 @@ Created on 14-Sep-2020
 import logging
 from tornado.websocket import websocket_connect
 import tornado
+from abstracts import IEventDispatcher
 
-class WebSocketClient(object):
+class WebSocketClient(IEventDispatcher):
     '''
     classdocs
     '''

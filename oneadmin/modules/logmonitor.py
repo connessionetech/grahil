@@ -26,9 +26,10 @@ import array
 import collections
 from tornado.ioloop import IOLoop
 from _datetime import datetime
+from abstracts import IEventDispatcher
 
 
-class LogMonitor(object):
+class LogMonitor(IEventDispatcher):
     '''
     classdocs
     '''
@@ -37,6 +38,8 @@ class LogMonitor(object):
         '''
         Constructor
         '''
+        super().__init__()
+        
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
         self.__log_files = {}

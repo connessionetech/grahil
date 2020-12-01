@@ -31,13 +31,17 @@ from pathlib import Path
 from crontab import CronTab
 from oneadmin.version import __version__
 from tornado.httpclient import AsyncHTTPClient
+from abstracts import IEventDispatcher
 
-class SystemMonitor(object):
+class SystemMonitor(IEventDispatcher):
     
     def __init__(self, config, modules):
         '''
         Constructor
         '''
+        
+        super().__init__()
+        
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__config = config
         

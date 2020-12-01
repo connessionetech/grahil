@@ -20,9 +20,11 @@ from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotRes
 from oneadmin.abstracts import ServiceBot
 from oneadmin.abstracts import Notifyable
 from oneadmin.utilities import is_notification_event, is_data_notification_event
+from core.components import ActionDispatcher
+from abstracts import IIntentProvider
 
 
-class TelegramBot(ServiceBot, Notifyable):
+class TelegramBot(ServiceBot, Notifyable, IIntentProvider):
     
     dp = None;
     
@@ -30,16 +32,18 @@ class TelegramBot(ServiceBot, Notifyable):
     classdocs
     '''
 
-    def __init__(self, conf, executor, nlp_engine=None):
+    def __init__(self, conf:object, executor:ActionDispatcher, nlp_engine=None):
         '''
         Constructor
         '''
+        super().__init__()
+        
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__connected = False
         self.__supports_webhook = False
         self.__uid = None
         self.__conf = conf
-        self.__action_executor = executor
+        self.__action_dispatcher = executor
         self.__nlp_engine = nlp_engine
         self.__requests = {}
         self.__mgsqueue = Queue()
@@ -69,7 +73,7 @@ class TelegramBot(ServiceBot, Notifyable):
                 if self.__conf['conf']["master_user_id"] != "":
                     self.__bot_master = self.__conf['conf']["master_user_id"]
                     self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
-                    version = await self.__action_executor.get_software_version()
+                    version = "0.0.0" #await self.__action_dispatcherr.get_software_version()
                     await self.send_message(self.__bot_master, "Bot version:"+version+"\nI am listening..")                
                     
             
@@ -124,7 +128,8 @@ class TelegramBot(ServiceBot, Notifyable):
             await message.answer(pre_response)
             task_info = {"requestid":requestid, "method": str(methodname), "params": args}
             self.__requests[requestid] = {"handler": wshandler, "response": response, "subject": message} 
-            await self.__action_executor.addTask(task_info, self)
+            #await self.__action_dispatcherr.addTask(task_info, self)
+            await self.__action_dispatcher.handle_request(self, methodname, args)
         
         except:
             if requestid in self.__requests:
@@ -297,6 +302,24 @@ class TelegramBot(ServiceBot, Notifyable):
         else:
             await message.answer(response["text"])
 
+
+
+
+    def onIntentProcessResult(self, requestid:str, result:object) -> None:
+        self.logger.info("onIntentProcessResult")
+        pass
+    
+
+
+    def onIntentProcessError(self, e:object, message:str = None) -> None:
+        self.logger.info("onIntentProcessError")
+        pass
+    
+    
+    
+    def onIntentProcessupdate(self, requestid:str, update:object, message:str = None) -> None:
+        self.logger.info("onIntentProcessupdate")
+        pass
 
 
 

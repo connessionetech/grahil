@@ -13,7 +13,11 @@ import tornado
 from core.intent import built_in_intents, INTENT_PREFIX
 from core.action import ACTION_PREFIX
 from core.grahil_types import Modules
-
+from smalluuid import SmallUUID
+from time import time
+import json
+from abstracts import IIntentProvider
+from builtins import str
 
 
 class ActionDispatcher(object):
@@ -65,6 +69,7 @@ class ActionDispatcher(object):
             raise ValueError("intent "+intent_name+" is already registered for an action")
         
         self.__action_book[intent_name] = {"action": action, "requests": Queue(maxsize=5)} 
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__task_processor, intent_name)
         
         pass
     
@@ -86,20 +91,92 @@ class ActionDispatcher(object):
         action = action_from_name(action_name)
         
         self.__action_book[intent_name] =  {"action": action, "requests": Queue(maxsize=5)} # make 5 configurable
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__task_processor, intent_name)
         
         pass
     
     
     
+    '''
+        Accepts parameters and creates a request object
+    '''     
+    def build_request(self, requester:IIntentProvider, intent:Text, params:object):
+        
+        command_params = None
+        
+        if isinstance(params,str):
+            params = json.loads(params)
+        elif isinstance(params, list):
+            it = iter(params)
+            params = dict(zip(it, it))
+        elif not isinstance(params, dict):
+            raise ValueError("incompatible param type. dict is required")
+            
+        
+        return {
+            "requestid": SmallUUID().hex,
+            "requester":requester,
+            "intent": intent,
+            "params": params,
+            "timestamp": int(round(time() * 1000))
+        }
+        pass
     
-    async def handle_request(self, intent:Text, params:object):
+    
+    
+    
+    '''
+        Handles intent requests from -> requesters must implement special interface to be notified of result, error or progress
+    ''' 
+    async def handle_request(self, requester:IIntentProvider, intent:Text, params:object):
         
         intent_name = INTENT_PREFIX + intent 
         
         if intent_name not in self.__action_book:
             raise KeyError("Unknown intent " + intent_name)
         
-        requests:Queue = self.__action_book[intent_name]["requests"]
+        req_queue:Queue = self.__action_book[intent_name]["requests"]
+        req = self.build_request(requester, intent, params)
+        await req_queue.put(req)
+        pass
+    
+    
         
+    
+    
+    
+    '''
+        Task Queue Processor - (Per Intent loop)
+    '''
+    async def __task_processor(self, intent_name):
+        while True:
+            
+            if not intent_name in self.__action_book:
+                break
+            
+            task_queue:Queue = self.__action_book[intent_name]["requests"]
+            
+            response = None
+            requester:IIntentProvider = None
         
+            try:
+                task_definition = await task_queue.get()
+                
+                requestid:str = task_definition["requestid"]
+                intent:str = task_definition["intent"]
+                args:dict = task_definition["params"]
+                requester = task_definition["requester"]
+                action:Action = self.__action_book[intent_name]["action"]
+                
+                #result = await action.execute(requester, args)# add parameters
+                #await requester.onIntentProcessResult(requestid, result) 
+                
+            except Exception as e:
+                
+                err = "Error executing task " + str(e)                
+                self.logger.debug(err)
+                await  requester.onIntentProcessError(requestid, e) 
+                
+            finally:
+                task_queue.task_done()
         pass
