@@ -43,10 +43,10 @@ class IEventDispatcher(object):
         self.__eventHandler = handler
 
 
-    async def dispatchevent(self, event:EventType, auxdata:None) -> None:
+    async def dispatchevent(self, event:EventType) -> None:
         
         if self.__eventHandler:
-            await self.__eventHandler(event, auxdata)
+            await self.__eventHandler(event)
         pass
 
 

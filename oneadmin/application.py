@@ -44,7 +44,6 @@ from oneadmin.core.constants import *
 from core.components import ActionDispatcher
 from core.constants import ACTION_DISPATCHER_MODULE
 from core.events import EventType
-from scipy.integrate._ivp.ivp import handle_events
 
 
 
@@ -88,7 +87,6 @@ class TornadoApplication(tornado.web.Application):
             self.__pubsubhub.activate_message_flush()
             
             '''
-            Register `pubsub` module
             '''
             if self.__pubsubhub != None:
                 self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub)
@@ -99,7 +97,7 @@ class TornadoApplication(tornado.web.Application):
             pinger_conf = modules[PINGER_MODULE]
             self.__pinger = Pinger(pinger_conf["conf"])
             self.__pinger.callback = self.processPing
-            self.__pinger.eventhandler = handle_events
+            self.__pinger.eventhandler = self.handle_event
             self.__pinger.start()       
                  
             '''
@@ -145,7 +143,7 @@ class TornadoApplication(tornado.web.Application):
                     
                     if self.__delegate is not None:
                         self.__delegate.eventcallback = self.handleDelegateEvents
-                        self.__delegate.eventhandler = handle_events
+                        self.__delegate.eventhandler = self.handle_event
                 except ImportError as de:
                     self.logger.warn("Module by name %s was not found and will not be loaded", module_name)
                 
@@ -162,9 +160,7 @@ class TornadoApplication(tornado.web.Application):
             log_monitor_config = modules[LOG_MANAGER_MODULE]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
                 self.__logmonitor = LogMonitor(log_monitor_config["conf"])
-                self.__logmonitor.callback = self.processLogLine
-                self.__logmonitor.chunk_callback = self.processLogChunk
-                self.__logmonitor.eventhandler = handle_events               
+                self.__logmonitor.eventhandler = self.handle_event               
                     
                     
                 try:
@@ -221,7 +217,6 @@ class TornadoApplication(tornado.web.Application):
             stats_config = modules[SYSTEM_MODULE]
             if stats_config != None and stats_config["enabled"] == True:
                 self.__sysmon = SystemMonitor(stats_config["conf"], self.modules)
-                self.__sysmon.callback = self.processSystemStats # receive stats data from module 
                 self.__sysmon.eventhandler = self.handle_event
                 self.__sysmon.start_monitor()
             
@@ -257,7 +252,7 @@ class TornadoApplication(tornado.web.Application):
         reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
             self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
-            self.__reaction_engine.eventhandler = handle_events
+            self.__reaction_engine.eventhandler = handle_event
                         
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.addNotifyable(self.__reaction_engine)
@@ -289,7 +284,7 @@ class TornadoApplication(tornado.web.Application):
                 mod = __import__(bot_module_name, fromlist=[bot_class_name])
                 klass = getattr(mod, bot_class_name)
                 self.__service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
-                self.__service_bot.eventhandler = handle_events
+                self.__service_bot.eventhandler = self.handle_event
                 
                 self.__pubsubhub.addNotifyable(self.__service_bot)
                 
@@ -428,10 +423,14 @@ class TornadoApplication(tornado.web.Application):
             autoreload.watch(os.path.abspath(p))
     
     
+    
+    
     async def handleDelegateEvents(self, event):
         self.logger.debug("Event received from delegate")
         await self.__pubsubhub.publish_event(event)
         pass    
+        
+        
         
     
     async def processSystemStats(self, data, error=None):
@@ -446,36 +445,16 @@ class TornadoApplication(tornado.web.Application):
     
     
     
+  
     '''
-    Handles arbitrary events from for all event dispatching modules
+    Handles arbitrary events from all modules
     ''' 
-    async def handle_event(self, event:EventType, auxdata=None):
+    async def handle_event(self, event:EventType):
         self.logger.info("handle_event for " + str(event["name"]))
-        pass
-        
-        
-    
-    
-    async def processLogLine(self, logname, topic, data, error=None):
-        if(error == None):
-            self.logger.debug("Log line received")
-            # topicName = buildTopicPath(PubSubHub.LOGMONITORING, logname)
-            evt = buildDataEvent({"subject":"Target", "concern": "LogStatement", "content":str(data, 'utf-8')}, topic)
-            await self.__pubsubhub.publish(topic, evt)
-        else:
-            self.logger.error("Log line error " + str(error))
+        await self.__pubsubhub.publish_event_type(event) 
         pass
     
-    
-    async def processLogChunk(self, logname, topic, data, error=None):
-        if(error == None):
-            self.logger.debug("Log chunk received")
-            evt = buildDataEvent({"subject":"Target", "concern": "LogChunk", "content":data}, topic)
-            await self.__pubsubhub.publish(topic, evt)
-        else:
-            self.logger.error("Log chunk error " + str(error))
-        pass
-    
+   
     
     @property
     def totalclients(self):

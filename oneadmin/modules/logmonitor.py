@@ -22,11 +22,9 @@ import logging
 import tornado
 from sys import platform
 from pathlib import Path
-import array
 import collections
-from tornado.ioloop import IOLoop
-from _datetime import datetime
 from abstracts import IEventDispatcher
+from core.events import LogLineEvent, LogErrorEvent, LogChunkEvent
 
 
 class LogMonitor(IEventDispatcher):
@@ -34,7 +32,7 @@ class LogMonitor(IEventDispatcher):
     classdocs
     '''
 
-    def __init__(self, conf, callback=None, chunk_callback=None):
+    def __init__(self, conf):
         '''
         Constructor
         '''
@@ -43,17 +41,7 @@ class LogMonitor(IEventDispatcher):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
         self.__log_files = {}
-        self.__log_store = {}
-        self.__callback = None
-        self.__chunk_callback = None
-        
-        
-        if callback != None:
-            self.__callback = callback
-            
-        if chunk_callback != None:
-            self.__chunk_callback = chunk_callback
-            
+        self.__log_store = {}            
         pass    
     
     
@@ -100,32 +88,6 @@ class LogMonitor(IEventDispatcher):
             return self.__log_files[name]
         else:
             raise LookupError('Log info not found for log by name ' + name)
-    
-    
-        
-    
-    
-    @property
-    def callback(self):
-        return self.__callback
-    
-    
-    
-    @callback.setter
-    def callback(self, fun):
-        self.__callback = fun
-        
-        
-        
-    @property
-    def chunk_callback(self):
-        return self.__chunk_callback
-    
-    
-    
-    @chunk_callback.setter
-    def chunk_callback(self, fun):
-        self.__chunk_callback = fun
         
     
     
@@ -153,9 +115,8 @@ class LogMonitor(IEventDispatcher):
             
             
             if len(q)>0: 
-                if self.__chunk_callback != None:
-                    log_topic_path = log_topic_path.replace("logging", "logging/chunked")
-                    await self.__chunk_callback(logname, log_topic_path, q.copy(), None)
+                log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
+                await self.dispatchevent(LogChunkEvent(log_topic_path, data=q.copy(), meta={"log_name": logname}))
                 self.__log_store[logname].clear()
                 self.__log_store[logname] = None
                 self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"])                    
@@ -165,9 +126,8 @@ class LogMonitor(IEventDispatcher):
             err = "An error occurred in processing log chunks " + str(e)
             self.logger.warning(err)
             
-            if(self.__chunk_callback != None):
-                log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
-                await self.__chunk_callback(logname, log_topic_path, None, err)
+            log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
+            await self.dispatchevent(LogErrorEvent(log_topic_path, data=err, meta={"log_name": logname}))
             
         pass
         
@@ -209,8 +169,8 @@ class LogMonitor(IEventDispatcher):
                     self.logger.debug("nothing to show")
                     await asyncio.sleep(.2)
                 else:
-                    if(self.__callback != None):
-                        await self.__callback(logname, log_topic_path, line, None)
+                    
+                    self.dispatchevent(LogLineEvent(log_topic_path, data=str(line, 'utf-8'), meta={"log_name": logname}))
                         
                     ''' Collect log lines in a queue till  it reaches queue size limit'''    
                     q = self.__log_store[logname];
@@ -218,9 +178,9 @@ class LogMonitor(IEventDispatcher):
                     
                     ''' max_messages_chunks < 100 causes bug while writing log '''
                     if len(q)>=self.__conf["max_messages_chunks"] :
-                        if self.__chunk_callback != None:
-                            log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                            await self.__chunk_callback(logname, log_topic_path, q.copy(), None)
+                        log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
+                        await self.dispatchevent(LogChunkEvent(log_topic_path, data=q.copy(), meta={"log_name": logname}))
+                        
                         self.__log_store[logname].clear()
                         self.__log_store[logname] = None
                         self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"]) 
@@ -230,8 +190,7 @@ class LogMonitor(IEventDispatcher):
             err = "An error occurred in monitoring log." + str(e)
             self.logger.warning(err)
             
-            if(self.__callback != None):
-                await self.__callback(logname, log_topic_path, None, err)
+            self.dispatchevent(LogErrorEvent(log_topic_path, data=err, meta={"log_name": logname}))
             
             if logname in self.__log_files:
                 await self._retry(logname)

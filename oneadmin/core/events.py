@@ -14,31 +14,98 @@ EventType = Dict[Text, Any]
 
 
 # noinspection PyPep8Naming
-def StatsGenerated(
-    text: Optional[Text],
-    parse_data: Optional[Dict[Text, Any]] = None,
+def StatsGeneratedEvent(
+    topic: Optional[Text],
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
-        "event": "system",
-        "timestamp": timestamp,
-        "text": text,
-        "parse_data": parse_data,
+        "name": "stats_generated",
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
     }
     
     
 
 # noinspection PyPep8Naming
-def LogStatementGenerated(
+def StatsErrorEvent(
     topic: Optional[Text],
-    parse_data: Optional[Dict[Text, Any]] = None,
+    message: Optional[Text] = None,
+    data: Optional[Dict[Text, Any]] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
-        "event": "system",
-        "timestamp": timestamp,
-        "text": text,
-        "parse_data": parse_data,
+        "name": "stats_error",
+        "type": "error",
+        "topic": topic,
+        "data": data,
+        "message": message,
+        "timestamp": timestamp
+    }
+    
+    
+
+# noinspection PyPep8Naming
+def LogLineEvent(
+    topic: Optional[Text],
+    data: Optional[Dict[Text, Any]] = None,
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": "log_line",
+        "type": "event",
+        "topic": topic,        
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+    
+    
+
+# noinspection PyPep8Naming
+def LogChunkEvent(
+    topic: Optional[Text],
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": "log_chunk",
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+
+
+# noinspection PyPep8Naming
+def LogErrorEvent(
+    topic: Optional[Text],
+    message: Optional[Text] = None,
+    data: Optional[Dict[Text, Any]] = None,
+    meta: Optional[Dict[Text, Any]] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": "log_error",
+        "type": "error",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "message": message,
+        "timestamp": timestamp
     }
     
     

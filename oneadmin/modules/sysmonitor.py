@@ -32,6 +32,8 @@ from crontab import CronTab
 from oneadmin.version import __version__
 from tornado.httpclient import AsyncHTTPClient
 from abstracts import IEventDispatcher
+from core.events import StatsGeneratedEvent, StatsErrorEvent
+from core.constants import TOPIC_SYSMONITORING
 
 class SystemMonitor(IEventDispatcher):
     
@@ -52,7 +54,6 @@ class SystemMonitor(IEventDispatcher):
         self.__presenter = modules.getModule("presenter")
         ''' --- '''
         
-        self.__callback = None
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
         self.__external_ip = None
@@ -84,17 +85,7 @@ class SystemMonitor(IEventDispatcher):
         tornado.ioloop.IOLoop.current().spawn_callback(self.generateSystemStats)
     pass
 
-
     
-    @property
-    def callback(self):
-        return self.__callback
-    
-    
-    @callback.setter
-    def callback(self, fun):
-        self.__callback = fun
-
     
 
     async def __cpu_percent(self, interval = None, *args, **kwargs):
@@ -429,8 +420,13 @@ class SystemMonitor(IEventDispatcher):
                 self.logger.warning(err)
             finally:
                 try:
-                    if self.__callback != None:
-                        await self.__callback(stats, err)
+                    if err:
+                        evt = StatsErrorEvent(TOPIC_SYSMONITORING, {"message": err})
+                    else:
+                        evt = StatsGeneratedEvent(TOPIC_SYSMONITORING, stats)
+                        
+                    await self.dispatchevent(evt)
+                        
                 except Exception as e:
                     err = "An error occurred in generating system stats " + str(e)
                     self.logger.warning(err)

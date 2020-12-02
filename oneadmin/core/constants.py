@@ -5,6 +5,17 @@ Created on 26-Nov-2020
 '''
 
 
+''' topic names'''
+
+TOPIC_LOGMONITORING = "/logging"
+TOPIC_SYSMONITORING = "/stats"
+TOPIC_PING = "/ping"
+TOPIC_EVENTS = "/events"
+
+
+
+''' Moduile names'''
+
 SYSTEM_MODULE = "sysmon"
 
 FILE_MANAGER_MODULE = "file_manager"

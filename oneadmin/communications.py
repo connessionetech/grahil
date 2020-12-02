@@ -27,6 +27,8 @@ import asyncio
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from abstracts import IEventDispatcher
+from tornado.websocket import websocket_connect
+from core.events import EventType
 
 
 class Pinger(IEventDispatcher):
@@ -166,6 +168,9 @@ class PubSubHub(object):
     classdocs
     '''
     
+    '''
+    to be deprecated by constants module
+    '''
     LOGMONITORING = "/logging"
     SYSMONITORING = "/stats"
     PING = "/ping"
@@ -356,12 +361,28 @@ class PubSubHub(object):
     
     '''
         Publishes event data to a events channel - "/events"
+        *To be deprecated in favor of new event system*
     '''
     async def publish_event(self, event):
         if PubSubHub.EVENTS in self.channels:
             if self.__isValidEvent(event):
                 await self.__submit(PubSubHub.EVENTS, event)
         pass
+    
+    
+    
+    
+    '''
+        Publishes event to designated channel
+    '''
+    async def publish_event_type(self, event:EventType):
+        
+        if "topic"in event:
+            if event["topic"] in self.channels:
+                if self.__isValidEvent(event):
+                    await self.__submit(event["topic"], event)
+            pass
+    
     
     
     
@@ -431,3 +452,102 @@ class PubSubHub(object):
                 logging.error("Oops!,%s,occurred.", sys.exc_info()[0])
             finally:            
                 msgque.task_done()
+
+
+
+
+'''
+Created on 14-Sep-2020
+
+@author: rajdeeprath
+'''
+
+
+class WebSocketClient(IEventDispatcher):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self, conf):
+        '''
+        Constructor
+        '''
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.__connection = None
+        self.__connected = False
+        self.__url = None
+        
+        
+    
+    
+    '''
+        creates connection to remote endpoint
+    '''
+    async def connect(self, url, reconnect = False):
+        if(self.__connected == False):
+            
+            try:
+                self.__connection = await websocket_connect(url, connect_timeout=6000,
+                      ping_interval=15000, ping_timeout=3000)
+            except Exception as e:
+                self.logger.error("connection error. could not connect to remote endpoint " + url)
+            else:
+                self.logger.info("connected to remote endpoint " + url)
+                self.__connected = True
+                
+                '''
+                if reconnect == True:
+                    tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, name)
+                '''
+                
+                self.__read_message()
+                
+    
+    
+    
+    '''
+        Special method to enforce reconnection to remote endpoint
+    '''
+    async def __reconnect(self):
+        if self.__connected is None and self.__url is not None:
+            await self.connect(self.__url)
+        
+    
+    
+    
+    '''
+        Read message from open websocket channel
+    '''
+    async def __read_message(self):
+        while True:
+            msg = await self.__connection.read_message()
+            if msg is None:
+                self.logger.info("connection to remote endpoint " + self.__url +"closed");
+                self.__connection = None
+                self.__connected = False
+                break
+    
+    
+    
+    
+    '''
+        Write message in open websocket channel
+    '''
+    async def write_message(self, message, binary = False):
+        if(self.__connected == True):
+            self.__connection.write_message(message, binary);
+                
+    
+    
+    
+    '''
+        Closes connection
+    '''
+    async def closeConnection(self, code = None, reason = None):
+        if(self.__connected == True):
+            self.__connection.close(code, reason)
+            self.__connection = None
+            self.__connected = False
+        
+        
