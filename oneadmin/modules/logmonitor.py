@@ -127,7 +127,7 @@ class LogMonitor(IEventDispatcher):
             self.logger.warning(err)
             
             log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
-            await self.dispatchevent(LogErrorEvent(log_topic_path, data=err, meta={"log_name": logname}))
+            await self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
             
         pass
         
@@ -190,7 +190,7 @@ class LogMonitor(IEventDispatcher):
             err = "An error occurred in monitoring log." + str(e)
             self.logger.warning(err)
             
-            self.dispatchevent(LogErrorEvent(log_topic_path, data=err, meta={"log_name": logname}))
+            self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
             
             if logname in self.__log_files:
                 await self._retry(logname)

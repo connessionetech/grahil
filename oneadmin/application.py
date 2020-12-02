@@ -96,7 +96,6 @@ class TornadoApplication(tornado.web.Application):
             ''' Initializing pinger module used for sending keep-alive heartbeat to socket connections'''
             pinger_conf = modules[PINGER_MODULE]
             self.__pinger = Pinger(pinger_conf["conf"])
-            self.__pinger.callback = self.processPing
             self.__pinger.eventhandler = self.handle_event
             self.__pinger.start()       
                  
@@ -409,14 +408,6 @@ class TornadoApplication(tornado.web.Application):
     
     
     
-    async def processPing(self, data, error):
-        if error == None:
-            self.logger.debug("Ping message generated for clients")
-            evt = buildDataEvent({"subject":"System", "concern": "Time", "content":data}, PubSubHub.PING)
-            await self.__pubsubhub.publish(PubSubHub.PING, evt)        
-        pass
-    
-    
     
     def addwatchfiles(self, *paths):
         for p in paths:
@@ -428,21 +419,7 @@ class TornadoApplication(tornado.web.Application):
     async def handleDelegateEvents(self, event):
         self.logger.debug("Event received from delegate")
         await self.__pubsubhub.publish_event(event)
-        pass    
-        
-        
-        
-    
-    async def processSystemStats(self, data, error=None):
-        if(error == None):
-            self.logger.debug("System stats received")
-            self.__system_stats = data            
-            evt = buildDataEvent({"subject":"System", "concern": "StatsGenerated", "content":self.__system_stats}, PubSubHub.SYSMONITORING)
-            await self.__pubsubhub.publish(PubSubHub.SYSMONITORING, evt)
-        else:
-            self.logger.error("System monitor error " + str(error))
-        pass
-    
+        pass   
     
     
   

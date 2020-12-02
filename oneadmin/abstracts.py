@@ -426,8 +426,28 @@ class Notifyable(object):
         '''
         Constructor
         '''
+        self.__events_of_interest = set()
+      
     
-    def notifyEvent(self, event):
+    @property
+    def event_filters(self)-> set:
+        return self.__events_of_interest
+    
+    
+    @event_filters.setter
+    def event_filters(self, events) -> None:
+        self.__events_of_interest = events
+        
+        
+        
+    async def _notifyEvent(self, event:EventType):
+        
+        if event["name"] in self.__events_of_interest:
+            self.onEventOfInterest(event)
+        pass
+    
+    
+    async def onEventOfInterest(self, event):
         pass  
     
 

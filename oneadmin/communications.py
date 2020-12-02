@@ -28,31 +28,22 @@ from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from abstracts import IEventDispatcher
 from tornado.websocket import websocket_connect
-from core.events import EventType
+from core.events import EventType, PingEvent
+from core.constants import TOPIC_EVENTS, TOPIC_PING
 
 
 class Pinger(IEventDispatcher):
     
     def __init__(self, conf):
         self.__conf = conf;
-        self.__callback = None
         pass
-    
-    @property
-    def callback(self):
-        return self.__callback
-    
-    @callback.setter
-    def callback(self, fun):
-        self.__callback = fun
     
     
     async def __generatePing(self):
         while True:
-            if self.__callback != None:
-                        ping = datetime.datetime.utcnow().timestamp()
-                        await self.__callback(ping, None)
-            
+            ping = datetime.datetime.utcnow().timestamp()
+            await self.dispatchevent(PingEvent(topic=TOPIC_PING, data={"timestamp": ping}))
+                        
             if self.__conf["ping_interval_seconds"] is not None:
                 await asyncio.sleep(self.__conf["ping_interval_seconds"])
         pass
@@ -167,15 +158,7 @@ class PubSubHub(object):
     '''
     classdocs
     '''
-    
-    '''
-    to be deprecated by constants module
-    '''
-    LOGMONITORING = "/logging"
-    SYSMONITORING = "/stats"
-    PING = "/ping"
-    EVENTS = "/events"
-    
+        
 
     def __init__(self, config):
         '''
@@ -364,9 +347,9 @@ class PubSubHub(object):
         *To be deprecated in favor of new event system*
     '''
     async def publish_event(self, event):
-        if PubSubHub.EVENTS in self.channels:
+        if TOPIC_EVENTS in self.channels:
             if self.__isValidEvent(event):
-                await self.__submit(PubSubHub.EVENTS, event)
+                await self.__submit(TOPIC_EVENTS, event)
         pass
     
     
