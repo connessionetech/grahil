@@ -18,13 +18,13 @@ from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 from oneadmin.abstracts import ServiceBot
-from oneadmin.abstracts import Notifyable
+from oneadmin.abstracts import EventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
 from core.components import ActionDispatcher
 from abstracts import IIntentProvider
 
 
-class TelegramBot(ServiceBot, Notifyable, IIntentProvider):
+class TelegramBot(ServiceBot, EventHandler, IIntentProvider):
     
     dp = None;
     

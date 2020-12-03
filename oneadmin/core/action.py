@@ -5,12 +5,16 @@ Created on 25-Nov-2020
 '''
 from version import __version__
 from typing import List 
-from typing import Text
+from typing import Text, Dict, List,NamedTuple
 from oneadmin.core import grahil_types
+
 
 from tornado.concurrent import asyncio
 from core.constants import TARGET_DELEGATE_MODULE, FILE_MANAGER_MODULE,\
     SYSTEM_MODULE, PUBSUBHUB_MODULE
+from core.events import EventType
+    
+
 
 ACTION_PREFIX = "action_"
 
@@ -69,6 +73,12 @@ ACTION_RUN_DIAGNOSTICS_NAME = ACTION_PREFIX + "run_diagnostics"
 
 
 
+class ActionResponse(NamedTuple):
+    result:object = None
+    events:List[EventType] = []
+    pass
+
+
 
 class Action(object):
     '''
@@ -86,8 +96,8 @@ class Action(object):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        return {}
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse()
     
     
     
@@ -104,12 +114,14 @@ class Action(object):
 Returns instances of builtin actions
 '''
 def builtin_actions() -> List[Action]:
-    return [ActionGetSoftwareVersion(), ActionRebootSystem(), ActionGetSystemTime(), ActionForceGarbageCollection(), 
-            ActionGetSystemStats(), ActionGetMemoryStats(), ActionGetCPUStats(), ActionStartLogRecording(), ActionStopLogRecording(),
-            ActionCreateFolder(), ActionDeleteFolder(), ActionDeleteFile(), ActionCopyFile(), ActionMoveFile(), ActionDownloadFile(),
-            ActionBrowseFileSystem(), ActionFulfillTargetRequest(), ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
-            ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), ActionRemoveChannel(), ActionPublishChannel(), 
-            ActionRunDiagonitics()]
+    return [ActionGetSoftwareVersion(), ActionRebootSystem(), ActionGetSystemTime(), 
+            ActionForceGarbageCollection(), ActionGetSystemStats(), ActionGetMemoryStats(), 
+            ActionGetCPUStats(), ActionStartLogRecording(), ActionStopLogRecording(),
+            ActionCreateFolder(), ActionDeleteFolder(), ActionDeleteFile(), ActionCopyFile(), 
+            ActionMoveFile(), ActionDownloadFile(), ActionBrowseFileSystem(), ActionFulfillTargetRequest(), 
+            ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
+            ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
+            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics()]
 
 
 
@@ -148,8 +160,9 @@ class ActionGetSoftwareVersion(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        return {"data": __version__}
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = __version__, events=[]) 
+    
     
 
 
@@ -171,8 +184,8 @@ class ActionRebootSystem(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[]) 
 
 
 
@@ -193,8 +206,8 @@ class ActionForceGarbageCollection(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
     
@@ -215,8 +228,8 @@ class ActionGetSystemTime(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
  
  
  
@@ -239,8 +252,8 @@ class ActionGetSystemStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
 
 '''
@@ -261,8 +274,8 @@ class ActionGetMemoryStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
     
@@ -283,8 +296,8 @@ class ActionGetCPUStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
 
@@ -306,8 +319,8 @@ class ActionDeleteFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -328,8 +341,8 @@ class ActionMoveFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -351,8 +364,8 @@ class ActionCopyFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -373,8 +386,8 @@ class ActionDownloadFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -396,8 +409,8 @@ class ActionCreateFolder(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -419,8 +432,8 @@ class ActionDeleteFolder(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -443,8 +456,8 @@ class ActionBrowseFileSystem(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -465,8 +478,8 @@ class ActionFulfillTargetRequest(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
 
@@ -486,8 +499,8 @@ class ActionPublishChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -507,8 +520,8 @@ class ActionCreateChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass     
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
 
@@ -528,8 +541,8 @@ class ActionRemoveChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
 
@@ -549,8 +562,8 @@ class ActionRunDiagonitics(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass     
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
 
@@ -569,8 +582,8 @@ class ActionStartLogRecording(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -590,9 +603,10 @@ class ActionStopLogRecording(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
+
 
 
 class ActionStartTarget(Action):
@@ -610,8 +624,8 @@ class ActionStartTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
 
 
@@ -632,8 +646,8 @@ class ActionStopTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
 
 
 
@@ -653,8 +667,8 @@ class ActionRestartTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])
     
     
     
@@ -673,8 +687,8 @@ class ActionSubcribeChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])  
 
 
 
@@ -694,8 +708,8 @@ class ActionUnSubcribeChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> dict:
-        pass  
+    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])    
 
 
 

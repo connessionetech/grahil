@@ -28,7 +28,7 @@ from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from abstracts import IEventDispatcher
 from tornado.websocket import websocket_connect
-from core.events import EventType, PingEvent
+from core.events import EventType, PingEvent, is_valid_event
 from core.constants import TOPIC_EVENTS, TOPIC_PING
 
 
@@ -167,7 +167,7 @@ class PubSubHub(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__config = config
         self.__channels = {}
-        self.__notifyables = []
+        self.__listeners = []
         self._initialize()
         
     def _initialize(self):
@@ -210,23 +210,14 @@ class PubSubHub(object):
         self.__channels = _channels        
         
         
-    def addNotifyable(self, notifyable):
-        self.__notifyables.append(notifyable)
+    def addEventListener(self, listener):
+        self.__listeners.append(listener)
         
         
-    def removeNotifyable(self, notifyable):
-        self.__notifyables.remove(notifyable)
+    def removeEventListener(self, listener):
+        self.__listeners.remove(listener)
         
-        
-    @property    
-    def notifyables(self):
-        return self.__notifyables
-    
-    
-    @notifyables.setter
-    def notifyables(self, notifyables):
-        self.__notifyables = notifyables
-        
+       
         
     def subscribe(self, topicname, client):
         
@@ -362,22 +353,10 @@ class PubSubHub(object):
         
         if "topic"in event:
             if event["topic"] in self.channels:
-                if self.__isValidEvent(event):
+                if is_valid_event(event):
                     await self.__submit(event["topic"], event)
             pass
-    
-    
-    
-    
-    '''
-        Validates message as `event` object and publishes to 'events' channel
-    '''
-    def __isValidEvent(self, event):
-        # validate event object and place in queue
-        if "type" in event and "category" in event and "data" in event:
-            return True
-        return False
-    
+        
     
     
     '''
@@ -423,10 +402,9 @@ class PubSubHub(object):
                         await clients.submit(message)                
                                 
                 try:
-                    # Notify notifyables
-                    if self.__isValidReactableEvent(message) == True:
-                        for notifyable in self.__notifyables:
-                            await notifyable.notifyEvent(message)
+                    # Notify notifyable components of the system
+                    for listener in self.__listeners:
+                        await listener._notifyEvent(message)                            
                 except Exception as e:
                         err = "An error occurred notifying %s while reacting to this event.%s"
                         self.logger.error(err, str(notifyable), str(e))

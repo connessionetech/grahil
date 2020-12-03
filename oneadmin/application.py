@@ -247,19 +247,19 @@ class TornadoApplication(tornado.web.Application):
         
         ''' Reaction engine -> to send commands to reaction engine use pubsub '''
         # Register reaction engine
-        '''
+        
         reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
             self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
-            self.__reaction_engine.eventhandler = handle_event
+            self.__reaction_engine.eventhandler = self.handle_event
                         
             # Inform pubsubhub of the reaction engine presence
-            self.__pubsubhub.addNotifyable(self.__reaction_engine)
-            self.__action__executor.rulesmanager = self.__reaction_engine            
-        '''
+            self.__pubsubhub.addEventListener(self.__reaction_engine)
+            #self.__action__executor.rulesmanager = self.__reaction_engine
+        
         
         ''' Bot -> to send commands to bot use pubsub '''
-        
+        '''
         bot_config =  modules[BOT_SERVICE_MODULE]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
@@ -284,15 +284,14 @@ class TornadoApplication(tornado.web.Application):
                 klass = getattr(mod, bot_class_name)
                 self.__service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
                 self.__service_bot.eventhandler = self.handle_event
-                
-                self.__pubsubhub.addNotifyable(self.__service_bot)
+                self.__pubsubhub.addEventListener(self.__service_bot)
                 
                 # Register `servicebot` module'
                 self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot);
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-                
+           '''     
 
 
         

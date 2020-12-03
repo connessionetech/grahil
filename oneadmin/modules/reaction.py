@@ -28,7 +28,7 @@ from tornado.ioloop import IOLoop
 import json
 from oneadmin.exceptions import FileSystemOperationError, RulesError
 from oneadmin.modules.reactions.standard_reactions import http_reaction
-from oneadmin.abstracts import Notifyable
+from oneadmin.abstracts import EventHandler
 import importlib
 import inspect
 import time
@@ -40,10 +40,12 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from oneadmin.modules.reactions.filesystem_reactions import copy_file
 from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
+from core.events import EventType, EVENT_STATS_GENERATED
+from core.constants import TOPIC_SYSMONITORING
 
 
 
-class ReactionEngine(IEventDispatcher, Notifyable):
+class ReactionEngine(IEventDispatcher, EventHandler):
     
     
 
@@ -72,12 +74,37 @@ class ReactionEngine(IEventDispatcher, Notifyable):
     def _initialize(self):
         self.__rules = {}
         self.__events = Queue(maxsize=50)
-        self.__task_scheduler.start();        
+        self.__task_scheduler.start()     
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_evaluators)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__index_reactions)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
+        
+        
+    '''
+    Overridden to provide list of events that we are interested to listen to 
+    '''
+    def get_events_of_interests(self)-> set:
+        return []
+    
+    
+    
+    '''
+    Overridden to provide list of events that we are interested to listen to 
+    '''
+    def get_topics_of_interests(self)-> set:
+        return []
+    
+    
+    
+    '''
+    Overridden to handle events subscribed to
+    '''
+    async def handleEvent(self, event:EventType):
+        self.logger.info(event["name"])
+        pass
+    
         
     
     

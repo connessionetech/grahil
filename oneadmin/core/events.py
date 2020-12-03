@@ -48,9 +48,21 @@ EVENTS
 EventType = Dict[Text, Any]
 
 
+
+
+def is_valid_event(evt):
+    
+    if "name" in evt and "type" in evt and "topic" in evt:
+        return True
+    
+    return False
+
+
+
+
 # noinspection PyPep8Naming
 def StatsGeneratedEvent(
-    topic: Optional[Text],
+    topic: Text,
     data: Optional[Dict[Text, Any]] = None,    
     meta: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
@@ -70,7 +82,7 @@ def StatsGeneratedEvent(
 
 # noinspection PyPep8Naming
 def StatsErrorEvent(
-    topic: Optional[Text],
+    topic: Text,
     message: Optional[Text] = None,
     data: Optional[Dict[Text, Any]] = None,
     timestamp: Optional[float] = None,
@@ -88,7 +100,7 @@ def StatsErrorEvent(
 
 # noinspection PyPep8Naming
 def LogLineEvent(
-    topic: Optional[Text],
+    topic: Text,
     data: Optional[Dict[Text, Any]] = None,
     meta: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
@@ -108,7 +120,7 @@ def LogLineEvent(
 
 # noinspection PyPep8Naming
 def LogChunkEvent(
-    topic: Optional[Text],
+    topic: Text,
     data: Optional[Dict[Text, Any]] = None,    
     meta: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
@@ -127,7 +139,7 @@ def LogChunkEvent(
 
 # noinspection PyPep8Naming
 def LogErrorEvent(
-    topic: Optional[Text],
+    topic: Text,
     message: Optional[Text] = None,
     data: Optional[Dict[Text, Any]] = None,
     meta: Optional[Dict[Text, Any]] = None,
@@ -148,7 +160,7 @@ def LogErrorEvent(
 
 # noinspection PyPep8Naming
 def PingEvent(
-    topic: Optional[Text],
+    topic: Text,
     data: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
@@ -166,7 +178,7 @@ def PingEvent(
     
 # noinspection PyPep8Naming
 def SimpleTextNotificationEvent(
-    topic: Optional[Text],
+    topic: Text,
     message: Text,
     code: int,
     category: Optional[Text] = None,
@@ -186,10 +198,10 @@ def SimpleTextNotificationEvent(
 
 # noinspection PyPep8Naming
 def DataNotificationEvent(
-    topic: Optional[Text],
-    message: Text,
-    data: Optional[Dict[Text, Any]] = None,
+    topic: Text,
     code: int,
+    message: Optional[Text],    
+    data: Optional[Dict[Text, Any]] = None,
     category: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:

@@ -24,12 +24,14 @@ import asyncio
 from abc import abstractmethod
 from builtins import int, str
 from core.events import EventType
+from typing import List
 
 
 
 class IEventDispatcher(object):
     
     def __init__(self, handler=None):
+        super().__init__()
         self.__eventHandler = None if handler == None else handler
         pass
     
@@ -416,7 +418,7 @@ class TargetProcess(IEventDispatcher):
 
 
 
-class Notifyable(object):
+class EventHandler(object):
     '''
     classdocs
     '''
@@ -426,28 +428,27 @@ class Notifyable(object):
         '''
         Constructor
         '''
-        self.__events_of_interest = set()
+        super().__init__()
+        self.__topics_of_interest = []
+        self.__events_of_interest = []
       
     
-    @property
-    def event_filters(self)-> set:
-        return self.__events_of_interest
+    def get_events_of_interests(self)-> List:
+        return self.__events_of_interest 
     
     
-    @event_filters.setter
-    def event_filters(self, events) -> None:
-        self.__events_of_interest = events
-        
+    def get_topics_of_interests(self)-> List:
+        return self.__topics_of_interest        
         
         
     async def _notifyEvent(self, event:EventType):
-        
-        if event["name"] in self.__events_of_interest:
-            self.onEventOfInterest(event)
+        if event["topic"] in self.get_topics_of_interests():
+            if event["name"] in self.get_events_of_interests():
+                await self.handleEvent(event)
         pass
     
     
-    async def onEventOfInterest(self, event):
+    async def handleEvent(self, event):
         pass  
     
 
@@ -463,7 +464,9 @@ class ServiceBot(IEventDispatcher):
         '''
         Constructor
         '''
+        super().__init__()
         self._initialize()
+        pass
         
         
     def _initialize(self):
@@ -473,13 +476,6 @@ class ServiceBot(IEventDispatcher):
         self.__webhook_secret = None
         pass
     
-    
-    def __read_messages(self, params=None):
-        pass
-    
-    
-    def write_message(self, params=None):
-        pass
     
     
     def is_webhook_supported(self):
@@ -506,17 +502,16 @@ class ServiceBot(IEventDispatcher):
     def set_webhook_url_config(self, urlconfig):
         self.__webhook_handler_url_config = urlconfig
         
-        
-    def on_webhook_data(self, data):
-        pass
-    
-    
-    def get_webhook_secret(self):
-        return self.__webhook_secret
-        
 
 
-class IIntentProvider:
+class IIntentProvider(object):
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+    
 
     def onIntentProcessResult(self, requestid:str, result:object) -> None:
         pass
