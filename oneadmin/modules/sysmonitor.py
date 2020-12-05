@@ -32,7 +32,7 @@ from crontab import CronTab
 from oneadmin.version import __version__
 from tornado.httpclient import AsyncHTTPClient
 from abstracts import IEventDispatcher
-from core.events import StatsGeneratedEvent, StatsErrorEvent
+from core.event import StatsGeneratedEvent, StatsErrorEvent
 from core.constants import TOPIC_SYSMONITORING
 
 class SystemMonitor(IEventDispatcher):

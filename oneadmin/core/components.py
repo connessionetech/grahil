@@ -8,17 +8,22 @@ from tornado.queues import Queue
 from typing import Text
 from oneadmin.core.action import Action, builtin_action_names, action_from_name
 from oneadmin.core.intent import INTENT_REBOOT_SYSTEM_NAME, INTENT_GET_SYSTEM_TIME_NAME, INTENT_FORCE_GARBAGE_COLLECTION_NAME, INTENT_GET_SYSTEM_STATS_NAME, INTENT_GET_MEMORY_STATS_NAME, INTENT_GET_CPU_STATS_NAME, INTENT_START_LOG_RECORDING_NAME, INTENT_STOP_LOG_RECORDING_NAME, INTENT_CREATE_FOLDER_NAME, INTENT_DELETE_FOLDER_NAME, INTENT_DELETE_FILE_NAME, INTENT_COPY_FILE_NAME, INTENT_MOVE_FILE_NAME, INTENT_DOWNLOAD_FILE_NAME, INTENT_BROWSE_FILE_SYSTEM_NAME, INTENT_INVOKE_ON_TARGET_NAME, INTENT_RESTART_TARGET_NAME, INTENT_STOP_TARGET_NAME, INTENT_START_TARGET_NAME, INTENT_SUBSCRIBE_CHANNEL_NAME, INTENT_UNSUBSCRIBE_CHANNEL_NAME, INTENT_REMOVE_CHANNEL_NAME, INTENT_CREATE_CHANNEL_NAME, INTENT_PUBLISH_CHANNEL_NAME, INTENT_RUN_DIAGNOSTICS_NAME
+from core.constants import TARGET_DELEGATE_MODULE, FILE_MANAGER_MODULE,\
+    SYSTEM_MODULE, PUBSUBHUB_MODULE
 import logging
 import tornado
 from core.intent import built_in_intents, INTENT_PREFIX
-from core.action import ACTION_PREFIX
+from core.action import ACTION_PREFIX, ActionResponse
 from core.grahil_types import Modules
 from smalluuid import SmallUUID
 from time import time
 import json
-from abstracts import IIntentProvider
+from abstracts import IntentProvider
 from builtins import str
-
+import inspect
+import copy
+from core.event import EventType
+from typing import List
 
 class ActionDispatcher(object):
     '''
@@ -33,7 +38,9 @@ class ActionDispatcher(object):
     
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
+        self.__modules = modules
         self.__action_book = {}
+        self.__request_register = {}
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
     pass
@@ -100,7 +107,7 @@ class ActionDispatcher(object):
     '''
         Accepts parameters and creates a request object
     '''     
-    def build_request(self, requester:IIntentProvider, intent:Text, params:object):
+    def _build_request(self, requester:IntentProvider, intent:Text, params:object):
         
         command_params = None
         
@@ -128,7 +135,7 @@ class ActionDispatcher(object):
     '''
         Handles intent requests from -> requesters must implement special interface to be notified of result, error or progress
     ''' 
-    async def handle_request(self, requester:IIntentProvider, intent:Text, params:object):
+    async def handle_request(self, requester:IntentProvider, intent:Text, params:object):
         
         intent_name = INTENT_PREFIX + intent 
         
@@ -136,9 +143,11 @@ class ActionDispatcher(object):
             raise KeyError("Unknown intent " + intent_name)
         
         req_queue:Queue = self.__action_book[intent_name]["requests"]
-        req = self.build_request(requester, intent, params)
+        req = self._build_request(requester, intent, params)
+        self.__request_register[req["requestid"]] = req
+        
         await req_queue.put(req)
-        pass
+        return req["requestid"]
     
     
         
@@ -155,28 +164,40 @@ class ActionDispatcher(object):
                 break
             
             task_queue:Queue = self.__action_book[intent_name]["requests"]
+            requestid:str = None
             
             response = None
-            requester:IIntentProvider = None
+            requester:IntentProvider = None
+            events:List[EventType] = None
         
             try:
                 task_definition = await task_queue.get()
                 
-                requestid:str = task_definition["requestid"]
+                requestid = task_definition["requestid"]
                 intent:str = task_definition["intent"]
                 args:dict = task_definition["params"]
                 requester = task_definition["requester"]
                 action:Action = self.__action_book[intent_name]["action"]
                 
-                #result = await action.execute(requester, args)# add parameters
-                #await requester.onIntentProcessResult(requestid, result) 
-                
+                executable = copy.deepcopy(action)  
+                # implement flywheeel pattern here              
+                result:ActionResponse = await executable.execute(requester, self.__modules, args)
+                events = result.events
+                await  requester.onIntentProcessSuccess(requestid, result.data)
+                                 
             except Exception as e:
                 
-                err = "Error executing task " + str(e)                
+                err = "Error executing action " + str(e)                
                 self.logger.debug(err)
-                await  requester.onIntentProcessError(requestid, e) 
+                await  requester.onIntentProcessResult(requestid, e) 
                 
             finally:
                 task_queue.task_done()
-        pass
+                
+                if requestid != None:
+                    del self.__request_register[requestid]
+                                
+                if events != None:
+                    pubsub = self.__modules.getModule(SYSTEM_MODULE)
+                    for event in events:
+                        await pubsub.publish_event_type(event)

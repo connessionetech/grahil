@@ -28,7 +28,7 @@ from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from abstracts import IEventDispatcher
 from tornado.websocket import websocket_connect
-from core.events import EventType, PingEvent, is_valid_event
+from core.event import EventType, PingEvent, is_valid_event
 from core.constants import TOPIC_EVENTS, TOPIC_PING
 
 
@@ -276,10 +276,10 @@ class PubSubHub(object):
     '''
         Creates a dynamic bidirectional communication channel
     '''
-    def createChannel(self, channel_info):
+    def createChannel(self, channel_info, channel_type="bidirectional"):
         if "name" in channel_info and not channel_info["name"] in self.channels:
             topicname = channel_info["name"]
-            topictype = channel_info["type"]
+            topictype = channel_type
             queuesize = channel_info["queue_size"]
             max_users = channel_info["max_users"]
             self.logger.info("Registering channel %s", topicname)

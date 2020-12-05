@@ -7,18 +7,23 @@ from version import __version__
 from typing import List 
 from typing import Text, Dict, List,NamedTuple
 from oneadmin.core import grahil_types
+from tornado.concurrent import asyncio
 
 
 from tornado.concurrent import asyncio
-from core.constants import TARGET_DELEGATE_MODULE, FILE_MANAGER_MODULE,\
-    SYSTEM_MODULE, PUBSUBHUB_MODULE
-from core.events import EventType
+from oneadmin.core.constants import *
+from core.event import EventType
+from abstracts import IntentProvider
+from utilities import buildLogWriterRule
+from exceptions import RulesError
     
 
 
 ACTION_PREFIX = "action_"
 
 ACTION_GET_SOFTWARE_VERSION_NAME = ACTION_PREFIX + "get_software_version"
+
+ACTION_UPDATE_SOFTWARE_NAME = ACTION_PREFIX + "update_software"
 
 ACTION_REBOOT_SYSTEM_NAME = ACTION_PREFIX + "reboot_system"
 
@@ -74,7 +79,7 @@ ACTION_RUN_DIAGNOSTICS_NAME = ACTION_PREFIX + "run_diagnostics"
 
 
 class ActionResponse(NamedTuple):
-    result:object = None
+    data:object = None
     events:List[EventType] = []
     pass
 
@@ -96,7 +101,7 @@ class Action(object):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         return ActionResponse()
     
     
@@ -121,7 +126,7 @@ def builtin_actions() -> List[Action]:
             ActionMoveFile(), ActionDownloadFile(), ActionBrowseFileSystem(), ActionFulfillTargetRequest(), 
             ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
-            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics()]
+            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre()]
 
 
 
@@ -160,8 +165,17 @@ class ActionGetSoftwareVersion(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = __version__, events=[]) 
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __sysmon = None
+        if self.__system_modules.hasModule(SYSTEM_MODULE):
+                __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+                __ver = __sysmon.getVersion()
+                return ActionResponse(data = __ver, events=[])
+        else:
+                raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        pass
+         
     
     
 
@@ -184,8 +198,19 @@ class ActionRebootSystem(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[]) 
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __sysmon = None
+        
+        if self.__system_modules.hasModule(SYSTEM_MODULE):
+            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+            result =  __sysmon.rebootSystem()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        pass
+        
+         
 
 
 
@@ -206,8 +231,16 @@ class ActionForceGarbageCollection(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __sysmon = None
+        
+        if self.__system_modules.hasModule("sysmon"):
+            __sysmon = self.__system_modules.getModule("sysmon")        
+            __sysmon.force_gc()
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`sysmon` module does not exist")
+        
     
     
     
@@ -228,8 +261,18 @@ class ActionGetSystemTime(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        
+        __sysmon = None
+        
+        if modules.hasModule(SYSTEM_MODULE):
+            __sysmon = modules.getModule(SYSTEM_MODULE) 
+            result =  __sysmon.getSystemTime()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        pass       
  
  
  
@@ -252,8 +295,16 @@ class ActionGetSystemStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __sysmon = None
+        
+        if self.__system_modules.hasModule(SYSTEM_MODULE):
+            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)        
+            result =  __sysmon.getLastSystemStats()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        
     
 
 '''
@@ -274,8 +325,16 @@ class ActionGetMemoryStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __sysmon = None
+        
+        if self.__system_modules.hasModule(SYSTEM_MODULE):
+            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+            result =  __sysmon.getMemorytats()
+            await asyncio.sleep(.5)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
     
     
     
@@ -296,8 +355,17 @@ class ActionGetCPUStats(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __sysmon = None
+        
+        if self.__system_modules.hasModule(SYSTEM_MODULE):
+            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)        
+            result =  __sysmon.getCPUStats()
+            await asyncio.sleep(.5)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        
     
     
 
@@ -319,8 +387,17 @@ class ActionDeleteFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __filemanager = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            path = str(params["source"])
+            result = await __filemanager.deleteFile(path)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")        
 
 
 
@@ -341,8 +418,17 @@ class ActionMoveFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            src = params["source"]
+            dest = params["destination"]
+            result = await __filemanager.moveFile(src, dest)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
 
 
 
@@ -364,8 +450,17 @@ class ActionCopyFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            src = params["source"]
+            dest = params["destination"]
+            result = await __filemanager.copyFile(src, dest)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
 
 
 
@@ -386,7 +481,8 @@ class ActionDownloadFile(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        raise NotImplementedError()
         return ActionResponse(data = None, events=[])
 
 
@@ -409,8 +505,17 @@ class ActionCreateFolder(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            path = params["path"]
+            dirname = params["name"]
+            result = await __filemanager.create_directory(path, dirname)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
 
 
 
@@ -432,8 +537,15 @@ class ActionDeleteFolder(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            path = params["path"]
+            dirname = params["name"]
+            result = await __filemanager.remove_folder(path, dirname)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
 
 
 
@@ -456,8 +568,17 @@ class ActionBrowseFileSystem(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            handler = params[0]
+            path = str(params[1])
+            result = await __filemanager.browse_content(path)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`FileManager` module does not exist")
 
 
 
@@ -478,8 +599,22 @@ class ActionFulfillTargetRequest(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __delegate = None
+        
+        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+            if(len(params)<1):
+                raise Exception("Minimum of one parameter is required for this method call")            
+            command = params["command"]
+            del params["command"]
+            result =  await __delegate.fulfillRequest(command, params)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        pass
+        
     
     
 
@@ -499,8 +634,19 @@ class ActionPublishChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __pubsubhub = None
+        
+        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+            handler = params["handler"] 
+            topicname = params["topic"]  
+            message = params["message"]        
+            __pubsubhub.publish(topicname, message, handler)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+PUBSUBHUB_MODULE+"` module does not exist")
 
 
 
@@ -520,12 +666,19 @@ class ActionCreateChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __pubsubhub = None
+        
+        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+            channel_info = params["channel_info"]  
+            __pubsubhub.createChannel(channel_info)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+PUBSUBHUB_MODULE+"` module does not exist")
+        
     
     
-
-
 
 class ActionRemoveChannel(Action):
     
@@ -541,8 +694,17 @@ class ActionRemoveChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __pubsubhub = None
+        
+        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+            channel_name = params["topic"]        
+            __pubsubhub.removeChannel(channel_name)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+PUBSUBHUB_MODULE+"` module does not exist")
+        
     
     
 
@@ -562,7 +724,8 @@ class ActionRunDiagonitics(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        raise NotImplementedError()
         return ActionResponse(data = None, events=[])
     
     
@@ -582,8 +745,35 @@ class ActionStartLogRecording(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __logmon = None
+        
+        if self.__system_modules.hasModule(LOG_MANAGER_MODULE):
+            __logmon = self.__system_modules.getModule(LOG_MANAGER_MODULE)
+            handler = params["handler"]
+        
+        if self.__rulesmanager is not None:
+            log_name = params["name"] # log name
+            log_info = __logmon.getLogInfo(log_name)
+            
+            if hasattr(handler, 'id'):
+                rule_id = handler.id + '-' + log_name
+                topic_path = log_info["topic_path"]                
+                topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
+                filepath = log_info["log_file_path"]
+                    
+                rule = buildLogWriterRule(rule_id, topic_path, filepath)
+                if self.__rulesmanager.hasRule(rule_id):
+                    raise RulesError('Rule for id ' + rule_id + 'already exists')
+                else:
+                    self.__rulesmanager.registerRule(rule)
+                    handler.liveactions['logrecordings'].add(rule_id) # store reference on client WebSocket handler
+                    return ActionResponse(data = rule_id, events=[])
+        else:
+            raise ModuleNotFoundError("`"+LOG_MANAGER_MODULE+"` module does not exist")
+        
+        
 
 
 
@@ -603,9 +793,21 @@ class ActionStopLogRecording(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
-    
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        handler = params["handler"]
+                
+        if self.__rulesmanager is not None:
+            rule_id = params[1]
+            if hasattr(handler, 'id'):                                
+                if self.__rulesmanager.hasRule(rule_id):
+                    self.__rulesmanager.deregisterRule(rule_id)
+                    if rule_id in handler.liveactions['logrecordings']:
+                        handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
+                        return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("No rules manager assigned")
+            
 
 
 
@@ -624,8 +826,15 @@ class ActionStartTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+            await __delegate.start_proc()
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        
     
 
 
@@ -646,9 +855,13 @@ class ActionStopTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
-
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+            await __delegate.stop_proc()
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
 
 
 
@@ -667,8 +880,16 @@ class ActionRestartTarget(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __delegate = None
+        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+            await __delegate.restart_proc()
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        
     
     
     
@@ -687,8 +908,24 @@ class ActionSubcribeChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])  
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __pubsubhub = None
+        
+        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+        
+        if(__pubsubhub != None):
+            handler = params["handler"]
+            topic = params["topic"]
+            # finalparams = params.copy() 
+            #if(len(finalparams)>1):
+            #    finalparams = finalparams[2:]
+            __pubsubhub.subscribe(topic, handler)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+PUBSUBHUB_MODULE+"` module does not exist")
+        
 
 
 
@@ -708,8 +945,50 @@ class ActionUnSubcribeChannel(Action):
     '''
     async method that executes the actual logic
     '''
-    async def execute(self, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        return ActionResponse(data = None, events=[])    
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __pubsubhub = None
+        
+        if self.__system_modules.hasModule("pubsub"):
+            __pubsubhub = self.__system_modules.getModule("pubsub")
+            handler = params["handler"]
+            topic = params["topic"]       
+            __pubsubhub.unsubscribe(topic, handler)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`PubSub` module does not exist")
+        
+        
 
 
 
+class ActionUnUpdateSoftwre(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_UPDATE_SOFTWARE_NAME
+    
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __sysmon = None
+        
+        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
+            __file_manager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+            if(__file_manager != None):
+                __updater_script = await __file_manager.get_updater_script()
+            
+                if self.__system_modules.hasModule(SYSTEM_MODULE):
+                    __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+                    if(__sysmon != None):
+                        return __sysmon.schedule__update(__updater_script)
+                else:
+                    raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
+        else:
+                    raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")

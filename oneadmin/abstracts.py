@@ -23,7 +23,7 @@ import logging
 import asyncio
 from abc import abstractmethod
 from builtins import int, str
-from core.events import EventType
+from core.event import EventType
 from typing import List
 
 
@@ -504,7 +504,7 @@ class ServiceBot(IEventDispatcher):
         
 
 
-class IIntentProvider(object):
+class IntentProvider(object):
     
     def __init__(self):
         '''
@@ -518,10 +518,6 @@ class IIntentProvider(object):
 
 
     def onIntentProcessError(self, e:object, message:str = None) -> None:
-        pass
-    
-    
-    def onIntentProcessupdate(self, requestid:str, update:object, message:str = None) -> None:
         pass
     
     

@@ -24,7 +24,7 @@ from sys import platform
 from pathlib import Path
 import collections
 from abstracts import IEventDispatcher
-from core.events import LogLineEvent, LogErrorEvent, LogChunkEvent
+from core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
 
 
 class LogMonitor(IEventDispatcher):

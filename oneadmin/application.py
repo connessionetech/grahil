@@ -36,14 +36,13 @@ from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.modules.sysmonitor import SystemMonitor
-from oneadmin.modules.actions import ActionExecutor
 from oneadmin.core.grahil_core import ModuleRegistry
 import socket
 import asyncio
 from oneadmin.core.constants import *
 from core.components import ActionDispatcher
 from core.constants import ACTION_DISPATCHER_MODULE
-from core.events import EventType
+from core.event import EventType
 
 
 
@@ -231,14 +230,7 @@ class TornadoApplication(tornado.web.Application):
             self.logger.error("Oops!,%s,occurred." + str(e))
         
         
-        
-        ''' Action executor'''
-        '''
-        action_config = modules[ACTION_EXECUTOR_MODULE]
-        if action_config != None and action_config["enabled"] == True:
-            self.__action__executor = ActionExecutor(action_config["conf"], self.modules)
-        '''
-        
+                
         action_config = modules[ACTION_DISPATCHER_MODULE]
         if action_config != None and action_config["enabled"] == True:
             self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
@@ -259,7 +251,7 @@ class TornadoApplication(tornado.web.Application):
         
         
         ''' Bot -> to send commands to bot use pubsub '''
-        '''
+        
         bot_config =  modules[BOT_SERVICE_MODULE]
         if bot_config != None and bot_config["enabled"] == True:
             bot_module_name = bot_config["module"]
@@ -291,7 +283,7 @@ class TornadoApplication(tornado.web.Application):
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-           '''     
+                
 
 
         

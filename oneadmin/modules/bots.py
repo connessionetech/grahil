@@ -21,10 +21,10 @@ from oneadmin.abstracts import ServiceBot
 from oneadmin.abstracts import EventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
 from core.components import ActionDispatcher
-from abstracts import IIntentProvider
+from abstracts import IntentProvider
 
 
-class TelegramBot(ServiceBot, EventHandler, IIntentProvider):
+class TelegramBot(ServiceBot, EventHandler, IntentProvider):
     
     dp = None;
     
@@ -298,7 +298,7 @@ class TelegramBot(ServiceBot, EventHandler, IIntentProvider):
         if "action" in response and response["action"] != None:
             action = response["action"]
             if "method" in action and len(action["method"])>0:
-                await self.handleBotRPC(response, message)
+                await self.handleBotMessage(response, message)
         else:
             await message.answer(response["text"])
 
@@ -313,12 +313,6 @@ class TelegramBot(ServiceBot, EventHandler, IIntentProvider):
 
     def onIntentProcessError(self, e:object, message:str = None) -> None:
         self.logger.info("onIntentProcessError")
-        pass
-    
-    
-    
-    def onIntentProcessupdate(self, requestid:str, update:object, message:str = None) -> None:
-        self.logger.info("onIntentProcessupdate")
         pass
 
 

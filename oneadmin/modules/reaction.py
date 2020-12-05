@@ -40,7 +40,7 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from oneadmin.modules.reactions.filesystem_reactions import copy_file
 from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
-from core.events import EventType, EVENT_STATS_GENERATED
+from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
 
 

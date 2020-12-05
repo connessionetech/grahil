@@ -39,6 +39,7 @@ import os.path
 from os import path
 from _collections import deque
 from abstracts import IEventDispatcher
+from builtins import str
 
 class FileManager(IEventDispatcher):
     '''
@@ -501,7 +502,7 @@ class FileManager(IEventDispatcher):
     '''
         Copies a file or folder to another location. Can read only from within base directory defined
     '''
-    async def copyFile(self, source_path, destination_path):
+    async def copyFile(self, source_path:str, destination_path:str):
         if(not self.is_path_included(source_path)):
             raise FileSystemOperationError("Source path is not within allowed path")
         
@@ -666,6 +667,37 @@ class FileManager(IEventDispatcher):
     def __create_directory_async(self, file, permissions):
         try:
             os.mkdir(file, permissions) 
+        except Exception as e:
+            raise FileSystemOperationError("Unable to create resource at path " + str(file.absolute()) + ".Cause " + str(e))
+        pass
+    
+    
+    
+    
+    '''
+        Removes directory at a  given path
+    '''
+    async def remove_directory(self, path, dirname):
+        if(not self.is_path_included(path)):
+            raise FileSystemOperationError("Requested path is not within allowed path")
+        
+        dir_file = Path(os.path.join(path, dirname))
+        
+        if not dir_file.exists()  and dir_file.is_dir():
+            raise FileSystemOperationError("Directory " + dirname + " does not exists at " + path)
+        
+        if dir_file.exists()  and not dir_file.is_dir():
+            raise FileSystemOperationError(dirname + " is not a directory at path " + path)
+        
+        await IOLoop.current().run_in_executor(None,self.__delete_directory_async, dir_file, 0o755) 
+        
+        pass
+    
+    
+    
+    def __delete_directory_async(self, file, permissions):
+        try:
+            os.remove(file) 
         except Exception as e:
             raise FileSystemOperationError("Unable to create resource at path " + str(file.absolute()) + ".Cause " + str(e))
         pass
