@@ -160,36 +160,14 @@
 							}
 						},
 						{
-							"intent": "photo",
-							"seed": "photograph",
-							"keywords": ["show me a photo", "click a photo", "take a pic", "show me what you see", "what do you see", "share a photo", "snap a pic"],
-							"responses": ["here is a photo", "let me get you a snap", "this is what i have"],
-							"action": {
-								"pre_response": "Preparing photo",
-								"method" : "fulfillRequest",
-								"parameters" : ["capture_image", "image.jpg"]
-							}
-						},
-						{
-							"intent": "video",
-							"seed": "video",
-							"keywords": ["shoot a video", "record a video", "capture video", "take a video"],
-							"responses": ["here is a video", "here is a recording", "this is what i have"],
-							"action": {
-								"pre_response": "Preparing video",
-								"method" : "fulfillRequest",
-								"parameters" : ["capture_video", "video.avi"]
-							}
-						},
-						{
-							"intent": "stats",
+							"intent": "get_system_stats",
 							"seed": "statistics",
 							"keywords": ["give me some system info", "show system stats", "get system statistics", "share system stats", "show system status"],
 							"responses": ["the stats are looking like this", "here are the stats"],
 							"action": {
 								"pre_response": "fetching system stats",
 								"method" : "get_system_stats",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
@@ -201,146 +179,66 @@
 							}
 						},
 						{
-							"intent": "cpu",
+							"intent": "get_cpu_stats",
 							"seed": "processor",
 							"keywords": ["show cpu info", "show cpu usage", "show cpu data", "what is the cpu load", "show cpu stats"],
 							"responses": ["here are the cpu stats", "this is what the cpu stats look like"],
 							"action": {
 								"pre_response": "fetching cpu stats",
 								"method" : "get_cpu_stats",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
-							"intent": "ram",
+							"intent": "get_memory_stats",
 							"seed": "memory",
 							"keywords": ["show memory info", "show memory stats", "what is the memory load", "how much memory is free", "how much memory is in use"],
 							"responses": ["here are the memory stats", "this is what the memory info looks like"],
 							"action": {
 								"pre_response": "fetching memory stats",
 								"method" : "get_memory_stats",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
-							"intent": "time",
+							"intent": "get_system_time",
 							"seed": "now",
 							"keywords": ["show time", "tell me the time", "whats the time", "what is the time", "what time is it now", "show current time", "whats the time", "current time"],
 							"responses": ["here you are..", "today's date and time...", "it is.."],
 							"action": {
 								"pre_response": "let me check...",
 								"method" : "get_system_time",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
-							"intent": "left",
-							"seed": "left",
-							"keywords": ["turn left", "look left"],
-							"responses": ["turned left", "moved"],
-							"action": {
-								"pre_response": "turning left",
-								"method" : "fulfillRequest",
-								"parameters" : ["turn_left"]
-							}
-						},
-												{
-							"intent": "right",
-							"seed": "right",
-							"keywords": ["turn right", "look right"],
-							"responses": ["turned right", "moved"],
-							"action": {
-								"pre_response": "turning right",
-								"method" : "fulfillRequest",
-								"parameters" : ["turn_right"]
-							}
-						},
-						{
-							"intent": "up",
-							"seed": "up",
-							"keywords": ["look up", "move up"],
-							"responses": ["done"],
-							"action": {
-								"pre_response": "looking up",
-								"method" : "fulfillRequest",
-								"parameters" : ["turn_up"]
-							}
-						},
-						{
-							"intent": "down",
-							"seed": "down",
-							"keywords": ["look down", "move down"],
-							"responses": ["done"],
-							"action": {
-								"pre_response": "looking down",
-								"method" : "fulfillRequest",
-								"parameters" : ["turn_down"]
-							}
-						},
-						{
-							"intent": "weather",
-							"seed": "weather",
-							"keywords": ["what is the humidity level", "what is the temperature", "get weather info", "show temperature", "show humidity"],
-							"responses": ["here is what it feels like"],
-							"action": {
-								"pre_response": "fetching weather report",
-								"method" : "fulfillRequest",
-								"parameters" : ["get_humidity_temperature"]
-							}
-						},
-						{
-							"intent": "publish",
-							"seed": "publish",
-							"keywords": ["start streaming", "start publishing", "publish camera"],
-							"responses": ["initialized"],
-							"action": {
-								"pre_response": "starting stream",
-								"method" : "fulfillRequest",
-								"parameters" : ["start_streaming"]
-							}
-						},
-						{
-							"intent": "unpublish",
-							"seed": "unpublish",
-							"keywords": ["stop streaming", "stop publishing", "publish camera"],
-							"responses": ["deinitialized stream"],
-							"action": {
-								"pre_response": "stopping",
-								"method" : "fulfillRequest",
-								"parameters" : ["stop_streaming"]
-							}
-						},
-						{
-							"intent": "reboot",
+							"intent": "reboot_system",
 							"seed": "reboot",
 							"keywords": ["restart", "reset"],
 							"responses": ["Restarted"],
 							"action": {
 								"pre_response": "Restarting..",
-								"method" : "reboot_system",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
-							"intent": "recycle",
+							"intent": "force_garbage_collection",
 							"seed": "recycle",
 							"keywords": ["garbage collect", "reclaim"],
 							"responses": ["gc done!"],
 							"action": {
 								"pre_response": "Reclaiming memory..",
-								"method" : "force_gc",
-								"parameters" : []
+								"parameters" : {}
 							}
 						},
 						{
-							"intent": "update",
+							"intent": "update_software",
 							"seed": "update",
 							"keywords": ["schedule update", "update", "update now"],
 							"responses": ["Update scheduled"],
 							"action": {
 								"pre_response": "Scheduling update",
-								"method" : "schedule_update",
-								"parameters" : []
+								"parameters" : {}
 							}
 						}
 						]

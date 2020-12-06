@@ -22,6 +22,7 @@ from oneadmin.abstracts import EventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
 from core.components import ActionDispatcher
 from abstracts import IntentProvider
+from exceptions import RPCError
 
 
 class TelegramBot(ServiceBot, EventHandler, IntentProvider):
@@ -108,36 +109,28 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
             
     async def handleBotRPC(self, response, message: types.Message):
         
-        action = response["action"]
-        
-        requestid = message.message_id
-        methodname = action["method"]
-        
-        args = action["parameters"]
-        
-        pre_response = action["pre_response"]
-        post_response = response["text"]
         wshandler = self
         
-        if len(args) == 0: 
-            args = [wshandler] 
-        else: 
-            args.insert(0, wshandler)
+        local_request_id = message.message_id
+        action = response["action"]
+        intent = response["intent"]
+        post_response = response["text"]
+        args = action["parameters"]
+        pre_response = action["pre_response"]
+        args["handler"] = wshandler 
         
         try:
             await message.answer(pre_response)
-            task_info = {"requestid":requestid, "method": str(methodname), "params": args}
-            self.__requests[requestid] = {"handler": wshandler, "response": response, "subject": message} 
-            #await self.__action_dispatcherr.addTask(task_info, self)
-            await self.__action_dispatcher.handle_request(self, methodname, args)
+            requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+            self.__requests[requestid] = {"local_request_id": local_request_id, "handler": wshandler, "response": response, "subject": message}
         
         except:
+            
             if requestid in self.__requests:
                 del self.__requests[requestid]
                 
             raise RPCError("Failed to invoke method." + str(sys.exc_info()[0]))
         pass   
-    
     
     
     
@@ -207,23 +200,6 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
     
     async def respond_to_message(self, message: types.Message, response_text: str, response_data:object) -> bool:
         await self.send_message(message.from_user.id, response_text, response_data)
-        pass
-            
-    
-    
-    
-    async def onExecutionResult(self, requestid, result):
-        self.logger.debug("Bot RPC Success")
-        response = formatSuccessBotResponse(requestid, result)
-        await self.__mgsqueue.put({"requestid": requestid, "status": "success", "message": response})
-        pass
-    
-    
-    
-    async def onExecutionerror(self, requestid, e):
-        self.logger.debug("Bot RPC Error")
-        response = formatErrorBotResponse(requestid, e)
-        await self.__mgsqueue.put({"requestid": requestid, "status": "error", "message": response})
         pass
     
     
@@ -295,24 +271,26 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
             response = {"text": "Bye! take care..", "action" : None} 
             
             
-        if "action" in response and response["action"] != None:
-            action = response["action"]
-            if "method" in action and len(action["method"])>0:
-                await self.handleBotMessage(response, message)
+        if "intent" in response and response["intent"] != None:
+            await self.handleBotRPC(response, message)
         else:
             await message.answer(response["text"])
 
 
 
 
-    def onIntentProcessResult(self, requestid:str, result:object) -> None:
+    async def onIntentProcessResult(self, requestid:str, result:object) -> None:
         self.logger.info("onIntentProcessResult")
+        response = formatSuccessBotResponse(requestid, result)
+        await self.__mgsqueue.put({"requestid": requestid, "status": "success", "message": response})
         pass
     
 
 
-    def onIntentProcessError(self, e:object, message:str = None) -> None:
+    async def onIntentProcessError(self, requestid:str, e:object, message:str = None) -> None:
         self.logger.info("onIntentProcessError")
+        response = formatErrorBotResponse(requestid, e)
+        await self.__mgsqueue.put({"requestid": requestid, "status": "error", "message": response})
         pass
 
 

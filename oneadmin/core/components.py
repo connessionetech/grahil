@@ -183,13 +183,13 @@ class ActionDispatcher(object):
                 # implement flywheeel pattern here              
                 result:ActionResponse = await executable.execute(requester, self.__modules, args)
                 events = result.events
-                await  requester.onIntentProcessSuccess(requestid, result.data)
+                await  requester.onIntentProcessResult(requestid, result.data)
                                  
             except Exception as e:
                 
                 err = "Error executing action " + str(e)                
                 self.logger.debug(err)
-                await  requester.onIntentProcessResult(requestid, e) 
+                await  requester.onIntentProcessError(requestid, e) 
                 
             finally:
                 task_queue.task_done()

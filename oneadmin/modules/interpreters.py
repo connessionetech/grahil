@@ -147,6 +147,6 @@ class DefaultInterpreter(object):
         else:
             response_text = "I am sorry! I don't understand you"
             action = None
-            
-        return {"text": response_text, "action" : copy.deepcopy(action)}
+        
+        return {"text": response_text, "action" : action, "intent": key}
     

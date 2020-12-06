@@ -168,8 +168,8 @@ class ActionGetSoftwareVersion(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
         __sysmon = None
-        if self.__system_modules.hasModule(SYSTEM_MODULE):
-                __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+        if modules.hasModule(SYSTEM_MODULE):
+                __sysmon = modules.getModule(SYSTEM_MODULE)
                 __ver = __sysmon.getVersion()
                 return ActionResponse(data = __ver, events=[])
         else:
@@ -202,8 +202,8 @@ class ActionRebootSystem(Action):
         
         __sysmon = None
         
-        if self.__system_modules.hasModule(SYSTEM_MODULE):
-            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+        if modules.hasModule(SYSTEM_MODULE):
+            __sysmon = modules.getModule(SYSTEM_MODULE)
             result =  __sysmon.rebootSystem()
             return ActionResponse(data = result, events=[])
         else:
@@ -234,8 +234,8 @@ class ActionForceGarbageCollection(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __sysmon = None
         
-        if self.__system_modules.hasModule("sysmon"):
-            __sysmon = self.__system_modules.getModule("sysmon")        
+        if modules.hasModule("sysmon"):
+            __sysmon = modules.getModule("sysmon")        
             __sysmon.force_gc()
             return ActionResponse(data = None, events=[])
         else:
@@ -263,6 +263,7 @@ class ActionGetSystemTime(Action):
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
+        raise ValueError("testing")
         
         __sysmon = None
         
@@ -298,8 +299,8 @@ class ActionGetSystemStats(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __sysmon = None
         
-        if self.__system_modules.hasModule(SYSTEM_MODULE):
-            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)        
+        if modules.hasModule(SYSTEM_MODULE):
+            __sysmon = modules.getModule(SYSTEM_MODULE)        
             result =  __sysmon.getLastSystemStats()
             return ActionResponse(data = result, events=[])
         else:
@@ -328,8 +329,8 @@ class ActionGetMemoryStats(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __sysmon = None
         
-        if self.__system_modules.hasModule(SYSTEM_MODULE):
-            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+        if modules.hasModule(SYSTEM_MODULE):
+            __sysmon = modules.getModule(SYSTEM_MODULE)
             result =  __sysmon.getMemorytats()
             await asyncio.sleep(.5)
             return ActionResponse(data = result, events=[])
@@ -358,8 +359,8 @@ class ActionGetCPUStats(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __sysmon = None
         
-        if self.__system_modules.hasModule(SYSTEM_MODULE):
-            __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)        
+        if modules.hasModule(SYSTEM_MODULE):
+            __sysmon = modules.getModule(SYSTEM_MODULE)        
             result =  __sysmon.getCPUStats()
             await asyncio.sleep(.5)
             return ActionResponse(data = result, events=[])
@@ -391,8 +392,8 @@ class ActionDeleteFile(Action):
         
         __filemanager = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             path = str(params["source"])
             result = await __filemanager.deleteFile(path)
             return ActionResponse(data = result, events=[])
@@ -421,8 +422,8 @@ class ActionMoveFile(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __filemanager = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             src = params["source"]
             dest = params["destination"]
             result = await __filemanager.moveFile(src, dest)
@@ -453,8 +454,8 @@ class ActionCopyFile(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __filemanager = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             src = params["source"]
             dest = params["destination"]
             result = await __filemanager.copyFile(src, dest)
@@ -508,8 +509,8 @@ class ActionCreateFolder(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __filemanager = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             path = params["path"]
             dirname = params["name"]
             result = await __filemanager.create_directory(path, dirname)
@@ -538,8 +539,8 @@ class ActionDeleteFolder(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             path = params["path"]
             dirname = params["name"]
             result = await __filemanager.remove_folder(path, dirname)
@@ -571,8 +572,8 @@ class ActionBrowseFileSystem(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __filemanager = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
             handler = params[0]
             path = str(params[1])
             result = await __filemanager.browse_content(path)
@@ -603,8 +604,8 @@ class ActionFulfillTargetRequest(Action):
         
         __delegate = None
         
-        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
             if(len(params)<1):
                 raise Exception("Minimum of one parameter is required for this method call")            
             command = params["command"]
@@ -638,8 +639,8 @@ class ActionPublishChannel(Action):
         
         __pubsubhub = None
         
-        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
-            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+        if modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = modules.getModule(PUBSUBHUB_MODULE)
             handler = params["handler"] 
             topicname = params["topic"]  
             message = params["message"]        
@@ -669,8 +670,8 @@ class ActionCreateChannel(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __pubsubhub = None
         
-        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
-            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+        if modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = modules.getModule(PUBSUBHUB_MODULE)
             channel_info = params["channel_info"]  
             __pubsubhub.createChannel(channel_info)
             return ActionResponse(data = None, events=[])
@@ -697,8 +698,8 @@ class ActionRemoveChannel(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __pubsubhub = None
         
-        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
-            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+        if modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = modules.getModule(PUBSUBHUB_MODULE)
             channel_name = params["topic"]        
             __pubsubhub.removeChannel(channel_name)
             return ActionResponse(data = None, events=[])
@@ -749,8 +750,8 @@ class ActionStartLogRecording(Action):
         
         __logmon = None
         
-        if self.__system_modules.hasModule(LOG_MANAGER_MODULE):
-            __logmon = self.__system_modules.getModule(LOG_MANAGER_MODULE)
+        if modules.hasModule(LOG_MANAGER_MODULE):
+            __logmon = modules.getModule(LOG_MANAGER_MODULE)
             handler = params["handler"]
         
         if self.__rulesmanager is not None:
@@ -828,8 +829,8 @@ class ActionStartTarget(Action):
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
-        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
             await __delegate.start_proc()
             return ActionResponse(data = None, events=[])
         else:
@@ -856,8 +857,8 @@ class ActionStopTarget(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
             await __delegate.stop_proc()
             return ActionResponse(data = None, events=[])
         else:
@@ -883,8 +884,8 @@ class ActionRestartTarget(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
         __delegate = None
-        if self.__system_modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = self.__system_modules.getModule(TARGET_DELEGATE_MODULE)
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
             await __delegate.restart_proc()
             return ActionResponse(data = None, events=[])
         else:
@@ -912,8 +913,8 @@ class ActionSubcribeChannel(Action):
         
         __pubsubhub = None
         
-        if self.__system_modules.hasModule(PUBSUBHUB_MODULE):
-            __pubsubhub = self.__system_modules.getModule(PUBSUBHUB_MODULE)
+        if modules.hasModule(PUBSUBHUB_MODULE):
+            __pubsubhub = modules.getModule(PUBSUBHUB_MODULE)
         
         if(__pubsubhub != None):
             handler = params["handler"]
@@ -948,8 +949,8 @@ class ActionUnSubcribeChannel(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __pubsubhub = None
         
-        if self.__system_modules.hasModule("pubsub"):
-            __pubsubhub = self.__system_modules.getModule("pubsub")
+        if modules.hasModule("pubsub"):
+            __pubsubhub = modules.getModule("pubsub")
             handler = params["handler"]
             topic = params["topic"]       
             __pubsubhub.unsubscribe(topic, handler)
@@ -979,13 +980,13 @@ class ActionUnUpdateSoftwre(Action):
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         __sysmon = None
         
-        if self.__system_modules.hasModule(FILE_MANAGER_MODULE):
-            __file_manager = self.__system_modules.getModule(FILE_MANAGER_MODULE)
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __file_manager = modules.getModule(FILE_MANAGER_MODULE)
             if(__file_manager != None):
                 __updater_script = await __file_manager.get_updater_script()
             
-                if self.__system_modules.hasModule(SYSTEM_MODULE):
-                    __sysmon = self.__system_modules.getModule(SYSTEM_MODULE)
+                if modules.hasModule(SYSTEM_MODULE):
+                    __sysmon = modules.getModule(SYSTEM_MODULE)
                     if(__sysmon != None):
                         return __sysmon.schedule__update(__updater_script)
                 else:
