@@ -56,3 +56,7 @@ class RunnableScriptError(Exception):
 class RulesError(Exception):
     """Base class for other exceptions"""
     pass
+
+class ActionError(Exception):
+    """Base class for other exceptions"""
+    pass

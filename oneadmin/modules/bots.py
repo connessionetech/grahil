@@ -23,6 +23,7 @@ from oneadmin.utilities import is_notification_event, is_data_notification_event
 from core.components import ActionDispatcher
 from abstracts import IntentProvider
 from exceptions import RPCError
+from core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
 
 
 class TelegramBot(ServiceBot, EventHandler, IntentProvider):
@@ -74,7 +75,7 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
                 if self.__conf['conf']["master_user_id"] != "":
                     self.__bot_master = self.__conf['conf']["master_user_id"]
                     self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
-                    version = "0.0.0" #await self.__action_dispatcherr.get_software_version()
+                    version = await self.__action_dispatcher.handle_request_direct(self, INTENT_GET_SOFTWARE_VERSION_NAME, {})
                     await self.send_message(self.__bot_master, "Bot version:"+version+"\nI am listening..")                
                     
             

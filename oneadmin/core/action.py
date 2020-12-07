@@ -4,7 +4,6 @@ Created on 25-Nov-2020
 @author: root
 '''
 from version import __version__
-from typing import List 
 from typing import Text, Dict, List,NamedTuple
 from oneadmin.core import grahil_types
 from tornado.concurrent import asyncio
