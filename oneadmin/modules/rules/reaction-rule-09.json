@@ -2,12 +2,14 @@
 	"id": "reaction-rule-09",
 	"description": "Rule for log recording",
 	"listen-to": "/logging/chunked/red5pro-server-us-7-2-recording/log/red5.log",
-	"enabled": false,
+	"enabled": true,
 	"trigger":{
-		"on-payload-object": "data",
-		"on-content": "*",
-		"using-condition": "equals",
-		"evaluator-func": null
+		"on-payload-object": {
+			"key":"data",
+			"on-content": "*",
+			"on-condition": "equals"
+		},		
+		"evaluator": "SimpleCheckEvaluator"
 	},
 	"response":{
 		"nonce" : false,

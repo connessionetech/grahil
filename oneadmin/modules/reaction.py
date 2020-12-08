@@ -42,6 +42,8 @@ from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
 from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
+from core.rules import CronRule, StandardRule, RuleBase, ReactionRule,\
+    TimeTrigger, PayloadTrigger, RuleExecutionEvaluator
 
 
 
@@ -286,12 +288,36 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                 for name in files:
                     listing_path = Path(os.path.join(str(path), name))
                     if not listing_path.is_dir():
-                        rule = await self.__readRule(listing_path)
+                        rule_data = await self.__readRule(listing_path)
                         
-                        if rule["enabled"] != True:
+                        if rule_data["enabled"] != True:
                             continue
                         
-                        self.registerRule(rule)
+                        rule:ReactionRule = ReactionRule()
+                        rule.id = rule_data["id"]
+                        rule.description = rule_data["description"]
+                        rule.enabled = rule_data["enabled"]
+                        
+                        trigger:Trigger = None
+                        trigger_evaluator:RuleExecutionEvaluator = None                      
+                        
+                        if "on-time-object" in rule_data["trigger"]:
+                            trigger = TimeTrigger()
+                            trigger.cron_expression = rule_data["trigger"]["on-time-object"]["using-expression"]
+                            trigger.recurring = rule_data["trigger"]["on-time-object"]["recurring"]
+                            
+                        elif "on-payload-object" in rule_data["trigger"]:
+                            trigger = PayloadTrigger()
+                            trigger.payload_object_key = rule_data["trigger"]["on-payload-object"]["key"]
+                            trigger.expected_content = rule_data["trigger"]["on-payload-object"]["on-content"]
+                            trigger.condition_clause = rule_data["trigger"]["on-payload-object"]["on-condition"]
+                        
+                        else:
+                            raise ValueError("Unknown rule type")
+                        
+                        
+                        
+                        #self.registerRule(rule)
             else:
                 raise FileNotFoundError("File : " + path + " does not exist.")
             

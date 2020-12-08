@@ -10,7 +10,7 @@ import re
 
 
 
-class RuleReaction(object):
+class Reaction(object):
     
     def __init__(self):
         '''
@@ -161,21 +161,43 @@ class PayloadTrigger(Trigger):
         '''
         super().__init__()
         self.__payload_object_key = None
+        self.__expected_content = None
+        self.__condition_clause = None
     
     
     @property
-    def payload_object_key(self):
+    def expected_content(self) ->str:
+        return self.__expected_content
+        
+        
+    @expected_content.setter
+    def expected_content(self, _expected_content:str) ->None:
+        self.__expected_content = _expected_content
+        
+        
+    @property
+    def payload_object_key(self) ->str:
         return self.__payload_object_key
         
         
     @payload_object_key.setter
-    def payload_object_key(self, _payload_object_key):
+    def payload_object_key(self, _payload_object_key:str) -> None:
         self.__payload_object_key = _payload_object_key
         
         
+    @property
+    def condition_clause(self) ->str:
+        return self.__condition_clause
+        
+        
+    @condition_clause.setter
+    def condition_clause(self, _condition_clause:str) -> None:
+        self.__condition_clause = _condition_clause
+        
+        
 
 
-class RuleBase(object):
+class ReactionRule(object):
     '''
     classdocs
     '''
@@ -255,47 +277,11 @@ class RuleBase(object):
     
     
     @property
-    def response(self) -> RuleReaction:
+    def response(self) -> Reaction:
         return self.__trigger
         
         
     @response.setter
-    def response(self, _response:RuleReaction) -> None:
+    def response(self, _response:Reaction) -> None:
         self.__response = _response
         
-
-
-
-class CronRule(RuleBase):
-    '''
-    classdocs
-    '''
-
-
-    def __init__(self, params=None):
-        '''
-        Constructor
-        '''
-        super().__init__()
-        self.__recurring = False
-        self.__cron_expression = None
-         
-    
-    @property
-    def recurring(self):
-        return self.__recurring
-        
-        
-    @recurring.setter
-    def recurring(self, _recurring):
-        self.__recurring = _recurring
-        
-    
-    @property
-    def cron_expression(self):
-        return self.__cron_expression
-        
-        
-    @cron_expression.setter
-    def cron_expression(self, _cron_expression):
-        self.__cron_expression = _cron_expression
