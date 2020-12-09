@@ -43,7 +43,9 @@ from abstracts import IEventDispatcher
 from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
 from core.rules import CronRule, StandardRule, RuleBase, ReactionRule,\
-    TimeTrigger, PayloadTrigger, RuleExecutionEvaluator
+    TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, SIMPLE_RULE_EVALUATOR,\
+    get_evaluator_by_name, RuleResponse
+from builtins import str
 
 
 
@@ -269,7 +271,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
 
 
     '''
-        Loads reaction rules from filesystem
+        Loads reaction rules from filesystem (v2.0)
     '''
     async def __loadRules(self):
         
@@ -297,6 +299,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                         rule.id = rule_data["id"]
                         rule.description = rule_data["description"]
                         rule.enabled = rule_data["enabled"]
+                        rule.target_topic = rule_data["listen-to"]
                         
                         trigger:Trigger = None
                         trigger_evaluator:RuleExecutionEvaluator = None                      
@@ -315,9 +318,29 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                         else:
                             raise ValueError("Unknown rule type")
                         
+                        rule.trigger = trigger                        
                         
+                        if "evaluator" in rule_data["trigger"]:
+                            evaluator_name = rule_data["trigger"]["evaluator"]
+                            trigger.evaluator = get_evaluator_by_name(evaluator_name.lower())
+                                                   
+                        response = RuleResponse()
                         
-                        #self.registerRule(rule)
+                        if not "intent" in rule_data["response"]:
+                            raise AttributeError("Rule response must have an `Intent`!")
+                        
+                        response.intent = rule_data["response"]["intent"]
+                        
+                        if "nonce" in rule_data["response"]:
+                            response.nonce = rule_data["response"]["nonce"]
+                        
+                        if "parameters" in rule_data["response"]:    
+                            response.parameters = rule_data["response"]["parameters"]
+                            
+                        
+                        rule.response = response
+                        
+                        self.registerRule(rule)
             else:
                 raise FileNotFoundError("File : " + path + " does not exist.")
             
@@ -346,47 +369,70 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         
                             
     '''
-        Register rule and topic of interest
+        Register rules for specified topic of interest (v2.0)
     '''    
-    def registerRule(self, rule):
+    def registerRule(self, rule:ReactionRule) ->None:
         
         try:
             
-            rule["_responded_to"] = False
-            
-            self.__rules[rule["id"]] = rule
+            self.__rules[rule.id] = rule
                             
             '''
             All {time} actions go to task scheduler
             '''
-            if rule["listen-to"] == "{time}":
+            if isinstance(rule.trigger, TimeTrigger):
                 self.__register_timed_reaction(rule)                                
                 
-            else:
-                if rule["listen-to"] not in self.__topics_of_intertest:
-                    self.__topics_of_intertest[rule["listen-to"]] = 1
+            elif isinstance(rule.trigger, PayloadTrigger):
+                
+                if rule not in self.__topics_of_intertest:
+                    self.__topics_of_intertest[rule.target_topic] = {"num_rules": 1} #Count how many rules for same topic
                 else:
-                    self.__topics_of_intertest[rule["listen-to"]] = self.__topics_of_intertest[rule["listen-to"]] + 1
+                    num_rules_for_topic = self.__topics_of_intertest[rule.target_topic]["num_rules"]
+                    num_rules_for_topic = num_rules_for_topic + 1
+                    self.__topics_of_intertest[rule.target_topic] = {"num_rules": num_rules_for_topic}
                     
-                self.logger.info("total rules" +  str(len(self.__rules)))               
+                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + len(num_rules_for_topic))  
+            
+            else:
+                raise RulesError("Invalid rule " + str(rule))             
         
         except Exception as e:
             err = "Unable to register rule " + str(e)
             self.logger.error(err)
+        
+        finally:
+            self.logger.info("Total topics " + len(self.__topics_of_intertest))  
     
     
     
     '''
-        Delete rule and topic of interest
+        Delete rule and topic of interest (v2.0)
     '''
-    def deregisterRule(self, id):
+    def deregisterRule(self, id:str):
         if id in self.__rules and self.__rules[id] != None:
-            rule = self.__rules[id]
-            self.__topics_of_intertest[rule["listen-to"]] = 0 if self.__topics_of_intertest[rule["listen-to"]] <= 0 else self.__topics_of_intertest[rule["listen-to"]] - 1
-            del self.__topics_of_intertest[rule["listen-to"]]
-            del self.__rules[id]
-            self.logger.info("total rules" +  str(len(self.__rules)))
-            pass
+            try:
+                rule:ReactionRule = self.__rules[id]
+                
+                num_rules_for_topic = self.__topics_of_intertest[rule.target_topic]["num_rules"]
+                num_rules_for_topic = 0 if num_rules_for_topic <= 0 else num_rules_for_topic - 1
+                
+                if num_rules_for_topic == 0:
+                    del self.__topics_of_intertest[rule.target_topic]
+                else:
+                    self.__topics_of_intertest[rule.target_topic]["num_rules"] = num_rules_for_topic
+                
+                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + len(num_rules_for_topic))
+            
+            except Exception as e:
+                err = "Unable to register rule " + str(e)
+                self.logger.error(err)
+        
+            finally:
+                del self.__rules[id]
+                self.logger.info("Total topics " + len(self.__topics_of_intertest))  
+    
+            
     
                 
     

@@ -9,8 +9,33 @@ from typing import Text
 import re
 
 
+SIMPLE_RULE_EVALUATOR = "SimpleRuleEvaluator"
 
-class Reaction(object):
+REG_EX_RULE_EVALUATOR = "RegExRuleEvaluator"
+
+
+
+def built_in_evaluators():
+    return [SimpleRuleEvaluator(), RegExRuleEvaluator()]
+
+
+
+def built_in_evaluator_names():
+    return [SIMPLE_RULE_EVALUATOR, REG_EX_RULE_EVALUATOR]
+
+
+
+def get_evaluator_by_name(name:Text) ->RuleExecutionEvaluator:
+   
+    for evaluator in built_in_evaluators():
+        if evaluator.name() == name:
+            return evaluator
+    
+    return None 
+
+
+
+class RuleResponse(object):
     
     def __init__(self):
         '''
@@ -55,13 +80,22 @@ class Reaction(object):
 class RuleExecutionEvaluator(object):
     
     
+    def name(self) -> Text:
+        raise NotImplementedError()
+    
+    
     def evaluate(self, haystack, needle, condition) -> bool:
         raise NotImplementedError();
         pass
 
 
 
-class SimpleCheckEvaluator(RuleExecutionEvaluator):
+class SimpleRuleEvaluator(RuleExecutionEvaluator):
+    
+    
+    def name(self) -> Text:
+        return SIMPLE_RULE_EVALUATOR
+    
     
     def evaluate(self, haystack, needle, condition)-> bool:
         if haystack.contains(needle):
@@ -70,7 +104,12 @@ class SimpleCheckEvaluator(RuleExecutionEvaluator):
     
     
 
-class RegExCheckEvaluator(RuleExecutionEvaluator):
+class RegExRuleEvaluator(RuleExecutionEvaluator):
+    
+    
+    def name(self) -> Text:
+        return REG_EX_RULE_EVALUATOR
+    
     
     def evaluate(self, haystack, regex, condition=None)-> bool:
         pattern = re.compile(condition)
