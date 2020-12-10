@@ -44,8 +44,11 @@ from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
 from core.rules import CronRule, StandardRule, RuleBase, ReactionRule,\
     TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, SIMPLE_RULE_EVALUATOR,\
-    get_evaluator_by_name, RuleResponse
+    get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
+from typing import Text
+from core.components import ActionDispatcher
+from core.grahil_types import Modules
 
 
 
@@ -53,7 +56,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     
     
 
-    def __init__(self, conf, modules):
+    def __init__(self, conf, modules:Modules, action_dispatcher:ActionDispatcher):
         '''
         Constructor
         '''
@@ -65,6 +68,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         self.__evaluator__modules={}
         self.__reaction__modules={}  
         self.__topics_of_intertest = {}
+        self.__action_dispatcher = None
         self.__task_scheduler = TornadoScheduler()
             
         
@@ -81,8 +85,6 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         self.__task_scheduler.start()     
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__index_evaluators)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__index_reactions)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         
         
@@ -111,16 +113,20 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     
         
     
-    
-    def __register_timed_reaction(self, rule):
+
+    '''
+        Registers a time-rule
+    '''    
+    def __register_timed_reaction(self, rule:ReactionRule) ->None:
         
         try:
-            time_object = rule["trigger"]["on-time-object"]
-            if 'recurring' not in time_object or  time_object["recurring"] == False:            
-                date_time_str = time_object["expression"]
+            trigger:TimeTrigger = rule.trigger
+            
+            if trigger.recurring:            
+                date_time_str:str = trigger.expression
                 self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
             else:    
-                cron_str = time_object["expression"]
+                cron_str:str = trigger.expression
                 if croniter.is_valid(cron_str):
                     trigger = CronTrigger.from_crontab(cron_str)
                     self.__task_scheduler.add_job(self.__respondToTimedEvent, trigger, args=[rule])
@@ -128,11 +134,6 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                     raise Exception("Invalid cron expression " + str(cron_str))
         except Exception as e:  
                 self.logger.error("Error registering timed event. " + str(e))
-                
-    
-    
-    def hello(self):
-        print("hello")
         
         
         
@@ -146,6 +147,18 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     def system_modules(self, provider):
         self.__system__modules = provider
         
+        
+    
+    @property
+    def action_dispatcher(self):
+        return self.__action_dispatcher
+    
+    
+    
+    @action_dispatcher.setter
+    def action_dispatcher(self, _dispatcher):
+        self.__action_dispatcher = _dispatcher
+    
     
     '''
         Processes events from queue
@@ -153,8 +166,9 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     async def __event_processor(self):
         while True:
             try:
-                event = await self.__events.get()
-                tornado.ioloop.IOLoop.current().spawn_callback(self.process_event_with_rules, event)
+                event:EventType = await self.__events.get()
+                # always process events in parallel
+                tornado.ioloop.IOLoop.current().spawn_callback(self.process_event_with_rules, event) 
             except Exception as e:  
                 self.logger.error("Error processing event. " + str(e))
             finally:
@@ -169,105 +183,11 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     async def process_event_with_rules(self, event):
         
         for ruleid, rule in self.__rules.items():
-            if self.__canReactTo(rule, event):
+            if rule.is_applicable(event):
                 self.logger.info("Processing event %s for rule %s", str(event), ruleid)
+                # always process multipel rules for 6the event in parallel
                 tornado.ioloop.IOLoop.current().spawn_callback(self.__respondToEvent, rule, event)
-
-
-
-    async def __index_evaluators(self):
-        
-        self.logger.debug("Loading evaluators")
-        
-        try:
-            path = os.path.join(os.path.dirname(__file__), "evaluators")
-
-            self.logger.debug("listing evaluators directory %s", path)
-            if os.path.exists(path):
-                files = await IOLoop.current().run_in_executor(
-                    None,
-                    self.__list_directory_async, str(path)
-                    ) 
                 
-                for name in files:
-                    listing_path = Path(os.path.join(str(path), name))
-                    if not listing_path.is_dir() and name != "__init__.py":
-                        await IOLoop.current().run_in_executor(
-                                None,
-                                self.__import_module, name, str(listing_path), "evaluators"
-                            ) 
-            else:
-                raise FileNotFoundError("File : " + path + " does not exist.")
-            
-        except Exception as e:
-            err = "Unable to load one or more evaluator(s) " + str(e)
-            self.logger.error(err)
-        
-        pass
-    
-    
-    
-    
-    async def __index_reactions(self):            
-            
-        self.logger.debug("Loading reactions")
-            
-            
-        try:
-            path = os.path.join(os.path.dirname(__file__), "reactions")
-
-            self.logger.debug("listing reactions directory %s", path)
-            if os.path.exists(path):
-                files = await IOLoop.current().run_in_executor(
-                    None,
-                    self.__list_directory_async, str(path)
-                    ) 
-                
-                for name in files:
-                    listing_path = Path(os.path.join(str(path), name))
-                    if not listing_path.is_dir() and name != "__init__.py":
-                        await IOLoop.current().run_in_executor(
-                                None,
-                                self.__import_module, name, str(listing_path), "reactions"
-                            ) 
-            else:
-                raise FileNotFoundError("File : " + path + " does not exist.")
-            
-        except Exception as e:
-            err = "Unable to load one or more reaction(s) " + str(e)
-            self.logger.error(err)
-            
-        pass
-    
-    
-    
-    
-    def __import_module(self, name, path, mod_type):
-        name = name.split(".", 1)[0]
-        spec = importlib.util.spec_from_file_location(name, path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        
-        modules = None
-        if mod_type == "evaluators":
-            modules = self.__evaluator__modules
-        elif mod_type == "reactions":
-            modules = self.__reaction__modules
-        else:
-            raise("Invalid module type requested")
-        
-        
-        if not name in modules:
-            modules[name] = {}
-            
-            funcs = set()
-            all_functions = inspect.getmembers(mod, inspect.isfunction)
-            for func in all_functions:
-                funcs.add(func[0])
-            
-            modules[name]["module"] = mod
-            modules[name]["methods"] = funcs
-            
 
 
     '''
@@ -295,51 +215,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                         if rule_data["enabled"] != True:
                             continue
                         
-                        rule:ReactionRule = ReactionRule()
-                        rule.id = rule_data["id"]
-                        rule.description = rule_data["description"]
-                        rule.enabled = rule_data["enabled"]
-                        rule.target_topic = rule_data["listen-to"]
-                        
-                        trigger:Trigger = None
-                        trigger_evaluator:RuleExecutionEvaluator = None                      
-                        
-                        if "on-time-object" in rule_data["trigger"]:
-                            trigger = TimeTrigger()
-                            trigger.cron_expression = rule_data["trigger"]["on-time-object"]["using-expression"]
-                            trigger.recurring = rule_data["trigger"]["on-time-object"]["recurring"]
-                            
-                        elif "on-payload-object" in rule_data["trigger"]:
-                            trigger = PayloadTrigger()
-                            trigger.payload_object_key = rule_data["trigger"]["on-payload-object"]["key"]
-                            trigger.expected_content = rule_data["trigger"]["on-payload-object"]["on-content"]
-                            trigger.condition_clause = rule_data["trigger"]["on-payload-object"]["on-condition"]
-                        
-                        else:
-                            raise ValueError("Unknown rule type")
-                        
-                        rule.trigger = trigger                        
-                        
-                        if "evaluator" in rule_data["trigger"]:
-                            evaluator_name = rule_data["trigger"]["evaluator"]
-                            trigger.evaluator = get_evaluator_by_name(evaluator_name.lower())
-                                                   
-                        response = RuleResponse()
-                        
-                        if not "intent" in rule_data["response"]:
-                            raise AttributeError("Rule response must have an `Intent`!")
-                        
-                        response.intent = rule_data["response"]["intent"]
-                        
-                        if "nonce" in rule_data["response"]:
-                            response.nonce = rule_data["response"]["nonce"]
-                        
-                        if "parameters" in rule_data["response"]:    
-                            response.parameters = rule_data["response"]["parameters"]
-                            
-                        
-                        rule.response = response
-                        
+                        rule = self._parse_rule(rule_data)                        
                         self.registerRule(rule)
             else:
                 raise FileNotFoundError("File : " + path + " does not exist.")
@@ -348,7 +224,64 @@ class ReactionEngine(IEventDispatcher, EventHandler):
             err = "Unable to load one or more rule(s) " + str(e)
             self.logger.error(err)
             raise RulesError(err)
+        
+        
     
+    '''
+    Parses rule data into  ReactionRule objects (v2.0)
+    '''
+    def _parse_rule(self, rule_data:dict) ->ReactionRule:
+        
+        rule:ReactionRule = ReactionRule()
+        rule.id = rule_data["id"]
+        rule.description = rule_data["description"]
+        rule.enabled = rule_data["enabled"]
+        rule.target_topic = rule_data["listen-to"]
+        
+        if "on-event" in rule_data:
+                trigger.on_event = rule_data["on-event"]
+        
+        trigger:Trigger = None
+        trigger_evaluator:RuleExecutionEvaluator = None                      
+        
+        if "on-time-object" in rule_data["trigger"]:
+            trigger = TimeTrigger()
+            trigger.cron_expression = rule_data["trigger"]["on-time-object"]["using-expression"]
+            trigger.recurring = rule_data["trigger"]["on-time-object"]["recurring"]
+            
+        elif "on-payload-object" in rule_data["trigger"]:
+            trigger = PayloadTrigger()
+            trigger.payload_object_key = rule_data["trigger"]["on-payload-object"]["key"]
+            trigger.expected_content = rule_data["trigger"]["on-payload-object"]["on-content"]
+            trigger.condition_clause = rule_data["trigger"]["on-payload-object"]["on-condition"]
+        
+        else:
+            raise ValueError("Unknown rule type")
+        
+        rule.trigger = trigger                        
+        
+        if "evaluator" in rule_data["trigger"]:
+            evaluator_name = rule_data["trigger"]["evaluator"]
+            trigger.evaluator = get_evaluator_by_name(evaluator_name.lower())
+                                   
+        response = RuleResponse()
+        
+        if not "intent" in rule_data["response"]:
+            raise AttributeError("Rule response must have an `Intent`!")
+        
+        response.intent = rule_data["response"]["intent"]
+        
+        if "nonce" in rule_data["response"]:
+            response.nonce = rule_data["response"]["nonce"]
+        
+        if "parameters" in rule_data["response"]:    
+            response.parameters = rule_data["response"]["parameters"]
+            
+        
+        rule.response = response
+        
+        return rule
+
     
     
     def create_rule(self, event, rule):
@@ -360,7 +293,11 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         self.deregisterRule(id)
         
         
-        
+    
+    
+    '''
+        Check to see if rule exists by id (v2.0)
+    '''     
     def hasRule(self, id):
         if id in self.__rules and self.__rules[id] != None:
             return True
@@ -374,12 +311,6 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     def registerRule(self, rule:ReactionRule) ->None:
         
         try:
-            
-            self.__rules[rule.id] = rule
-                            
-            '''
-            All {time} actions go to task scheduler
-            '''
             if isinstance(rule.trigger, TimeTrigger):
                 self.__register_timed_reaction(rule)                                
                 
@@ -395,7 +326,9 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                 self.logger.info("Total rules for topic " + rule.target_topic + " = "  + len(num_rules_for_topic))  
             
             else:
-                raise RulesError("Invalid rule " + str(rule))             
+                raise RulesError("Invalid rule " + str(rule))
+            
+            self.__rules[rule.id] = rule             
         
         except Exception as e:
             err = "Unable to register rule " + str(e)
@@ -437,7 +370,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                 
     
     '''
-        Reads rule data from file system for a rule file
+        Reads rule data from file system for a rule file (v2.0)
     '''
     async def __readRule(self, filepath):        
         
@@ -463,8 +396,10 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         pass
         
     
+    
+    
     '''
-        Reads and lists directory asynchronously
+        Reads and lists directory asynchronously (to be moved to filemanager)
     '''
     def __list_directory_async(self, filepath):
         
@@ -477,8 +412,9 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     
     
     
+    
     '''
-        Notifies an event to reaction engine 
+        Notifies an event to reaction engine (v2.0)
     '''
     async def notifyEvent(self, event):
         
@@ -487,181 +423,38 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         if topic in self.__topics_of_intertest:
             self.logger.debug("Adding event to list for processing " + str(event))
             await self.__events.put(event)
-            pass     
-                
-            
-            
-                
-    '''
-        Determines if the reaction engine can react to an event based on rule condition 
-    '''
-    def __canReactTo(self, rule, event):
-        
-        if rule["listen-to"] == event["topic"]:
-            
-            if rule["trigger"]["on-payload-object"] == "*":
-                return True
-            elif rule["trigger"]["on-payload-object"] == "data":
-                if rule["trigger"]["evaluator-func"] != None and rule["trigger"]["evaluator-func"] != "":
-                    fun = rule["trigger"]["evaluator-func"]
-                    func_parts = fun.split(".", 1)
-                    mod_name = func_parts[0]
-                    func_name = func_parts[1]
-                    if mod_name in self.__evaluator__modules:
-                        if "module" in self.__evaluator__modules[mod_name]:
-                            module = self.__evaluator__modules[mod_name]["module"]
-                            if isinstance(getattr(module, func_name), types.FunctionType):
-                                toCall = getattr(module, func_name)
-                                return toCall(event, rule) # must return boolean
-                                pass
-                            else:
-                                raise ("Function " +fun + " was not found")
-                            pass
-                else:
-                    self.logger.debug("evaluate locally and return boolean expression")
-                    
-                    if rule["trigger"]["using-condition"] == "equals":
-                        if rule["trigger"]["on-content"] == "*":
-                            return True
-                        else:
-                            return event["data"] == rule["trigger"]["on-content"]
-                    elif rule["trigger"]["using-condition"] == "contains":
-                        return str(event["data"]).find(str(rule["trigger"]["on-content"])) >= 0
-                    else:
-                        raise ("No evaluating condition found")
-                pass
-            
-        return False
+            pass
     
     
     
     
     '''
-        Determines and executes appropriate reaction(s) to an event
+        Determines and executes appropriate reaction(s) to an event (v2.0)
     '''
-    async def __respondToEvent(self, rule, event, auxdata=None):
+    async def __respondToEvent(self, rule:ReactionRule, event:EventType, auxdata=None):
         
-        response_mode = rule["response"]["action"]
-        response_fun = None if "reaction-func" not in rule["response"]  or  rule["response"]["reaction-func"] == 'null' else rule["response"]["reaction-func"]
-        response_fun_params = None if "reaction-params" not in rule["response"]  or  rule["response"]["reaction-params"] == 'null' else rule["response"]["reaction-params"]
+        num_rules_for_topic = self.__topics_of_intertest[rule.target_topic]["num_rules"]
+        response:RuleResponse =  rule.response
         
-        
-        if 'nonce' in rule["response"]:
-            if rule["response"]["nonce"] == True: 
-                if rule["_responded_to"] == False:
-                    rule["_responded_to"] = True
-                else:    
-                    return
-        else:
-            rule["response"]["nonce"] = False
-        
-        
-        if response_mode == "method":
-            
-            self.logger.debug("Call method")
-            sys_module = False
-            
-            if '.' in response_fun:
-                func_parts = response_fun.split(".", 1)
-                mod_name = func_parts[0]
-                func_name = func_parts[1]
-                
-                if mod_name in self.__reaction__modules:
-                    if "module" in self.__reaction__modules[mod_name]:
-                        module = self.__reaction__modules[mod_name]["module"]
-                        if isinstance(getattr(module, func_name), types.FunctionType):
-                            func = getattr(module, func_name)
-                            funparams = self.__detokenize(response_fun_params)
-                            await self.arbitrary_method_reaction(rule["id"], func, event, funparams)
-                        else:
-                            self.logger.error("Function " + response_fun + " was not found")
-                    else:
-                        self.logger.error("Module " + mod_name + " was not found")                 
-            else:
-                self.logger.error("Module not defined for function")
-                
-            
-        elif response_mode == "delegate":
-            self.logger.debug("Call delegate")
-                        
-            if self.__system__modules.hasModule('target_delegate'):
-                await self.delegate_method_reaction(rule["id"], event, response_fun_params) 
-            else:
-                self.logger.info("Delegate if unavailable. Reaction call will be skipped for rule %s", rule["id"])
-        
-        elif response_mode == "http":
-            
-            self.logger.info("Call http handler")
-            
-            url = response_fun_params["url"]
-            method = response_fun_params["method"]
-            queryparams = response_fun_params["queryparams"]
-            post_event_data = response_fun_params["post_event_data"]
-            
-            if post_event_data == True:
-                await http_reaction(rule["id"], url, method, queryparams, event)
-            else:
-                await http_reaction(rule["id"], url, method, queryparams)
-                        
-        elif rule["response"]["action"] == "start_log_record":
-            
-            self.logger.debug("Call log_record handler")
-            if self.file_manager is not None:
-                await write_log(rule["id"], self.file_manager, response_fun_params, event)
-            
-        elif rule["response"]["action"] == "copy_file":
-            
-            self.logger.debug("Call copyfile handler")
-            if self.file_manager is not None:
-                await copy_file(rule["id"], self.file_manager, response_fun_params, event)
-                
-        
-        elif rule["response"]["action"] == "create_rule":
-            
-            self.logger.debug("Call create_rule handler")
-            new_rule = rule["response"]["reaction-params"]["rule-data"]
-            self.registerRule(new_rule)
-            
-        
-        elif rule["response"]["action"] == "delete_rule":
-            
-            self.logger.debug("Call create_rule handler")
-            rule_id = rule["response"]["reaction-params"]["rule-data"]["id"]
-            self.deregisterRule(rule_id)
-                
-        else:
-            raise ("Invalid reaction type " + rule["response"]["action"])
-        pass
-        
-    
-    
-    async def __respondToTimedEvent(self, rule, auxdata=None):
-        await self.__respondToEvent(rule, "Scheduled", auxdata)
-        pass
-    
-    
-    '''
-        Reaction to event via method call
-    '''
-    async def arbitrary_method_reaction(self, ruleid, func, event, exec_params):
         try:
-            await func(event, exec_params)
+            if rule.state != RuleState.READY:
+                raise RulesError("Rule cannot be eligible for execution")
+            
+            await self.__action_dispatcher.handle_request(None, response.intent, response.parameters)            
+            
+            if response.nonce:
+                rule.state = RuleState.DONE
+        
+        except RulesError as e:
+            return
         except Exception as e:
-            self.logger.error("Error in method reaction for rule %s : %s ", ruleid, e)
+            self.logger.error("Error responding to event %s delegate method reaction for rule %s, Cause : %s ", event["name"], rule.id, str(e))
         pass
+        
+        
     
     
-    
-    '''
-        Reaction to event via method call on delegate
-    '''
-    async def delegate_method_reaction(self, ruleid, event, rparams=None):
-        try:
-            if self.__system__modules.hasModule('target_delegate'):
-                delegate = self.__system__modules.getModule("target_delegate")
-                await delegate.on_reaction(ruleid, event, rparams)
-        except Exception as e:
-            self.logger.error("Error in delegate method reaction for rule %s : %s ", ruleid, e)
-        pass
-    
+    async def __respondToTimedEvent(self, rule:ReactionRule):
+        await self.__respondToEvent(rule, "Scheduled")
+        pass   
         

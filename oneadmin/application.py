@@ -242,12 +242,10 @@ class TornadoApplication(tornado.web.Application):
         
         reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
         if reaction_engine_conf["enabled"] == True:
-            self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules)
+            self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules, self.__action__dispatcher)
             self.__reaction_engine.eventhandler = self.handle_event
-                        
             # Inform pubsubhub of the reaction engine presence
             self.__pubsubhub.addEventListener(self.__reaction_engine)
-            #self.__action__executor.rulesmanager = self.__reaction_engine
         
         
         ''' Bot -> to send commands to bot use pubsub '''

@@ -7,6 +7,7 @@ from builtins import str
 from enum import Enum
 from typing import Text
 import re
+from core.event import EventType
 
 
 SIMPLE_RULE_EVALUATOR = "SimpleRuleEvaluator"
@@ -57,12 +58,12 @@ class RuleResponse(object):
     
     
     @property
-    def intent(self):
+    def intent(self) ->Text:
         return self.__intent
         
         
     @intent.setter
-    def intent(self, _intent):
+    def intent(self, _intent:Text) -> None:
         self.__intent = _intent
     
     
@@ -149,7 +150,6 @@ class Trigger(object):
     @evaluator.setter
     def evaluator(self, _evaluator:RuleExecutionEvaluator):
         self.__evaluator = _evaluator
-        
 
 
 
@@ -232,6 +232,8 @@ class PayloadTrigger(Trigger):
     @condition_clause.setter
     def condition_clause(self, _condition_clause:str) -> None:
         self.__condition_clause = _condition_clause
+    
+
         
         
 
@@ -251,8 +253,26 @@ class ReactionRule(object):
         self.__trigger = None
         self.__response = None
         self.__enabled = False
-        self.__target_topic = None
-        self.__state = RuleState.READY
+        self.__target_topic = "*"
+        self.__target_event = "*"
+        self.__state = RuleState.READY    
+    
+    
+    
+    def is_applicable(self, event:EventType) ->bool:
+        if self.__target_topic != "*":
+            if  self.__target_topic == event["topic"]:
+                if self.__target_event != "*":
+                    if self.__target_event == event["name"].lower():
+                        return True
+                else:
+                    return True
+        else:
+            if self.__target_event != "*":
+                if self.__target_event == event["name"].lower():
+                        return True
+            else:
+                return True
         
     
     @property
@@ -283,6 +303,16 @@ class ReactionRule(object):
     @target_topic.setter
     def target_topic(self, _target_topic:Text) -> None:
         self.__target_topic = _target_topic
+
+
+    @property
+    def target_event(self) -> Text:
+        return self.__target_event
+        
+        
+    @target_event.setter
+    def target_event(self, _target_event:Text) -> None:
+        self.__target_event = _target_event
     
     
     @property
@@ -316,11 +346,11 @@ class ReactionRule(object):
     
     
     @property
-    def response(self) -> Reaction:
+    def response(self) -> RuleResponse:
         return self.__trigger
         
         
     @response.setter
-    def response(self, _response:Reaction) -> None:
+    def response(self, _response:RuleResponse) -> None:
         self.__response = _response
         
