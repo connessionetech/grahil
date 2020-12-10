@@ -6,14 +6,14 @@
 	"trigger": {
 		"on-time-object": {
 			"recurring": true,
-			"using-expression": "33 13 * * *"
+			"using-expression": "17 4 * * *"
 		},
 		"evaluator": null
 	},
 	"response":{
 		"intent": "http_get",
 		"parameters": {
-			"url": "http://192.168.1.18/switch/1/set",
+			"url": "http://192.168.1.25/switch/1/set",
 			"queryparams": {}
 		}
 	}	

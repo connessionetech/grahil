@@ -15,12 +15,18 @@ from core.event import EventType
 from abstracts import IntentProvider
 from utilities import buildLogWriterRule
 from exceptions import RulesError
+from tornado.httpclient import AsyncHTTPClient
+import urllib
+import logging
+from tornado.web import HTTPError
     
 
 
 ACTION_PREFIX = "action_"
 
 ACTION_GET_SOFTWARE_VERSION_NAME = ACTION_PREFIX + "get_software_version"
+
+ACTION_HTTP_GET_NAME = ACTION_PREFIX + "http_get"
 
 ACTION_UPDATE_SOFTWARE_NAME = ACTION_PREFIX + "update_software"
 
@@ -125,7 +131,7 @@ def builtin_actions() -> List[Action]:
             ActionMoveFile(), ActionDownloadFile(), ActionBrowseFileSystem(), ActionFulfillTargetRequest(), 
             ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
-            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre()]
+            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), ActionHttpGet()]
 
 
 
@@ -986,9 +992,49 @@ class ActionUnUpdateSoftwre(Action):
             
                 if modules.hasModule(SYSTEM_MODULE):
                     __sysmon = modules.getModule(SYSTEM_MODULE)
-                    if(__sysmon != None):
-                        return __sysmon.schedule__update(__updater_script)
+                    __sysmon.schedule__update(__updater_script)
+                    return ActionResponse(data = None, events=[])
                 else:
                     raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
         else:
                     raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
+
+
+
+
+
+class ActionHttpGet(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_HTTP_GET_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        
+        url = params["url"]
+        queryparams = params["queryparams"]
+        querystring = urllib.parse.urlencode(queryparams)
+        method = "GET"                
+        
+        http_client = AsyncHTTPClient()
+        
+        try:
+            url = url + querystring
+            response = await http_client.fetch(url, method=method, headers=None)
+            print("response = %s", str(response))
+            if response.code == 200:
+                data = str(response.body, 'utf-8')
+                return ActionResponse(data = None, events=[])
+            raise HTTPError("Unable to make request to url " + url)
+        except Exception as e:
+            print.error("Error in http reaction for rule %s : %s ", ruleid, e)
+        pass

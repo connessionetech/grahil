@@ -42,9 +42,7 @@ from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
 from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
-from core.rules import CronRule, StandardRule, RuleBase, ReactionRule,\
-    TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, SIMPLE_RULE_EVALUATOR,\
-    get_evaluator_by_name, RuleResponse, RuleState
+from core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
 from typing import Text
 from core.components import ActionDispatcher
@@ -56,19 +54,19 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     
     
 
-    def __init__(self, conf, modules:Modules, action_dispatcher:ActionDispatcher):
+    def __init__(self, conf, modules:Modules=None, action_dispatcher:ActionDispatcher=None):
         '''
         Constructor
         '''
         super().__init__()
         
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__conf = conf
-        self.__system__modules = modules
+        self.__conf = conf        
         self.__evaluator__modules={}
         self.__reaction__modules={}  
         self.__topics_of_intertest = {}
-        self.__action_dispatcher = None
+        self.__system__modules = modules
+        self.__action_dispatcher = action_dispatcher
         self.__task_scheduler = TornadoScheduler()
             
         
@@ -122,11 +120,11 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         try:
             trigger:TimeTrigger = rule.trigger
             
-            if trigger.recurring:            
-                date_time_str:str = trigger.expression
+            if not trigger.recurring:            
+                date_time_str:str = trigger.time_expression
                 self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
             else:    
-                cron_str:str = trigger.expression
+                cron_str:str = trigger.time_expression
                 if croniter.is_valid(cron_str):
                     trigger = CronTrigger.from_crontab(cron_str)
                     self.__task_scheduler.add_job(self.__respondToTimedEvent, trigger, args=[rule])
@@ -239,14 +237,14 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         rule.target_topic = rule_data["listen-to"]
         
         if "on-event" in rule_data:
-                trigger.on_event = rule_data["on-event"]
+                rule.target_event = rule_data["on-event"]
         
         trigger:Trigger = None
         trigger_evaluator:RuleExecutionEvaluator = None                      
         
         if "on-time-object" in rule_data["trigger"]:
             trigger = TimeTrigger()
-            trigger.cron_expression = rule_data["trigger"]["on-time-object"]["using-expression"]
+            trigger.time_expression = rule_data["trigger"]["on-time-object"]["using-expression"]
             trigger.recurring = rule_data["trigger"]["on-time-object"]["recurring"]
             
         elif "on-payload-object" in rule_data["trigger"]:
@@ -262,7 +260,8 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         
         if "evaluator" in rule_data["trigger"]:
             evaluator_name = rule_data["trigger"]["evaluator"]
-            trigger.evaluator = get_evaluator_by_name(evaluator_name.lower())
+            if evaluator_name != None:
+                trigger.evaluator = get_evaluator_by_name(evaluator_name.lower())
                                    
         response = RuleResponse()
         
@@ -335,7 +334,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
             self.logger.error(err)
         
         finally:
-            self.logger.info("Total topics " + len(self.__topics_of_intertest))  
+            self.logger.info("Total topics " + str(len(self.__topics_of_intertest)))  
     
     
     
@@ -431,9 +430,8 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     '''
         Determines and executes appropriate reaction(s) to an event (v2.0)
     '''
-    async def __respondToEvent(self, rule:ReactionRule, event:EventType, auxdata=None):
+    async def __respondToEvent(self, rule:ReactionRule, event:EventType, timed=False):
         
-        num_rules_for_topic = self.__topics_of_intertest[rule.target_topic]["num_rules"]
         response:RuleResponse =  rule.response
         
         try:
@@ -448,13 +446,13 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         except RulesError as e:
             return
         except Exception as e:
-            self.logger.error("Error responding to event %s delegate method reaction for rule %s, Cause : %s ", event["name"], rule.id, str(e))
+            self.logger.error("Error responding to event rule %s, Cause : %s ", rule.id, str(e))
         pass
         
         
     
     
     async def __respondToTimedEvent(self, rule:ReactionRule):
-        await self.__respondToEvent(rule, "Scheduled")
+        await self.__respondToEvent(rule, None, timed=True)
         pass   
         

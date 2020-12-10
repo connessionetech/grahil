@@ -16,23 +16,6 @@ REG_EX_RULE_EVALUATOR = "RegExRuleEvaluator"
 
 
 
-def built_in_evaluators():
-    return [SimpleRuleEvaluator(), RegExRuleEvaluator()]
-
-
-
-def built_in_evaluator_names():
-    return [SIMPLE_RULE_EVALUATOR, REG_EX_RULE_EVALUATOR]
-
-
-
-def get_evaluator_by_name(name:Text) ->RuleExecutionEvaluator:
-   
-    for evaluator in built_in_evaluators():
-        if evaluator.name() == name:
-            return evaluator
-    
-    return None 
 
 
 
@@ -164,7 +147,7 @@ class TimeTrigger(Trigger):
         '''
         super().__init__()
         self.__recurring = False
-        self.__cron_expression = None
+        self.__time_expression = None
     
     
     @property
@@ -178,13 +161,13 @@ class TimeTrigger(Trigger):
         
     
     @property
-    def cron_expression(self):
-        return self.__cron_expression
+    def time_expression(self):
+        return self.__time_expression
         
         
-    @cron_expression.setter
-    def cron_expression(self, _cron_expression):
-        self.__cron_expression = _cron_expression
+    @time_expression.setter
+    def time_expression(self, _time_expression):
+        self.__time_expression = _time_expression
 
 
 
@@ -347,10 +330,31 @@ class ReactionRule(object):
     
     @property
     def response(self) -> RuleResponse:
-        return self.__trigger
+        return self.__response
         
         
     @response.setter
     def response(self, _response:RuleResponse) -> None:
         self.__response = _response
         
+
+
+
+def built_in_evaluators():
+    return [SimpleRuleEvaluator(), RegExRuleEvaluator()]
+
+
+
+def built_in_evaluator_names():
+    return [SIMPLE_RULE_EVALUATOR, REG_EX_RULE_EVALUATOR]
+
+
+
+def get_evaluator_by_name(name:Text) ->RuleExecutionEvaluator:
+   
+    for evaluator in built_in_evaluators():
+        if evaluator.name() == name:
+            return evaluator
+    
+    return None 
+
