@@ -37,6 +37,8 @@ EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 
 EVENT_DATA_NOTIFICATION = "data_notification"
 
+EVENT_KEY = "__event__"
+
 
 '''
 

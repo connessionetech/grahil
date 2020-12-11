@@ -22,6 +22,7 @@ from oneadmin.exceptions import ActionError
 from oneadmin.core.intent import built_in_intents, INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_action_names, action_from_name
 from oneadmin.core.grahil_types import Modules
+from core.event import EVENT_KEY
 
 class ActionDispatcher(object):
     '''
@@ -130,10 +131,16 @@ class ActionDispatcher(object):
     
     
     
+    
+    
     '''
         Handles intent requests from -> requesters must implement special interface to be notified of result, error or progress
     ''' 
-    async def handle_request(self, requester:IntentProvider, intent:Text, params:object):
+    async def handle_request(self, requester:IntentProvider, intent:Text, params:dict, event:EventType=None):
+        
+        ''' if we have event info pass that to action as well '''
+        if event:
+            params = self.merge_parameters(params, event)
         
         intent_name = (INTENT_PREFIX + intent) if not intent.startswith(INTENT_PREFIX) else intent
         
@@ -163,6 +170,7 @@ class ActionDispatcher(object):
         response = None
         requester:IntentProvider = None
         events:List[EventType] = None
+        executable:Action = None
     
         try:
             action:Action = self.__action_book[intent_name]["action"]
@@ -178,13 +186,23 @@ class ActionDispatcher(object):
             raise ActionError(err)
                     
         finally:
+            
+            if executable != None:
+                del executable 
+                executable = None
+            
+            
             if events != None:
                 pubsub = self.__modules.getModule(PUBSUBHUB_MODULE)
                 for event in events:
                     await pubsub.publish_event_type(event)
     
     
-        
+    
+    ''' Merges event sict into parameters dict '''
+    def merge_parameters(self, params, event:EventType):
+        event_dict = {EVENT_KEY:event}
+        return{**params, **event_dict}        
     
     
     

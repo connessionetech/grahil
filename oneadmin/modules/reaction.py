@@ -27,7 +27,6 @@ from aiofile.aio import AIOFile
 from tornado.ioloop import IOLoop
 import json
 from oneadmin.exceptions import FileSystemOperationError, RulesError
-from oneadmin.modules.reactions.standard_reactions import http_reaction
 from oneadmin.abstracts import EventHandler
 import importlib
 import inspect
@@ -90,7 +89,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to provide list of events that we are interested to listen to 
     '''
     def get_events_of_interests(self)-> set:
-        return []
+        return [EVENT_STATS_GENERATED]
     
     
     
@@ -98,7 +97,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to provide list of events that we are interested to listen to 
     '''
     def get_topics_of_interests(self)-> set:
-        return []
+        return [TOPIC_SYSMONITORING]
     
     
     
@@ -106,7 +105,8 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to handle events subscribed to
     '''
     async def handleEvent(self, event:EventType):
-        self.logger.info(event["name"])
+        self.logger.info(event["name"] + " received")
+        await self.__events.put(event)
         pass
     
         
@@ -178,10 +178,18 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     '''
         Process event against each applicable rule
     '''
-    async def process_event_with_rules(self, event):
+    async def process_event_with_rules(self, event:EventType):
         
         for ruleid, rule in self.__rules.items():
             if rule.is_applicable(event):
+                
+                evaluator:RuleExecutionEvaluator = rule.trigger.evaluator
+                
+                if evaluator:
+                    evaluator.evaluate(event)
+                    
+                
+                
                 self.logger.info("Processing event %s for rule %s", str(event), ruleid)
                 # always process multipel rules for 6the event in parallel
                 tornado.ioloop.IOLoop.current().spawn_callback(self.__respondToEvent, rule, event)
@@ -315,14 +323,17 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                 
             elif isinstance(rule.trigger, PayloadTrigger):
                 
+                num_rules_for_topic = 0
+                
                 if rule not in self.__topics_of_intertest:
-                    self.__topics_of_intertest[rule.target_topic] = {"num_rules": 1} #Count how many rules for same topic
+                    num_rules_for_topic = 1
+                    self.__topics_of_intertest[rule.target_topic] = {"num_rules": num_rules_for_topic} #Count how many rules for same topic
                 else:
                     num_rules_for_topic = self.__topics_of_intertest[rule.target_topic]["num_rules"]
                     num_rules_for_topic = num_rules_for_topic + 1
                     self.__topics_of_intertest[rule.target_topic] = {"num_rules": num_rules_for_topic}
                     
-                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + len(num_rules_for_topic))  
+                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))  
             
             else:
                 raise RulesError("Invalid rule " + str(rule))
@@ -438,7 +449,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
             if rule.state != RuleState.READY:
                 raise RulesError("Rule cannot be eligible for execution")
             
-            await self.__action_dispatcher.handle_request(None, response.intent, response.parameters)            
+            await self.__action_dispatcher.handle_request(None, response.intent, response.parameters, event)            
             
             if response.nonce:
                 rule.state = RuleState.DONE

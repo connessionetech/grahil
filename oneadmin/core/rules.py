@@ -81,11 +81,24 @@ class SimpleRuleEvaluator(RuleExecutionEvaluator):
         return SIMPLE_RULE_EVALUATOR
     
     
-    def evaluate(self, haystack, needle, condition)-> bool:
-        if haystack.contains(needle):
-            return True
-        return False
-    
+    def evaluate(self, data, expected_content, condition_clause)-> bool:
+        
+        if condition_clause =="contains":
+            if str(data).contains(expected_content):
+                return True
+            return False
+        elif condition_clause =="equals":
+            if str(data) == expected_content:
+                return True
+            return False
+        elif condition_clause =="startswith":
+            if str(data).startswith(expected_content):
+                return True
+            return False
+        elif condition_clause =="endswith":
+            if str(data).endswith(expected_content):
+                return True
+            return False
     
 
 class RegExRuleEvaluator(RuleExecutionEvaluator):
@@ -238,24 +251,67 @@ class ReactionRule(object):
         self.__enabled = False
         self.__target_topic = "*"
         self.__target_event = "*"
-        self.__state = RuleState.READY    
+        self.__state = RuleState.READY   
+    
+    
+    def _deep_access(self, x,keylist):
+        val = x
+        for key in keylist:
+            val = val[key]
+        return val
+        
+        
+    
+    def __can_execute(self, event:EventType):
+        
+        evaluator = self.trigger.evaluator 
+        if evaluator:
+            if isinstance(self.trigger, PayloadTrigger):
+                expected_content = self.trigger.expected_content 
+                condition_clause = self.trigger.condition_clause
+                key = self.trigger.payload_object_key
+                data = self.deep_access(None,key.split('.'))
+                return evaluator.evaluate(data, expected_content, condition_clause)
+             
+            elif isinstance(self.trigger, TimeTrigger):
+                # To Do
+                pass
+            
+            else:
+                raise TypeError("Unknown trigger type")
+                pass       
+        return True
+    
+    
+    
+    def __is_eligible(self, event:EventType):
+        
+        if self.__target_topic != "{time}":
+            if self.__target_topic != "*":
+                if  self.__target_topic == event["topic"]:
+                    if self.__target_event != "*":
+                        if self.__target_event == event["name"].lower():
+                            return True
+                    else:
+                        return True
+            else:
+                if self.__target_event != "*":
+                    if self.__target_event == event["name"].lower():
+                            return True
+                else:
+                    return True
+        else:
+            return False
     
     
     
     def is_applicable(self, event:EventType) ->bool:
-        if self.__target_topic != "*":
-            if  self.__target_topic == event["topic"]:
-                if self.__target_event != "*":
-                    if self.__target_event == event["name"].lower():
-                        return True
-                else:
-                    return True
+        
+        if self.__is_eligible(event):
+            return self.__can_execute(event)
         else:
-            if self.__target_event != "*":
-                if self.__target_event == event["name"].lower():
-                        return True
-            else:
-                return True
+            return False
+        
         
     
     @property

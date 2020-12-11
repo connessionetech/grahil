@@ -19,7 +19,9 @@ from tornado.httpclient import AsyncHTTPClient
 import urllib
 import logging
 from tornado.web import HTTPError
-    
+
+
+logger = logging.getLogger(__name__)    
 
 
 ACTION_PREFIX = "action_"
@@ -1025,16 +1027,11 @@ class ActionHttpGet(Action):
         querystring = urllib.parse.urlencode(queryparams)
         method = "GET"                
         
-        http_client = AsyncHTTPClient()
-        
-        try:
-            url = url + querystring
-            response = await http_client.fetch(url, method=method, headers=None)
-            print("response = %s", str(response))
-            if response.code == 200:
-                data = str(response.body, 'utf-8')
-                return ActionResponse(data = None, events=[])
-            raise HTTPError("Unable to make request to url " + url)
-        except Exception as e:
-            print.error("Error in http reaction for rule %s : %s ", ruleid, e)
-        pass
+        http_client = AsyncHTTPClient()        
+        url = url + querystring
+        response = await http_client.fetch(url, method=method, headers=None)
+        logger.debug("response = %s", str(response))
+        if response.code == 200:
+            data = str(response.body, 'utf-8')
+            return ActionResponse(data = None, events=[])
+        raise HTTPError("Unable to make request to url " + url)

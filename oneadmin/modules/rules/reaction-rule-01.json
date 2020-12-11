@@ -1,0 +1,22 @@
+{
+	"id": "reaction-rule-01",
+	"description": "test rule for date payload",
+	"listen-to": "/stats",
+	"enabled": true,
+	"trigger":{
+		"on-payload-object": {
+			"key":"data",
+			"on-content": "*",
+			"on-condition": "equals"
+		},		
+		"evaluator": "SimpleRuleEvaluator"
+	},
+	"response":{
+		"nonce" : false,
+		"intent": "http_get",
+		"parameters": {
+			"url": "http://192.168.1.25/switch/1/set",
+			"queryparams": {}
+		}
+	}	
+}
