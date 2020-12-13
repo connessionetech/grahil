@@ -38,6 +38,12 @@ import subprocess
 
 #import RPi.GPIO as GPIO
 import numpy as np
+from core.intent import INTENT_PREFIX
+from core.action import Action, ACTION_PREFIX, ActionResponse
+from typing import Text, List, Dict
+from abstracts import IntentProvider
+from core.constants import TARGET_DELEGATE_MODULE
+from core.grahil_types import * 
 #import Adafruit_DHT
 
 
@@ -51,6 +57,7 @@ class TargetDelegate(TargetProcess):
     SERVO2 = 27
     DHT_PIN = 4
     DHT_SENSOR = 0#Adafruit_DHT.DHT22
+
     
     
 
@@ -592,3 +599,294 @@ class TargetDelegate(TargetProcess):
     '''
     def do_fulfill_hello(self, params):
         return " world"
+    
+    
+    
+    def supported_actions(self) -> List[Action]:
+        return [ActionDelegateMoveUp(), ActionDelegateMoveDown(), ActionDelegateMoveLeft(),ActionDelegateMoveRight(), ActionDelegateGetWeather(),
+                ActionDelegateTakePhoto(), ActionDelegateTakeVideo(), ActionDelegateStarPublishStream(), ActionDelegateStopPublishStream()]
+
+
+
+
+    def supported_action_names(self) -> List[Text]:
+        return [a.name() for a in self.supported_actions()]
+    
+    
+    
+    
+    def supported_intents(self) -> List[Text]:
+        return [INTENT_MOVE_UP_NAME, INTENT_MOVE_DOWN_NAME, INTENT_MOVE_LEFT_NAME, INTENT_MOVE_RIGHT_NAME, INTENT_TAKE_PHOTO_NAME, INTENT_TAKE_VIDEO_NAME, INTENT_GET_WEATHER_NAME, INTENT_PUBLISH_STREAM_NAME, INTENT_UNPUBLISH_STREAM_NAME]
+
+    
+    
+
+# ---------------------------------------------
+
+
+
+    
+# Delegate Intents
+INTENT_MOVE_UP_NAME = INTENT_PREFIX + "delegate_move_up"
+INTENT_MOVE_DOWN_NAME = INTENT_PREFIX + "delegate_move_down"
+INTENT_MOVE_LEFT_NAME = INTENT_PREFIX + "delegate_move_left"
+INTENT_MOVE_RIGHT_NAME = INTENT_PREFIX + "delegate_move_right"
+INTENT_TAKE_PHOTO_NAME = INTENT_PREFIX + "delegate_capture_photo"
+INTENT_TAKE_VIDEO_NAME = INTENT_PREFIX + "delegate_capture_video"
+INTENT_GET_WEATHER_NAME = INTENT_PREFIX + "delegate_get_weather"
+INTENT_PUBLISH_STREAM_NAME = INTENT_PREFIX + "delegate_publish_stream"
+INTENT_UNPUBLISH_STREAM_NAME = INTENT_PREFIX + "delegate_unpublish_stream"
+
+# Delegate Actions
+ACTION_MOVE_UP_NAME = ACTION_PREFIX + "delegate_move_up"
+ACTION_MOVE_DOWN_NAME = ACTION_PREFIX + "delegate_move_down"
+ACTION_MOVE_LEFT_NAME = ACTION_PREFIX + "delegate_move_left"
+ACTION_MOVE_RIGHT_NAME = ACTION_PREFIX + "delegate_move_right"
+ACTION_TAKE_PHOTO_NAME = ACTION_PREFIX + "delegate_capture_photo"
+ACTION_TAKE_VIDEO_NAME = ACTION_PREFIX + "delegate_capture_video"
+ACTION_GET_WEATHER_NAME = ACTION_PREFIX + "delegate_get_weather"
+ACTION_PUBLISH_STREAM_NAME = ACTION_PREFIX + "delegate_publish_stream"
+ACTION_UNPUBLISH_STREAM_NAME = ACTION_PREFIX + "delegate_unpublish_stream"
+
+
+
+class ActionDelegateMoveUp(Action):
+    
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_MOVE_UP_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_turn_up()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        
+
+
+class ActionDelegateMoveDown(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_MOVE_DOWN_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_turn_down()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+
+
+
+
+
+class ActionDelegateMoveLeft(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_MOVE_LEFT_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_turn_left()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+
+
+
+
+class ActionDelegateMoveRight(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_MOVE_RIGHT_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_turn_right()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+
+
+
+
+class ActionDelegateGetWeather(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_GET_WEATHER_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_get_humidity_temperature()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+
+
+
+
+
+class ActionDelegateTakePhoto(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_TAKE_PHOTO_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_capture_image()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+
+
+
+
+
+class ActionDelegateTakeVideo(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_TAKE_VIDEO_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_capture_video()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        
+        
+        
+class ActionDelegateStarPublishStream(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_PUBLISH_STREAM_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_start_streaming()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+        
+        
+        
+class ActionDelegateStopPublishStream(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_UNPUBLISH_STREAM_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:Modules, params:dict=None) -> ActionResponse:
+        __delegate = None
+        
+        if modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)        
+            result = await __delegate.do_fulfill_stop_streaming()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")

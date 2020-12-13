@@ -2,14 +2,14 @@
 	"id": "reaction-rule-01",
 	"description": "test rule for date payload",
 	"listen-to": "/stats",
-	"enabled": true,
+	"enabled": false,
 	"trigger":{
 		"on-payload-object": {
 			"key":"data",
 			"on-content": "*",
 			"on-condition": "equals"
 		},		
-		"evaluator": "SimpleRuleEvaluator"
+		"evaluator": null
 	},
 	"response":{
 		"nonce" : false,

@@ -12,7 +12,7 @@ from tornado.concurrent import asyncio
 from tornado.concurrent import asyncio
 from oneadmin.core.constants import *
 from core.event import EventType
-from abstracts import IntentProvider
+from oneadmin.abstracts import IntentProvider
 from utilities import buildLogWriterRule
 from exceptions import RulesError
 from tornado.httpclient import AsyncHTTPClient
@@ -269,8 +269,6 @@ class ActionGetSystemTime(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        
-        raise ValueError("testing")
         
         __sysmon = None
         

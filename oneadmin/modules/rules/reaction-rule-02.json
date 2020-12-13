@@ -2,7 +2,7 @@
 	"id": "reaction-rule-02",
 	"description": "Cron rule to trigget HTTP get",
 	"listen-to": "{time}",
-	"enabled": true,
+	"enabled": false,
 	"trigger": {
 		"on-time-object": {
 			"recurring": true,

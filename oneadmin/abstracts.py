@@ -24,7 +24,7 @@ import asyncio
 from abc import abstractmethod
 from builtins import int, str
 from core.event import EventType
-from typing import List
+from typing import List, Text
 
 
 
@@ -414,6 +414,29 @@ class TargetProcess(IEventDispatcher):
             return True
         else:
             return False
+    
+    
+    # Return type should be Action but for some reason it cannot be imported into this file
+    def supported_actions(self) -> List[object]:
+        return []
+
+
+
+    def supported_action_names(self) -> List[Text]:
+        return []
+    
+    
+    def supported_intents(self) -> List[Text]:
+        return []
+    
+    
+    # Return type should be Action but for some reason it cannot be imported into this file
+    def action_from_name(self, name:Text) -> object:
+        defaults = {a.name(): a for a in self.supported_actions()}
+        if name in defaults:
+            return defaults.get(name)
+                
+        return None
     
 
 

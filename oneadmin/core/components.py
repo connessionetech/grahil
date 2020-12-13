@@ -23,6 +23,11 @@ from oneadmin.core.intent import built_in_intents, INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_action_names, action_from_name
 from oneadmin.core.grahil_types import Modules
 from core.event import EVENT_KEY
+from typing import Dict,Any
+from core.constants import TARGET_DELEGATE_MODULE
+from abstracts import TargetProcess
+
+
 
 class ActionDispatcher(object):
     '''
@@ -64,6 +69,27 @@ class ActionDispatcher(object):
             except TypeError as te:
                 self.logger.warn(str(te))
                 pass
+            
+        
+        # Get delegate intents and build action map
+        if self.__modules.hasModule(TARGET_DELEGATE_MODULE):
+            __delegate:TargetProcess = self.__modules.getModule(TARGET_DELEGATE_MODULE) 
+            __delegate_intents = __delegate.supported_intents()
+            
+            for intent_name in __delegate_intents:
+                try:
+                    action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
+                    action = __delegate.action_from_name(action_name)
+                
+                    if action:
+                        self.registerActionforIntent(intent_name, action)
+                        self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
+                    else:
+                        raise TypeError("'action' for intent " + intent_name + " was None, where object of type 'Action' was expected") 
+           
+                except TypeError as te:
+                    self.logger.warn(str(te))
+                    pass
 
 
 
@@ -257,3 +283,51 @@ class ActionDispatcher(object):
                     pubsub = self.__modules.getModule(PUBSUBHUB_MODULE)
                     for event in events:
                         await pubsub.publish_event_type(event)
+
+
+
+
+class CommunicationHub(object):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self, conf=None):
+        '''
+        Constructor
+        '''
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.__interfaces = Dict[Text, Any]
+
+    
+    def register_interface(self, name, mod):
+        self.__interfaces[name] = mod
+        pass
+    
+    
+    def deregister_interface(self, name):
+        del self.__interfaces[name]
+        pass
+    
+    
+    def activate_interface(self, name,):
+        mod = self.__interfaces[name]
+        if mod:
+            self._activate(name)
+        pass
+    
+    
+    def deactivate_interface(self, name):
+        mod = self.__interfaces[name]
+        if mod:
+            self._deactivate(name)
+        pass
+    
+    
+    def _activate(self, name):
+        pass
+    
+    
+    def _deactivate(self, name):
+        pass
