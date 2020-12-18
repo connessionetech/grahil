@@ -43,6 +43,7 @@ from core.components import ActionDispatcher, CommunicationHub
 from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT
 from core.event import EventType
+from mqtt import MQTTGateway
 
 
 
@@ -297,10 +298,26 @@ class TornadoApplication(tornado.web.Application):
         self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__dispatcher)
         
         '''
-        Register `rpc_gateway` module
+        Register `rpc gateway` module
         '''
         self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
         
+        '''
+        Register communication interface with communication hub
+        '''
+        self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
+        
+        
+        
+        '''
+        Register `mqtt gateway` module
+        '''
+        
+        mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
+        if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
+            mqtt = MQTTGateway(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+            
+            
         '''
         Register communication interface with communication hub
         '''

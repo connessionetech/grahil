@@ -51,7 +51,6 @@ class SystemMonitor(IEventDispatcher):
         self.__delegate = modules.getModule("target_delegate")
         self.__filemanager = modules.getModule("file_manager")
         self.__logmonitor = modules.getModule("log monitor")
-        self.__presenter = modules.getModule("presenter")
         ''' --- '''
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
@@ -60,7 +59,7 @@ class SystemMonitor(IEventDispatcher):
         
         # must specify logged in user in config for contab to work
         self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else True 
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
     pass
 
 

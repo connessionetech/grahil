@@ -54,7 +54,9 @@ class Pinger(IEventDispatcher):
         if self.__conf is not None:      
             tornado.ioloop.IOLoop.current().spawn_callback(self.__generatePing)
         pass
-    
+
+
+ 
 
 
 class RPCGateway(IEventDispatcher, IntentProvider, IClientChannel):

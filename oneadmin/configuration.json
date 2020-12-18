@@ -112,12 +112,6 @@
 					"updater_dir": "/home/pi/updater"  
 				}
 			},
-			"presenter": {
-				"enabled": true,
-				"conf": {
-					"default_locale": "en_US"
-				}
-			},
 			"target_delegate": {
 				"enabled": true,
 				"module": "oneadmin.modules.RPISmartDeviceDelegate",
@@ -136,6 +130,20 @@
 			},
 			"scheduler": {
 				"enabled": false
+			},
+			"mqtt_gateway": {
+				"enabled": true,
+				"conf" : {
+					"host": "127.0.0.1",
+					"reconnect_wait_time_seconds": 5,
+					"topic_filters":[
+						"floors/rooftop/",
+						"floors/+/humidity"
+					],
+					"subscriptions":[
+						{"topic": "floors/#", "qos": 0}
+					]
+				}
 			},
 			"service_bot": {
 				"enabled": true,

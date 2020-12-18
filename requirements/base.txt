@@ -13,4 +13,5 @@ aiogram==2.10.1
 nltk
 scikit-learn
 filetype==1.0.7
-python-crontab=2.5.1
+python-crontab==2.5.1
+asyncio-mqtt==0.8.0

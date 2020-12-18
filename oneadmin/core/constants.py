@@ -33,6 +33,8 @@ TARGET_DELEGATE_MODULE = "target_delegate"
 
 RPC_GATEWAY_MODULE = "rpc_gateway"
 
+MQTT_GATEWAY_MODULE = "mqtt_gateway"
+
 SCHEDULER_MODULE = "scheduler"
 
 BOT_SERVICE_MODULE = "service_bot"
