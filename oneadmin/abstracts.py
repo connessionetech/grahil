@@ -544,4 +544,11 @@ class IntentProvider(object):
         pass
     
     
+
+class IClientChannel(object):
     
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()

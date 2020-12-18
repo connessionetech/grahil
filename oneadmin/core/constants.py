@@ -8,8 +8,11 @@ Created on 26-Nov-2020
 ''' topic names'''
 
 TOPIC_LOGMONITORING = "/logging"
+
 TOPIC_SYSMONITORING = "/stats"
+
 TOPIC_PING = "/ping"
+
 TOPIC_EVENTS = "/events"
 
 
@@ -39,3 +42,29 @@ REACTION_ENGINE_MODULE = "reaction_engine"
 ACTION_EXECUTOR_MODULE = "action_executor"
 
 ACTION_DISPATCHER_MODULE = "action_dispatcher"
+
+
+
+''' client channel names'''
+
+CHANNEL_HTTP_REST = "http_rest_channel"
+
+CHANNEL_WEBSOCKET_RPC = "websocket_rpc_channel"
+
+CHANNEL_RTMP = "rtmp_channel"
+
+CHANNEL_CHAT_BOT = "chat_bot_channel"
+
+CHANNEL_MQTT = "mqtt_channel"
+
+
+
+''' client type'''
+
+
+PROACTIVE_CLIENT_TYPE = "proactive_client_type"
+
+REACTIVE_CLIENT_TYPE = "reactive_client_type"
+
+def built_in_client_types():
+    return [PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE]

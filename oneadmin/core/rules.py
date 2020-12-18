@@ -98,6 +98,21 @@ class SimpleRuleEvaluator(RuleExecutionEvaluator):
         elif condition_clause =="endswith":
             if str(data).endswith(expected_content):
                 return True
+        elif condition_clause =="lessthan":
+            if int(data) < int(expected_content):
+                return True
+            return False
+        elif condition_clause =="lessthanorequal":
+            if int(data) <= int(expected_content):
+                return True
+            return False
+        elif condition_clause =="greaterthan":
+            if int(data) > int(expected_content):
+                return True
+            return False
+        elif condition_clause =="greaterthanorequal":
+            if int(data) >= int(expected_content):
+                return True
             return False
     
 

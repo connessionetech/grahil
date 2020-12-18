@@ -31,7 +31,6 @@ from tornado import autoreload
 import os
 
 
-
 from oneadmin.modules.filesystem import FileManager
 from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
@@ -40,8 +39,9 @@ from oneadmin.core.grahil_core import ModuleRegistry
 import socket
 import asyncio
 from oneadmin.core.constants import *
-from core.components import ActionDispatcher
-from core.constants import ACTION_DISPATCHER_MODULE
+from core.components import ActionDispatcher, CommunicationHub
+from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
+    REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT
 from core.event import EventType
 
 
@@ -68,6 +68,7 @@ class TornadoApplication(tornado.web.Application):
             self.__reaction_engine = None
             self.__action__dispatcher = None
             self.__external_ip = None
+            self.__communication_hub = CommunicationHub()
             
             
             # Attempt to find out public ip
@@ -77,7 +78,7 @@ class TornadoApplication(tornado.web.Application):
                 
                 self.logger.info("No network connection. Waiting for connection...")
                 asyncio.sleep(10)
-                
+                                
             
          
             # Initializing pubsub hub
@@ -105,7 +106,6 @@ class TornadoApplication(tornado.web.Application):
             
             
             
-            
             ''' Conditional instantiation of file manager '''
             # Register filemanager module
             filemanager_config = modules[FILE_MANAGER_MODULE]
@@ -124,7 +124,7 @@ class TornadoApplication(tornado.web.Application):
                 '''
                 Register `file_manager` module
                 '''
-                self.modules.registerModule(FILE_MANAGER_MODULE, self.__filemanager);
+                self.modules.registerModule(FILE_MANAGER_MODULE, self.__filemanager)
             
             
             
@@ -150,6 +150,7 @@ class TornadoApplication(tornado.web.Application):
                 '''
                 if self.__delegate != None:
                     self.modules.registerModule(TARGET_DELEGATE_MODULE, self.__delegate);
+                    
 
             
 
@@ -278,6 +279,11 @@ class TornadoApplication(tornado.web.Application):
                 
                 # Register `servicebot` module'
                 self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot);
+                
+                '''
+                Register communication interface with communication hub
+                ''' 
+                self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, self.__service_bot)
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
@@ -295,6 +301,10 @@ class TornadoApplication(tornado.web.Application):
         '''
         self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
         
+        '''
+        Register communication interface with communication hub
+        '''
+        self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
 
         
         # Special settings for debugging and hot reload
@@ -312,7 +322,7 @@ class TornadoApplication(tornado.web.Application):
     '''
         Gets system wide capabilities
     '''
-    def notget_system_capabilities(self):
+    def get_system_capabilities(self):
         
         modules = self.__config["modules"]
         
@@ -339,7 +349,7 @@ class TornadoApplication(tornado.web.Application):
         if stats_config != None:
             sysmon_declaration = {
                 "enabled": stats_config["enabled"],
-                "new_stats_interval": stats_config["snapshot_interval_seconds"],
+                "new_stats_interval": stats_config["conf"]["snapshot_interval_seconds"],
                 "topics": "/stats"
             }
             
@@ -365,10 +375,10 @@ class TornadoApplication(tornado.web.Application):
         if logmon != None:
             file_management_declaration = {
                 "enabled": file_manager_config["enabled"],
-                "max_upload_size": file_manager_config["max_upload_size"],
-                "max_parallel_uploads": file_manager_config["max_parallel_uploads"],
-                "allowed_read_extensions": file_manager_config["allowed_read_extensions"],
-                "allowed_write_extensions": file_manager_config["allowed_write_extensions"],
+                "max_upload_size": file_manager_config["conf"]["max_upload_size"],
+                "max_parallel_uploads": file_manager_config["conf"]["max_parallel_uploads"],
+                "allowed_read_extensions": file_manager_config["conf"]["allowed_read_extensions"],
+                "allowed_write_extensions": file_manager_config["conf"]["allowed_write_extensions"],
                 "can_read": True,
                 "can_write": True,
                 "can_browse": False,

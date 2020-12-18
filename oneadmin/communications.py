@@ -26,10 +26,11 @@ import datetime
 import asyncio
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
-from abstracts import IEventDispatcher
+from abstracts import IEventDispatcher, IClientChannel, IntentProvider
 from tornado.websocket import websocket_connect
 from core.event import EventType, PingEvent, is_valid_event
 from core.constants import TOPIC_EVENTS, TOPIC_PING
+from core.components import ActionDispatcher
 
 
 class Pinger(IEventDispatcher):
@@ -55,19 +56,20 @@ class Pinger(IEventDispatcher):
         pass
     
 
-class RPCGateway(object):
+
+class RPCGateway(IEventDispatcher, IntentProvider, IClientChannel):
     '''
-    classdocs
+    Class to handle RPC style communication over websockets.
     '''
     
-    def __init__(self, conf, executor):
+    def __init__(self, conf, executor:ActionDispatcher):
         '''
         Constructor
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__action_executor = executor        
+        self.__action_dispatcher = executor       
         self.__requests = {}
-        self.__mgsqueue = Queue(20)
+        self.__mgsqueue = Queue()
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         pass
@@ -85,50 +87,54 @@ class RPCGateway(object):
         
         if(not self.isRPC(message)):
             raise RPCError("Invalid message type. Not a RPC'")
-        if(message["method"] == None):
-            raise RPCError("Missing parameter 'method'")        
+        if(message["intent"] == None):
+            raise RPCError("Missing parameter 'intent'")        
         if(message["requestid"] == None):
             raise RPCError("Missing parameter 'requestid'")
         
-        requestid = message["requestid"]
-        methodname = message["method"]
+        local_request_id = message["requestid"]
+        intent = message["intent"]
         
-        if message["params"] is None: 
-            args = [wshandler] 
-        else: 
-            args = message["params"]
-            args.insert(0, wshandler)
+        args = {} if message["params"] is None else message["params"] 
+        args["handler"]= wshandler
         
         try:
-        
-            task_info = {"requestid":requestid, "method": str(methodname), "params": args}
-            self.__requests[requestid] = wshandler
-            await self.__action_executor.addTask(task_info)
+            requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+            self.__requests[requestid] = {"local_request_id": local_request_id, "handler": wshandler}
         
         except:
+            
             if requestid in self.__requests:
                 del self.__requests[requestid]
                 
-            raise RPCError("Failed to invoke method." + sys.exc_info()[0])
-        pass    
+            raise RPCError("Failed to invoke method." + str(sys.exc_info()[0]))
+        pass 
     
     
     
-    
-    async def onExecutionResult(self, requestid, result):
-        self.logger.debug("RPC Success")
-        response = formatSuccessRPCResponse(requestid, result)
+    '''
+    Overriden method from intent provider, handles intent execution result
+    '''
+    async def onIntentProcessResult(self, requestid:str, result:object) -> None:
+        self.logger.debug("onIntentProcessResult")
+        local_request_id  = self.__requests[requestid]["local_request_id"]
+        response = formatSuccessRPCResponse(local_request_id, result)
         await self.__mgsqueue.put({"requestid": requestid, "message": response})
         pass
     
+
     
-    
-    async def onExecutionerror(self, requestid, e):
-        self.logger.debug("RPC Error")
+    '''
+    Overriden method from intent provider, handles intent execution error
+    '''
+    async def onIntentProcessError(self, requestid:str, e:object, message:str = None) -> None:
+        self.logger.debug("onIntentProcessError")
+        local_request_id  = self.__requests[requestid]["local_request_id"]
         err = str(e)
-        response = formatErrorRPCResponse(requestid, err)
+        response = formatErrorRPCResponse(local_request_id, err)
         await self.__mgsqueue.put({"requestid": requestid, "message": response})
         pass
+    
     
     
     
@@ -139,9 +145,10 @@ class RPCGateway(object):
                 data = await self.__mgsqueue.get()
                 requestid = data["requestid"]
                 response = data["message"]
-                handler = self.__requests[requestid]  
+                handler = self.__requests[requestid]["handler"]
+                local_request_id  = self.__requests[requestid]["local_request_id"]
                 
-                if handler != None and handler.finished == False:
+                if handler != None and handler.is_closed() == False:
                     self.logger.debug("write status for requestid " + str(requestid) + " to client")
                     await handler.submit(response)
             

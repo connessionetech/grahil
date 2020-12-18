@@ -24,8 +24,11 @@ from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_
 from oneadmin.core.grahil_types import Modules
 from core.event import EVENT_KEY
 from typing import Dict,Any
-from core.constants import TARGET_DELEGATE_MODULE
-from abstracts import TargetProcess
+from core.constants import TARGET_DELEGATE_MODULE, built_in_client_types
+from abstracts import TargetProcess, IClientChannel, EventHandler,\
+    IEventDispatcher
+from typing_extensions import TypedDict
+
 
 
 
@@ -287,7 +290,11 @@ class ActionDispatcher(object):
 
 
 
-class CommunicationHub(object):
+'''
+Delegate interface for communication layer across the application
+''' 
+class CommunicationHub(EventHandler, IEventDispatcher):
+    
     '''
     classdocs
     '''
@@ -298,36 +305,74 @@ class CommunicationHub(object):
         Constructor
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__interfaces = Dict[Text, Any]
+        self.__interfaces = {}
+        self.__channel_data = {}
+
 
     
-    def register_interface(self, name, mod):
+    def register_interface(self, name:Text, role:Text, mod:IClientChannel)->None:
+        
+        if not role in built_in_client_types():
+            raise ValueError("Invalid client type")
+        
+        
+        self.__channel_data[name] = {}
         self.__interfaces[name] = mod
         pass
     
     
-    def deregister_interface(self, name):
+    
+    def deregister_interface(self, name:Text)->None:        
         del self.__interfaces[name]
+        del self.__channel_data[name]
         pass
     
     
-    def activate_interface(self, name,):
+    
+    def activate_interface(self, name:Text)->None:
         mod = self.__interfaces[name]
         if mod:
             self._activate(name)
         pass
     
     
-    def deactivate_interface(self, name):
+    def deactivate_interface(self, name:Text)->None:
         mod = self.__interfaces[name]
         if mod:
             self._deactivate(name)
         pass
     
     
-    def _activate(self, name):
+    def _activate(self, name:Text)->None:
         pass
     
     
-    def _deactivate(self, name):
+    
+    def _deactivate(self, name:Text)->None:
+        pass
+    
+    
+    
+    '''
+    Overridden to provide list of events that we are interested to listen to 
+    '''
+    def get_events_of_interests(self)-> set:
+        return []
+    
+    
+    
+    '''
+    Overridden to provide list of events that we are interested to listen to 
+    '''
+    def get_topics_of_interests(self)-> set:
+        return []
+    
+    
+    
+    '''
+    Overridden to handle events subscribed to
+    '''
+    async def handleEvent(self, event:EventType):
+        self.logger.info(event["name"] + " received")
+        await self.__events.put(event)
         pass

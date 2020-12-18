@@ -33,6 +33,7 @@ import uuid
 from oneadmin import responsebuilder
 from settings import settings
 from oneadmin.exceptions import RPCError, AccessPermissionsError
+from core.constants import TOPIC_PING
 
 
 # Create a base class
@@ -269,35 +270,42 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
     def check_origin(self, origin):
         return True
 
+    
     def get_compression_options(self):
         # Non-None enables compression with default options.
         return {}
 
+    
     def open(self):
         self.logger.info("on open")
         tornado.ioloop.IOLoop.current().spawn_callback(lambda: self.__on_connect())
         pass
 
+    
     def on_close(self):
         self.logger.info("on close");
         tornado.ioloop.IOLoop.current().spawn_callback(lambda: self._close())
         pass
+    
     
     async def _close(self):        
         await self.__cancelRecordings()
         self.__clearSubscriptions()
         self.logger.info("Total clients %d", self.application.totalclients)
         self.finished = True
+        
+    
+    def is_closed(self):
+        return self.finished
+        pass
 
     
     def on_ping(self):
         pass
     
     
-    
     def on_pong(self, data):
         pass
-    
     
     
     def __clearSubscriptions(self):
@@ -388,7 +396,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         self.application.registerClient(self)
         
         self.logger.info("Total clients %d", self.application.totalclients)
-        pubsubhub.subscribe_topics([PubSubHub.PING], self)
+        pubsubhub.subscribe_topics([TOPIC_PING], self)
         
         # Notify system capabilities to client on connect
         capabilities = self.application.get_system_capabilities()

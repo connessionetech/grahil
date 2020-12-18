@@ -21,12 +21,12 @@ from oneadmin.abstracts import ServiceBot
 from oneadmin.abstracts import EventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
 from core.components import ActionDispatcher
-from abstracts import IntentProvider
+from abstracts import IntentProvider, IClientChannel
 from exceptions import RPCError
 from core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
 
 
-class TelegramBot(ServiceBot, EventHandler, IntentProvider):
+class TelegramBot(ServiceBot, EventHandler, IntentProvider, IClientChannel):
     
     dp = None;
     
@@ -280,6 +280,9 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
 
 
 
+    '''
+    Overriden method from intent provider, handles intent execution result
+    '''
     async def onIntentProcessResult(self, requestid:str, result:object) -> None:
         self.logger.info("onIntentProcessResult")
         response = formatSuccessBotResponse(requestid, result)
@@ -287,7 +290,10 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider):
         pass
     
 
-
+    
+    '''
+    Overriden method from intent provider, handles intent execution error
+    '''
     async def onIntentProcessError(self, requestid:str, e:object, message:str = None) -> None:
         self.logger.info("onIntentProcessError")
         response = formatErrorBotResponse(requestid, e)
