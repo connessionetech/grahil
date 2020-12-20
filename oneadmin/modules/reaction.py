@@ -20,7 +20,6 @@ from tornado.queues import Queue
 import logging
 import sys
 import tornado
-import types
 import os
 from pathlib import Path
 from aiofile.aio import AIOFile
@@ -28,22 +27,16 @@ from tornado.ioloop import IOLoop
 import json
 from oneadmin.exceptions import FileSystemOperationError, RulesError
 from oneadmin.abstracts import EventHandler
-import importlib
-import inspect
-import time
 import asyncio
-from oneadmin.modules.reactions.filesystem_reactions import write_log
 from datetime import datetime
 from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
-from oneadmin.modules.reactions.filesystem_reactions import copy_file
 from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
 from core.event import EventType, EVENT_STATS_GENERATED
 from core.constants import TOPIC_SYSMONITORING
 from core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
-from typing import Text
 from core.components import ActionDispatcher
 from core.grahil_types import Modules
 
@@ -121,10 +114,10 @@ class ReactionEngine(IEventDispatcher, EventHandler):
             trigger:TimeTrigger = rule.trigger
             
             if not trigger.recurring:            
-                date_time_str:str = trigger.time_expression
+                date_time_str:Text = trigger.time_expression
                 self.__task_scheduler.add_job(self.__respondToTimedEvent, 'date', run_date=date_time_str, args=[rule])
             else:    
-                cron_str:str = trigger.time_expression
+                cron_str:Text = trigger.time_expression
                 if croniter.is_valid(cron_str):
                     trigger = CronTrigger.from_crontab(cron_str)
                     self.__task_scheduler.add_job(self.__respondToTimedEvent, trigger, args=[rule])

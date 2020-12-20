@@ -35,6 +35,8 @@ RPC_GATEWAY_MODULE = "rpc_gateway"
 
 MQTT_GATEWAY_MODULE = "mqtt_gateway"
 
+SMTP_MAILER_MODULE = "smtp_mailer"
+
 SCHEDULER_MODULE = "scheduler"
 
 BOT_SERVICE_MODULE = "service_bot"
@@ -52,6 +54,8 @@ ACTION_DISPATCHER_MODULE = "action_dispatcher"
 CHANNEL_HTTP_REST = "http_rest_channel"
 
 CHANNEL_WEBSOCKET_RPC = "websocket_rpc_channel"
+
+CHANNEL_SMTP_MAILER = "smtp_mailer_channel"
 
 CHANNEL_RTMP = "rtmp_channel"
 

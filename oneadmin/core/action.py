@@ -19,6 +19,8 @@ from tornado.httpclient import AsyncHTTPClient
 import urllib
 import logging
 from tornado.web import HTTPError
+from core.constants import SMTP_MAILER_MODULE
+import json
 
 
 logger = logging.getLogger(__name__)    
@@ -82,6 +84,8 @@ ACTION_PUBLISH_CHANNEL_NAME = ACTION_PREFIX + "publish_channel"
 
 ACTION_RUN_DIAGNOSTICS_NAME = ACTION_PREFIX + "run_diagnostics"
 
+ACTION_SEND_MAIL_NAME = ACTION_PREFIX + "send_mail"
+
 
 
 
@@ -133,7 +137,8 @@ def builtin_actions() -> List[Action]:
             ActionMoveFile(), ActionDownloadFile(), ActionBrowseFileSystem(), ActionFulfillTargetRequest(), 
             ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
-            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), ActionHttpGet()]
+            ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
+            ActionHttpGet(), ActionSendMail()]
 
 
 
@@ -1030,6 +1035,63 @@ class ActionHttpGet(Action):
         response = await http_client.fetch(url, method=method, headers=None)
         logger.debug("response = %s", str(response))
         if response.code == 200:
-            data = str(response.body, 'utf-8')
-            return ActionResponse(data = None, events=[])
+            result = str(response.body, 'utf-8')
+            return ActionResponse(data = result, events=[])
         raise HTTPError("Unable to make request to url " + url)
+
+
+
+
+class ActionSendMail(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_SEND_MAIL_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        
+        if "subject" in params:
+            subject = params["subject"]
+        elif "__event__" in params:
+            subject = "Event notification for " + params["__event__"]["name"]
+        else:
+            subject = "Send mail action!"
+            
+        
+        if "content" in params:
+            content = params["content"]
+        elif "__event__" in params:
+            content = "Event data for " + params["__event__"]["name"]
+            content = content + "\n\r"
+            content = "Event data for " + json.dumps(params["__event__"]["data"])
+        else:
+            content = "Send mail action content"
+            content = content + "\n\r"
+            if params != None:
+                content = "Data " + json.dumps(params)
+            else:
+                content = " No content"
+                
+        
+        __mailer = None
+        
+        if modules.hasModule(SMTP_MAILER_MODULE):
+            __mailer = modules.getModule(SMTP_MAILER_MODULE)
+            if(__mailer != None):
+                result = await __mailer.send_mail(subject, content)
+                return ActionResponse(data = result, events=[])
+            else:
+                raise ModuleNotFoundError("`"+SMTP_MAILER_MODULE+"` module does not exist")
+        else:
+            raise ModuleNotFoundError("`"+SMTP_MAILER_MODULE+"` module does not exist")
+
+

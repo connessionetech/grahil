@@ -41,9 +41,11 @@ import asyncio
 from oneadmin.core.constants import *
 from core.components import ActionDispatcher, CommunicationHub
 from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
-    REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT
+    REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
+    SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT
 from core.event import EventType
 from mqtt import MQTTGateway
+from mailer import SMTPMailer
 
 
 
@@ -279,7 +281,7 @@ class TornadoApplication(tornado.web.Application):
                 self.__pubsubhub.addEventListener(self.__service_bot)
                 
                 # Register `servicebot` module'
-                self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot);
+                self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot)
                 
                 '''
                 Register communication interface with communication hub
@@ -316,12 +318,29 @@ class TornadoApplication(tornado.web.Application):
         mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
         if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
             mqtt = MQTTGateway(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+            self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt)
             
+            '''
+            Register communication interface with communication hub
+            '''
+            self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt)
+        
+        
+        
+        '''
+        Register `smtp mailer` module
+        '''
             
-        '''
-        Register communication interface with communication hub
-        '''
-        self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
+        smtp_mailer_conf = modules[SMTP_MAILER_MODULE]
+        if smtp_mailer_conf != None and smtp_mailer_conf["enabled"] == True:
+            smtp_mailer = SMTPMailer(smtp_mailer_conf["conf"])
+            self.modules.registerModule(SMTP_MAILER_MODULE, smtp_mailer)
+            
+            '''
+            Register communication interface with communication hub
+            '''
+            self.__communication_hub.register_interface(CHANNEL_SMTP_MAILER, PROACTIVE_CLIENT_TYPE, smtp_mailer)
+        
 
         
         # Special settings for debugging and hot reload
