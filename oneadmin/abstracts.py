@@ -552,3 +552,19 @@ class IClientChannel(object):
         Constructor
         '''
         super().__init__()
+        
+        
+        
+class IMailer(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        
+    
+    async def send_mail(self, subject:Text, body:Text) ->None:
+        raise NotImplementedError()
+        pass

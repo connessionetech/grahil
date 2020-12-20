@@ -45,7 +45,6 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT
 from core.event import EventType
 from mqtt import MQTTGateway
-from mailer import SMTPMailer
 
 
 
@@ -333,7 +332,12 @@ class TornadoApplication(tornado.web.Application):
             
         smtp_mailer_conf = modules[SMTP_MAILER_MODULE]
         if smtp_mailer_conf != None and smtp_mailer_conf["enabled"] == True:
-            smtp_mailer = SMTPMailer(smtp_mailer_conf["conf"])
+            smtp_module_name = smtp_mailer_conf["module"]
+            smtp_class_name = smtp_mailer_conf["klass"]
+            mod = __import__(smtp_module_name, fromlist=[smtp_class_name])
+            klass = getattr(mod, smtp_class_name)
+            smtp_mailer = klass(smtp_mailer_conf["conf"])
+            
             self.modules.registerModule(SMTP_MAILER_MODULE, smtp_mailer)
             
             '''

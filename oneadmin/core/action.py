@@ -21,6 +21,7 @@ import logging
 from tornado.web import HTTPError
 from core.constants import SMTP_MAILER_MODULE
 import json
+from abstracts import IMailer
 
 
 logger = logging.getLogger(__name__)    
@@ -1082,7 +1083,7 @@ class ActionSendMail(Action):
                 content = " No content"
                 
         
-        __mailer = None
+        __mailer:IMailer = None
         
         if modules.hasModule(SMTP_MAILER_MODULE):
             __mailer = modules.getModule(SMTP_MAILER_MODULE)

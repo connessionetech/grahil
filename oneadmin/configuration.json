@@ -146,13 +146,15 @@
 				}
 			},
 			"smtp_mailer": {
+				"module": "oneadmin.modules.mailer",
+				"klass": "SMTPMailer",
 				"enabled": true,
 				"conf" : {
 					"hostname": "smtp.gmail.com",
 					"port": 465,
 					"tls": true,
 					"default_from": "from@gmail.com",
-					"default_to": "toh@gmail.com",
+					"default_to": "to@gmail.com",
 					"default_username": "username",
 					"default_password": "password"
 				}
@@ -350,6 +352,16 @@
 							"action": {
 								"pre_response": "stopping",
 								"parameters" : {}
+							}
+						},
+						{
+							"intent": "send_mail",
+							"seed": "email",
+							"keywords": ["send mail", "email", "mail to", "notify by mail"],
+							"responses": ["mail sent"],
+							"action": {
+								"pre_response": "sending email",
+								"parameters" : {"subject": "thsi is a test", "content": "hello this is a test"}
 							}
 						}
 						]

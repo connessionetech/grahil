@@ -7,17 +7,20 @@ from builtins import str
 from email.message import EmailMessage
 from typing import Text
 import aiosmtplib
+from abstracts import IMailer
 
-class SMTPMailer(object):
+
+
+class SMTPMailer(IMailer):
     '''
     classdocs
     '''
-
 
     def __init__(self, conf:dict):
         '''
         Constructor
         '''
+        super().__init__()
         self.__conf = conf
         pass
     
