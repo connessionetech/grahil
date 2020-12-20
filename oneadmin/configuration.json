@@ -129,10 +129,12 @@
 				}
 			},
 			"scheduler": {
-				"enabled": false
+				"enabled": true
 			},
 			"mqtt_gateway": {
 				"enabled": false,
+				"module": "oneadmin.modules.mqtt",
+				"klass": "MQTTGateway",
 				"conf" : {
 					"host": "127.0.0.1",
 					"reconnect_wait_time_seconds": 5,

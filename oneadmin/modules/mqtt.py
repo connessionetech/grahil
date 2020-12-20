@@ -3,7 +3,8 @@ Created on 19-Dec-2020
 
 @author: root
 '''
-from abstracts import IEventDispatcher, IntentProvider, IClientChannel
+from abstracts import IEventDispatcher, IntentProvider, IClientChannel,\
+    IMQTTClient
 from core.components import ActionDispatcher
 from tornado.platform import asyncio
 
@@ -18,7 +19,7 @@ import logging
 from paho.mqtt.subscribeoptions import SubscribeOptions
 
 
-class MQTTGateway(IEventDispatcher, IntentProvider, IClientChannel):
+class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel):
     '''
     Class to handle RPC style communication over MQTT.
     '''
@@ -27,6 +28,8 @@ class MQTTGateway(IEventDispatcher, IntentProvider, IClientChannel):
         '''
         Constructor
         '''
+        
+        super().__init__()
         
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__action_dispatcher = executor
@@ -99,7 +102,7 @@ class MQTTGateway(IEventDispatcher, IntentProvider, IClientChannel):
             # 🤔 Note that we assume that the message paylod is an
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_with_filter")
-            print(template.format(message.payload.decode()))
+            self.logger.info(template.format(message.payload.decode()))
             pass
         
         
@@ -109,7 +112,7 @@ class MQTTGateway(IEventDispatcher, IntentProvider, IClientChannel):
             # 🤔 Note that we assume that the message paylod is an
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_without_filter")
-            print(template.format(message.payload.decode()))
+            self.logger.info(template.format(message.payload.decode()))
             pass
     
     
@@ -133,7 +136,7 @@ class MQTTGateway(IEventDispatcher, IntentProvider, IClientChannel):
             try:
                 await self._setup()
             except MqttError as error:
-                print(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
+                self.logger.info(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
             finally:
                 await asyncio.sleep(self.__conf["reconnect_wait_time_seconds"])
     

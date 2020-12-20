@@ -24,29 +24,29 @@ import asyncio
 from abc import abstractmethod
 from builtins import int, str
 from core.event import EventType
-from typing import List, Text
+from typing import List, Text, Callable
+
 
 
 
 class IEventDispatcher(object):
     
-    def __init__(self, handler=None):
+    def __init__(self, handler:Callable=None):
         super().__init__()
         self.__eventHandler = None if handler == None else handler
         pass
     
     
     @property
-    def eventhandler(self):
+    def eventhandler(self) ->Callable:
         return self.__eventHandler
     
     @eventhandler.setter
-    def eventhandler(self, handler):
+    def eventhandler(self, handler:Callable) ->None:
         self.__eventHandler = handler
-
+        
 
     async def dispatchevent(self, event:EventType) -> None:
-        
         if self.__eventHandler:
             await self.__eventHandler(event)
         pass
@@ -568,3 +568,35 @@ class IMailer(object):
     async def send_mail(self, subject:Text, body:Text) ->None:
         raise NotImplementedError()
         pass
+    
+
+class IMQTTClient(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        self.__topic_data_handler = None
+        
+    
+    async def publish_to_topic(self, topic:str, message:str, callback:Callable=None)->None:
+        raise NotImplementedError()
+        pass
+    
+    
+    
+    async def publish_to_topics(self, topic:List[str], message:str, callback:Callable=None)->None:
+        raise NotImplementedError()
+        pass
+    
+    
+    @property
+    def topic_data_handler(self) ->Callable:
+        return self.__topic_data_handler
+    
+    
+    @topic_data_handler.setter
+    def topic_data_handler(self, handler:Callable) ->None:
+        self.__topic_data_handler = handler

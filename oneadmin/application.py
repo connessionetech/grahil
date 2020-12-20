@@ -44,7 +44,6 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT
 from core.event import EventType
-from mqtt import MQTTGateway
 
 
 
@@ -316,13 +315,22 @@ class TornadoApplication(tornado.web.Application):
         
         mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
         if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
-            mqtt = MQTTGateway(mqtt_gateway_conf["conf"], self.__action__dispatcher)
-            self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt)
+            mqtt_module_name = mqtt_gateway_conf["module"]
+            mqtt_class_name = mqtt_gateway_conf["klass"]
+            mod = __import__(mqtt_module_name, fromlist=[mqtt_class_name])
+            klass = getattr(mod, mqtt_class_name)
+            mqtt_gateway = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+            
+            
+            '''
+            Register `rpc gateway` module
+            '''
+            self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt_gateway)
             
             '''
             Register communication interface with communication hub
             '''
-            self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt)
+            self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt_gateway)
         
         
         
