@@ -24,6 +24,56 @@ import filetype
 
 
 
+def has_uuid_message(msg):
+    if "session-id" in msg:
+        if msg["session-id"] != None and msg["session-id"] != "":
+            return True
+        
+    return False
+
+
+
+def has_sender_id_message(msg):
+    if "client-id" in msg:
+        if msg["client-id"] != None and msg["client-id"] != "":
+            return True
+        
+    return False
+
+
+
+def is_data_message(msg):
+    
+    if "data" in msg:
+        if msg["data"] != None and msg["data"] != "":
+            return True
+        
+    return False
+
+
+
+def is_command_message(msg):
+    
+    if "intent" in msg:
+        if msg["intent"] != None and msg["intent"] != "":
+            return True
+        
+    return False
+
+
+
+def requires_ack_message(msg):
+    
+    if "data" in msg:
+        if msg["data"] != None and msg["data"] != "":
+            if "res-topic" in msg["data"]:
+                if msg["data"]["res-topic"] != None and msg["data"]["res-topic"] != "":
+                    return True
+        
+    return False
+
+
+
 def is_data_notification_event(evt):
     
     if "type" in evt:

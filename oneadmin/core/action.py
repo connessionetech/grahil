@@ -585,8 +585,8 @@ class ActionBrowseFileSystem(Action):
         
         if modules.hasModule(FILE_MANAGER_MODULE):
             __filemanager = modules.getModule(FILE_MANAGER_MODULE)
-            handler = params[0]
-            path = str(params[1])
+            handler = params["handler"]
+            path = str(params["path"])
             result = await __filemanager.browse_content(path)
             return ActionResponse(data = result, events=[])
         else:

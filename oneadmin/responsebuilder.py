@@ -33,6 +33,31 @@ def base64ToString(b):
 
 
 
+def formatSuccessMQTTResponse(requestid, data={}, code=200):
+    return {
+            "session-id": str(requestid),
+            "type": "mqtt",
+            "status": "success",
+            "code": code,
+            "data": data,
+            "timestamp":int(datetime.datetime.utcnow().timestamp())
+            }
+
+
+
+def formatErrorMQTTResponse(requestid, message, code=400):
+    return {
+            "requestid": str(requestid),
+            "type": "mqtt",
+            "status": "error",
+            "code": code,
+            "message": message,
+            "timestamp":int(datetime.datetime.utcnow().timestamp())
+            }
+
+
+
+
 
 def formatSuccessRPCResponse(requestid, data, code=200):
     return {
