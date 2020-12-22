@@ -34,11 +34,13 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher
 from core.event import EventType, EVENT_STATS_GENERATED
-from core.constants import TOPIC_SYSMONITORING
+from core.constants import TOPIC_SYSMONITORING, TOPIC_LOG_ACTIONS
 from core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
 from core.components import ActionDispatcher
 from core.grahil_types import Modules
+from core.action import ACTION_START_LOG_RECORDING_NAME,\
+    ACTION_STOP_LOG_RECORDING_NAME
 
 
 
@@ -82,7 +84,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to provide list of events that we are interested to listen to 
     '''
     def get_events_of_interests(self)-> set:
-        return [EVENT_STATS_GENERATED]
+        return [EVENT_STATS_GENERATED, ACTION_START_LOG_RECORDING_NAME, ACTION_STOP_LOG_RECORDING_NAME]
     
     
     
@@ -90,7 +92,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to provide list of events that we are interested to listen to 
     '''
     def get_topics_of_interests(self)-> set:
-        return [TOPIC_SYSMONITORING]
+        return [TOPIC_SYSMONITORING, TOPIC_LOG_ACTIONS]
     
     
     
@@ -102,7 +104,6 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         await self.__events.put(event)
         pass
     
-        
     
 
     '''
