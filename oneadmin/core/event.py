@@ -37,6 +37,8 @@ EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 
 EVENT_DATA_NOTIFICATION = "data_notification"
 
+EVENT_ARBITRARY_DATA = "arbitrary_data"
+
 EVENT_KEY = "__event__"
 
 
@@ -228,6 +230,23 @@ def DataEvent(
 ) -> EventType:
     return {
         "name": EVENT_DATA_NOTIFICATION,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "category": category,
+        "timestamp": timestamp
+    }
+
+
+# noinspection PyPep8Naming
+def ArbitraryDataEvent(
+    topic: Optional[Text],
+    data: Optional[Dict[Text, Any]] = None,
+    category: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_ARBITRARY_DATA,
         "type": "event",
         "topic": topic,
         "data": data,

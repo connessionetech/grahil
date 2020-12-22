@@ -159,6 +159,10 @@ class RPCGateway(IEventDispatcher, IntentProvider, IClientChannel):
                 self.logger.warn("Unable to write message to client %s", handler.id)
                 
             finally:
+                
+                if requestid != None and requestid in self.__requests:
+                    del self.__requests[requestid]
+                
                 self.__mgsqueue.task_done()
 
 

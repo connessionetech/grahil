@@ -570,6 +570,8 @@ class IMailer(object):
         pass
     
 
+
+
 class IMQTTClient(object):
     
     
@@ -587,16 +589,16 @@ class IMQTTClient(object):
     
     
     
-    async def publish_to_topics(self, topic:List[str], message:str, callback:Callable=None)->None:
+    async def publish_to_topics(self, topics:List[str], message:str, callback:Callable=None)->None:
         raise NotImplementedError()
         pass
     
     
     @property
-    def topic_data_handler(self) ->Callable:
+    def on_data_handler(self) ->Callable:
         return self.__topic_data_handler
     
     
-    @topic_data_handler.setter
-    def topic_data_handler(self, handler:Callable) ->None:
+    @on_data_handler.setter
+    def on_data_handler(self, handler:Callable) ->None:
         self.__topic_data_handler = handler

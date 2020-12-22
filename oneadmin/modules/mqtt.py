@@ -22,13 +22,14 @@ from utilities import is_data_message, is_command_message, has_sender_id_message
     has_uuid_message, requires_ack_message
 import sys
 import json
-from responsebuilder import formatSuccessMQTTResponse, formatErrorMQTTResponse
+from responsebuilder import formatSuccessMQTTResponse, formatErrorMQTTResponse,\
+    formatAckMQTTResponse
 
 
 
 class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel):
     '''
-    Class to handle RPC style communication over MQTT.
+    Class to handle command and data communication over MQTT.
     
     
     Request/command with response
@@ -199,8 +200,8 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
             # 🤔 Note that we assume that the message paylod is an
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_with_filter")
-            self.logger.info(template.format(message.payload.decode()))
-            await self. handleMessage(message.payload.decode())
+            #self.logger.info(template.format(message.payload.decode()))
+            await self. handleMessage(message.topic, message.payload.decode())
             pass
         
         
@@ -210,8 +211,8 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
             # 🤔 Note that we assume that the message paylod is an
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_without_filter")
-            self.logger.info(template.format(message.payload.decode()))
-            await self. handleMessage(message.payload.decode())
+            #self.logger.info(template.format(message.payload.decode()))
+            await self. handleMessage(message.topic, message.payload.decode())
             pass
     
     
@@ -241,10 +242,10 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
     
     
     
-    async def handleMessage(self, msg:str, handler=None):
+    async def handleMessage(self, topic:Text, msg:Text, handler=None):
         
         intent = None
-        args = None
+        args = {}
         sender = None
         restopic = None
         
@@ -253,6 +254,7 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
         if is_command_message(message):
             intent = message["intent"]
             data = message["data"]
+            
         elif is_data_message(message):
             data = message["data"]
         else:
@@ -267,22 +269,38 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
         if has_sender_id_message(message):
             sender = message["client-id"]
             
+        
         if requires_ack_message(message):
             restopic = data["res-topic"]
         
-        intent = message["intent"]
-        args = {} if data["params"] is None else data["params"]
-        args["handler"]= self
         
         try:
-            requestid = await self.__action_dispatcher.handle_request(self, intent, args)
-            self.__requests[requestid] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
-        
-        except:
-            if requestid in self.__requests:
+            
+            if is_command_message(message):
+                
+                args = {} if data["params"] is None else data["params"]
+                args["handler"]= self
+                requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+                self.__requests[requestid] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
+            
+            elif is_data_message(message):
+                
+                if requires_ack_message(message):
+                    response = formatAckMQTTResponse(local_request_id)
+                    self.__requests[local_request_id] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
+                    await self.__mgsqueue.put({"requestid": local_request_id, "message": response})
+                
+                if self.on_data_handler:
+                    await self.on_data_handler(topic, data)
+                    
+        except Exception as le:
+            
+            if requestid != None and requestid in self.__requests:
                 del self.__requests[requestid]
                 
-            raise RPCError("Failed to invoke method." + str(sys.exc_info()[0]))
+            raise RPCError("Failed to invoke method." + str(le))
+        
+        
         pass
     
     
@@ -330,6 +348,10 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
                 self.logger.warn("Unable to write message to broker %s", str(e1))
                 
             finally:
+                
+                if requestid != None and requestid in self.__requests:
+                    del self.__requests[requestid]
+                
                 self.__mgsqueue.task_done()
         pass
     

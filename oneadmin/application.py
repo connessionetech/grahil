@@ -43,7 +43,9 @@ from core.components import ActionDispatcher, CommunicationHub
 from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT
-from core.event import EventType
+from core.event import EventType, ArbitraryDataEvent
+from abstracts import IMQTTClient
+from typing import Text
 
 
 
@@ -319,7 +321,8 @@ class TornadoApplication(tornado.web.Application):
             mqtt_class_name = mqtt_gateway_conf["klass"]
             mod = __import__(mqtt_module_name, fromlist=[mqtt_class_name])
             klass = getattr(mod, mqtt_class_name)
-            mqtt_gateway = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+            mqtt_gateway:IMQTTClient = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+            mqtt_gateway.on_data_handler = self.on_telemetry_data
             
             
             '''
@@ -478,6 +481,16 @@ class TornadoApplication(tornado.web.Application):
         await self.__pubsubhub.publish_event_type(event) 
         pass
     
+    
+    
+    '''
+    Handles events from telemetry channel if available
+    ''' 
+    async def on_telemetry_data(self, topic:Text, data:dict)->None:
+        event:EventType = ArbitraryDataEvent(topic, data)
+        await self.handle_event(event) 
+        pass
+    
    
     
     @property
@@ -511,9 +524,7 @@ class TornadoApplication(tornado.web.Application):
     @property    
     def modules(self):
         return self.__module_registry
-    
-    
-    
+        
     
     
     def __has_internet(self, host="8.8.8.8", port=53, timeout=3):

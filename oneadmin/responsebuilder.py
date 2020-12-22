@@ -24,6 +24,8 @@ class EventType(object):
     NOTIFICATION = "notification"
     pass
 
+
+
 def stringToBase64(s):
     return base64.b64encode(s.encode('utf-8'))
 
@@ -47,7 +49,7 @@ def formatSuccessMQTTResponse(requestid, data={}, code=200):
 
 def formatErrorMQTTResponse(requestid, message, code=400):
     return {
-            "requestid": str(requestid),
+            "session-id": str(requestid),
             "type": "mqtt",
             "status": "error",
             "code": code,
@@ -56,6 +58,15 @@ def formatErrorMQTTResponse(requestid, message, code=400):
             }
 
 
+
+def formatAckMQTTResponse(requestid, code=200):
+    return {
+            "session-id": str(requestid),
+            "type": "mqtt",
+            "status": "ack",
+            "code": code,
+            "timestamp":int(datetime.datetime.utcnow().timestamp())
+            }
 
 
 
@@ -68,6 +79,7 @@ def formatSuccessRPCResponse(requestid, data, code=200):
             "data": data,
             "timestamp":int(datetime.datetime.utcnow().timestamp())
             }
+
 
 
 def formatErrorRPCResponse(requestid, message, code=400):
@@ -88,6 +100,8 @@ def formatSuccessResponse(data, code=200):
             "timestamp":int(datetime.datetime.utcnow().timestamp())
             }
 
+
+
 def formatProgressResponse(permit, data):
     return {
             "permit": permit,
@@ -98,7 +112,6 @@ def formatProgressResponse(permit, data):
             "uploaded_bytes": data["uploaded_bytes"],
             "timestamp":int(datetime.datetime.utcnow().timestamp())
             }
-
 
 
 def formatErrorResponse(message, code):

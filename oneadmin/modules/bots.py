@@ -251,6 +251,10 @@ class TelegramBot(ServiceBot, EventHandler, IntentProvider, IClientChannel):
                 self.logger.warn("Unable to write message to client %s, reason %s", handler.id, str(e1))
                 
             finally:
+                
+                if requestid != None and requestid in self.__requests:
+                    del self.__requests[requestid]
+                
                 self.__mgsqueue.task_done()
     
     
