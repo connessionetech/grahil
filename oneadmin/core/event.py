@@ -27,6 +27,10 @@ EVENT_LOG_LINE_READ = "log_line"
 
 EVENT_LOG_CHUNK_READ = "log_chunk"
 
+EVENT_LOG_RECORDING_START = "log_record_start"
+
+EVENT_LOG_RECORDING_STOP = "log_record_stop"
+
 EVENT_LOG_ERROR = "log_error"
 
 EVENT_PING_GENERATED = "ping_generated"
@@ -119,6 +123,7 @@ def LogLineEvent(
         "note": note,
         "timestamp": timestamp
     }
+
     
     
 
@@ -139,6 +144,49 @@ def LogChunkEvent(
         "note": note,
         "timestamp": timestamp
     }
+    
+    
+
+
+# noinspection PyPep8Naming
+def StartLogRecordingEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_LOG_RECORDING_START,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+
+
+
+# noinspection PyPep8Naming
+def StopLogRecordingEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_LOG_RECORDING_STOP,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+
+
 
 
 # noinspection PyPep8Naming

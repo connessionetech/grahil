@@ -11,7 +11,7 @@ from tornado.concurrent import asyncio
 
 from tornado.concurrent import asyncio
 from oneadmin.core.constants import *
-from core.event import EventType
+from core.event import EventType, StartLogRecordingEvent, StopLogRecordingEvent
 from oneadmin.abstracts import IntentProvider
 from utilities import buildLogWriterRule
 from exceptions import RulesError
@@ -19,7 +19,7 @@ from tornado.httpclient import AsyncHTTPClient
 import urllib
 import logging
 from tornado.web import HTTPError
-from core.constants import SMTP_MAILER_MODULE
+from core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS
 import json
 from abstracts import IMailer
 
@@ -764,8 +764,6 @@ class ActionStartLogRecording(Action):
         if modules.hasModule(LOG_MANAGER_MODULE):
             __logmon = modules.getModule(LOG_MANAGER_MODULE)
             handler = params["handler"]
-        
-        if self.__rulesmanager is not None:
             log_name = params["name"] # log name
             log_info = __logmon.getLogInfo(log_name)
             
@@ -774,14 +772,10 @@ class ActionStartLogRecording(Action):
                 topic_path = log_info["topic_path"]                
                 topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
                 filepath = log_info["log_file_path"]
-                    
                 rule = buildLogWriterRule(rule_id, topic_path, filepath)
-                if self.__rulesmanager.hasRule(rule_id):
-                    raise RulesError('Rule for id ' + rule_id + 'already exists')
-                else:
-                    self.__rulesmanager.registerRule(rule)
-                    handler.liveactions['logrecordings'].add(rule_id) # store reference on client WebSocket handler
-                    return ActionResponse(data = rule_id, events=[])
+                handler.liveactions['logrecordings'].add(rule_id) # store reference on client handler
+                event = StartLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data=rule)
+                return ActionResponse(data = rule_id, events=[event])
         else:
             raise ModuleNotFoundError("`"+LOG_MANAGER_MODULE+"` module does not exist")
         
@@ -800,25 +794,28 @@ class ActionStopLogRecording(Action):
         return ACTION_STOP_LOG_RECORDING_NAME
     
     
-    
-    
     '''
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
-        handler = params["handler"]
+        __logmon = None
+        
+        if modules.hasModule(LOG_MANAGER_MODULE):
+            __logmon = modules.getModule(LOG_MANAGER_MODULE)
+            handler = params["handler"]
+            log_name = params["name"] # log name
+            log_info = __logmon.getLogInfo(log_name)
+            if hasattr(handler, 'id'):
+                rule_id = params["rule_id"]                                
+                if rule_id in handler.liveactions['logrecordings']:
+                    handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client handler
                 
-        if self.__rulesmanager is not None:
-            rule_id = params[1]
-            if hasattr(handler, 'id'):                                
-                if self.__rulesmanager.hasRule(rule_id):
-                    self.__rulesmanager.deregisterRule(rule_id)
-                    if rule_id in handler.liveactions['logrecordings']:
-                        handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client WebSocket handler
-                        return ActionResponse(data = None, events=[])
+            event = StopLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data={"rule_id": rule_id})
+            return ActionResponse(data = rule_id, events=[event])
+        
         else:
-            raise ModuleNotFoundError("No rules manager assigned")
+            raise ModuleNotFoundError("`"+LOG_MANAGER_MODULE+"` module does not exist")
             
 
 
