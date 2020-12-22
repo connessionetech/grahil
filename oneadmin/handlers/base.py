@@ -34,6 +34,8 @@ from oneadmin import responsebuilder
 from settings import settings
 from oneadmin.exceptions import RPCError, AccessPermissionsError
 from core.constants import TOPIC_PING
+from core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME,\
+    INTENT_DELETE_FILE_NAME
 
 
 # Create a base class
@@ -67,39 +69,40 @@ class FileReadHandler(tornado.web.RequestHandler, LoggingHandler):
         self.logger = logging.getLogger(self.__class__.__name__)
         pass
     
+    
+    
     def set_default_headers(self):
         self.set_header("Content-Type", 'application/json')   
 
+    
     # read file
     async def post(self):
         
-        modules = self.application.modules
+        filepath = self.get_argument("path", None, True)
+        self.logger.info("Read file request for file %s", filepath)
         
-        if modules.hasModule("file_manager"):
-        
-            filepath = self.get_argument("path", None, True)
-            self.logger.info("Read file request for file %s", filepath)
+        if(filepath != None):   
+            try:
+                content = await self.__getFile(filepath)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
             
-            if(filepath != None):   
-                try:
-                    content = await self.__getFile(filepath)
-                    self.write(json.dumps(formatSuccessResponse(content)))
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-            else:
-                self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-                pass
             
         self.finish()
     
     
+    
     async def __getFile(self, path):
-        modules = self.application.modules
-        filemanager = modules.getModule("file_manager")
-        content = await filemanager.readFile(path);
+        dispatcher = self.application.action_dispatcher
+        content = await dispatcher.handle_request_direct(self, INTENT_READ_FILE_NAME, {"source":path})
         encoded = base64.b64encode(bytes(content, 'utf-8'))  
         encoded_str = encoded.decode('utf-8')
         return encoded_str
+    
     
     
     
@@ -109,39 +112,40 @@ class FileWriteHandler(tornado.web.RequestHandler, LoggingHandler):
         self.logger = logging.getLogger(self.__class__.__name__)
         pass
     
+    
+    
     def set_default_headers(self):
         self.set_header("Content-Type", 'application/json')   
 
+    
+    
     # write file
     async def post(self):
         
-        modules = self.application.modules
+        filepath = self.get_argument("path", None, True)
+        content = self.get_argument("content", None, True)
+        self.logger.debug("Read file request for file %s", filepath)
         
-        if modules.hasModule("file_manager"):
-            
-            filepath = self.get_argument("path", None, True)
-            content = self.get_argument("content", None, True)
-            self.logger.debug("Read file request for file %s", filepath)
-            
-            # Try catch and then send back response as json formatted message
-            if(filepath != None):
-                try:   
-                    content = await self.__putFile(filepath, content)
-                    self.write(json.dumps(formatSuccessResponse(content)))
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-            else:
-                self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-                pass
+        # Try catch and then send back response as json formatted message
+        if(filepath != None):
+            try:   
+                content = await self.__putFile(filepath, content)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
+        
         
         self.finish()
 
 
+
     async def __putFile(self, path, encoded):
-        modules = self.application.modules
-        filemanager = modules.getModule("file_manager")
+        dispatcher = self.application.action_dispatcher
         decoded = responsebuilder.base64ToString(encoded)
-        await filemanager.writeFile(path, decoded)
+        content = await dispatcher.handle_request_direct(self, INTENT_WRITE_FILE_NAME, {"destination":path, "content": decoded})
         pass
 
 
@@ -220,34 +224,33 @@ class FileDeleteeHandler(tornado.web.RequestHandler, LoggingHandler):
         self.logger = logging.getLogger(self.__class__.__name__)
         pass
 
+    
     # write file
     async def delete(self):
         
-        modules = self.application.modules
+        filepath = self.get_argument("path", None, True)
+        self.logger.debug("Read file request for file %s", filepath)
         
-        if modules.hasModule("file_manager"):
+        # Try catch and then send back response as json formatted message
+        if(filepath != None):
+            try:   
+                content = await self.__delete(filepath)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
             
-            filepath = self.get_argument("path", None, True)
-            self.logger.debug("Read file request for file %s", filepath)
-            
-            # Try catch and then send back response as json formatted message
-            if(filepath != None):
-                try:   
-                    content = await self.__delete(filepath)
-                    self.write(json.dumps(formatSuccessResponse(content)))
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-            else:
-                self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-                pass
         
         self.finish()
 
 
+
+
     async def __delete(self, path):
-        modules = self.application.modules
-        filemanager = modules.getModule("file_manager")
-        await filemanager.deleteFile(path)
+        dispatcher = self.application.action_dispatcher
+        content = await dispatcher.handle_request_direct(self, INTENT_DELETE_FILE_NAME, {"source":path})
         pass
 
 

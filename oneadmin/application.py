@@ -524,6 +524,11 @@ class TornadoApplication(tornado.web.Application):
     @property    
     def modules(self):
         return self.__module_registry
+    
+    
+    @property    
+    def action_dispatcher(self):
+        return self.__action__dispatcher
         
     
     
