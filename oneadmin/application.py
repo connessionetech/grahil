@@ -46,7 +46,6 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
 from core.event import EventType, ArbitraryDataEvent
 from abstracts import IMQTTClient
 from typing import Text
-from shell import ScriptRunner
 
 
 
@@ -347,7 +346,11 @@ class TornadoApplication(tornado.web.Application):
             
         script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
         if script_runner_conf != None and script_runner_conf["enabled"] == True:
-            script_runner = ScriptRunner(script_runner_conf["conf"])
+            script_runner_module_name = script_runner_conf["module"]
+            script_runner_class_name = script_runner_conf["klass"]
+            mod = __import__(script_runner_module_name, fromlist=[script_runner_class_name])
+            klass = getattr(mod, script_runner_class_name)
+            script_runner = klass(script_runner_conf["conf"])
             script_runner.eventhandler = self.handle_event
             self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
 

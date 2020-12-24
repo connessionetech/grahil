@@ -77,6 +77,16 @@
 					}]
 				}
 			},
+			"script_runner": {
+				"enabled": true,
+				"module": "oneadmin.modules.shell",
+				"klass": "ScriptRunner",
+				"conf" : {
+					"max_messages_chunks": 20,
+					"script_folder": "scripts",
+					"file_types": [".sh", ".bat"]
+					}
+			},
 			"file_manager": {
 				"enabled": true,
 				"conf" : {
@@ -93,7 +103,9 @@
 						".xml",
 						".txt",
 						".ini",
-						".log"
+						".log",
+						".sh",
+						".bat"
 					],
 					"allowed_write_extensions": [
 						".properties",
@@ -150,7 +162,7 @@
 			"smtp_mailer": {
 				"module": "oneadmin.modules.mailer",
 				"klass": "SMTPMailer",
-				"enabled": true,
+				"enabled": false,
 				"conf" : {
 					"hostname": "smtp.gmail.com",
 					"port": 465,
