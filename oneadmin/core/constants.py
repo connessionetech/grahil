@@ -17,6 +17,8 @@ TOPIC_PING = "/ping"
 
 TOPIC_EVENTS = "/events"
 
+TOPIC_SCRIPTS = "/script"
+
 
 
 ''' Moduile names'''

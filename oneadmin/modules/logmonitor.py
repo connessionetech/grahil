@@ -169,8 +169,7 @@ class LogMonitor(IEventDispatcher):
                     self.logger.debug("nothing to show")
                     await asyncio.sleep(.2)
                 else:
-                    
-                    self.dispatchevent(LogLineEvent(log_topic_path, data=str(line, 'utf-8'), meta={"log_name": logname}))
+                    self.dispatchevent(LogLineEvent(log_topic_path, data={"output": str(line, 'utf-8')}, meta={"log_name": logname}))
                         
                     ''' Collect log lines in a queue till  it reaches queue size limit'''    
                     q = self.__log_store[logname];

@@ -24,6 +24,12 @@ import filetype
 
 
 
+
+def build_script_topic_path(seed:str, script_id:str):
+    return seed + "/" + script_id + "/data"
+
+
+
 def has_uuid_message(msg):
     if "session-id" in msg:
         if msg["session-id"] != None and msg["session-id"] != "":

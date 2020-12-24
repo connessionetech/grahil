@@ -348,6 +348,7 @@ class TornadoApplication(tornado.web.Application):
         script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
         if script_runner_conf != None and script_runner_conf["enabled"] == True:
             script_runner = ScriptRunner(script_runner_conf["conf"])
+            script_runner.eventhandler = self.handle_event
             self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
 
         

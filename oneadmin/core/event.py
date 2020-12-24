@@ -21,6 +21,12 @@ EVENT CONSTANTS
 
 EVENT_STATS_GENERATED = "stats_generated"
 
+EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
+
+EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
+
+EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
+
 EVENT_STATS_ERROR = "stats_error"
 
 EVENT_LOG_LINE_READ = "log_line"
@@ -158,6 +164,28 @@ def StartLogRecordingEvent(
 ) -> EventType:
     return {
         "name": EVENT_LOG_RECORDING_START,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+
+    
+    
+
+# noinspection PyPep8Naming
+def ScriptExecutionEvent(
+    name: Text,    
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": name,
         "type": "event",
         "topic": topic,
         "data": data,
