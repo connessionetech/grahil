@@ -39,6 +39,8 @@ MQTT_GATEWAY_MODULE = "mqtt_gateway"
 
 SMTP_MAILER_MODULE = "smtp_mailer"
 
+SCRIPT_RUNNER_MODULE = "script_runner"
+
 SCHEDULER_MODULE = "scheduler"
 
 BOT_SERVICE_MODULE = "service_bot"

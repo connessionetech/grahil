@@ -150,9 +150,9 @@ class LogMonitor(IEventDispatcher):
                 raise Exception("Log file %s does not exist at location %s ", logname,  str(log_file.absolute()))
             
             if platform == "linux" or platform == "linux2" :
-                log_mon_process = Subprocess(["tail", "-n", "1", "-f", str(log_file.absolute())], stdout=Subprocess.STREAM)
+                log_mon_process:Subprocess = Subprocess(["tail", "-n", "1", "-f", str(log_file.absolute())], stdout=Subprocess.STREAM)
             elif platform.startswith("win"):
-                log_mon_process = Subprocess(["Get-Content", str(log_file.absolute()), "-Tail", "1" , "-Wait", "1"], stdout=Subprocess.STREAM)
+                log_mon_process:Subprocess = Subprocess(["Get-Content", str(log_file.absolute()), "-Tail", "1" , "-Wait", "1"], stdout=Subprocess.STREAM)
             else:
                 error = "Log monitoring is not supported on " + platform
                 self.deregisterLogFile(logname)

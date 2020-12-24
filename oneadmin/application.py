@@ -1,5 +1,5 @@
 '''
-This file is part of `Reactivity` 
+This file is part of `Grahil` 
 Copyright 2018 Connessione Technologies
 
 This program is free software: you can redistribute it and/or modify
@@ -42,10 +42,11 @@ from oneadmin.core.constants import *
 from core.components import ActionDispatcher, CommunicationHub
 from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
-    SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT
+    SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from core.event import EventType, ArbitraryDataEvent
 from abstracts import IMQTTClient
 from typing import Text
+from shell import ScriptRunner
 
 
 
@@ -64,24 +65,10 @@ class TornadoApplication(tornado.web.Application):
         
         try:
             self.__filemanager = None
-            self.__logmonitor = None
             self.__pubsubhub = None
-            self.__pinger = None
-            self.__service_bot = None
             self.__reaction_engine = None
             self.__action__dispatcher = None
-            self.__external_ip = None
-            self.__communication_hub = CommunicationHub()
-            
-            
-            # Attempt to find out public ip
-            while True:
-                if self.__has_internet():
-                    break
-                
-                self.logger.info("No network connection. Waiting for connection...")
-                asyncio.sleep(10)
-                                
+            self.__communication_hub = CommunicationHub()                                
             
          
             # Initializing pubsub hub
@@ -98,14 +85,14 @@ class TornadoApplication(tornado.web.Application):
                 
             ''' Initializing pinger module used for sending keep-alive heartbeat to socket connections'''
             pinger_conf = modules[PINGER_MODULE]
-            self.__pinger = Pinger(pinger_conf["conf"])
-            self.__pinger.eventhandler = self.handle_event
-            self.__pinger.start()       
+            pinger = Pinger(pinger_conf["conf"])
+            pinger.eventhandler = self.handle_event
+            pinger.start()       
                  
             '''
             Register `pinger` module
             '''
-            self.modules.registerModule(PINGER_MODULE, self.__pinger);
+            self.modules.registerModule(PINGER_MODULE, pinger);
             
             
             
@@ -161,8 +148,8 @@ class TornadoApplication(tornado.web.Application):
             # Register log monitor module
             log_monitor_config = modules[LOG_MANAGER_MODULE]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
-                self.__logmonitor = LogMonitor(log_monitor_config["conf"])
-                self.__logmonitor.eventhandler = self.handle_event               
+                logmonitor = LogMonitor(log_monitor_config["conf"])
+                logmonitor.eventhandler = self.handle_event               
                     
                     
                 try:
@@ -176,7 +163,7 @@ class TornadoApplication(tornado.web.Application):
                         
                         log_key = getLogFileKey(log_target)
                         log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-                        self.__logmonitor.registerLogFile({
+                        logmonitor.registerLogFile({
                             "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
                         })
                         
@@ -202,7 +189,7 @@ class TornadoApplication(tornado.web.Application):
                                 if not log_target["topic_path"]:
                                     log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
                                 
-                                self.__logmonitor.registerLogFile(log_target)
+                                logmonitor.registerLogFile(log_target)
     
                 
                 except Exception as le:
@@ -212,7 +199,7 @@ class TornadoApplication(tornado.web.Application):
                 '''
                 Register `log monitor` module
                 '''
-                self.modules.registerModule(LOG_MANAGER_MODULE, self.__logmonitor);
+                self.modules.registerModule(LOG_MANAGER_MODULE, logmonitor);
             
             
             
@@ -226,7 +213,7 @@ class TornadoApplication(tornado.web.Application):
             '''
             Register `sysmon` module
             '''
-            self.modules.registerModule(SYSTEM_MODULE, self.__sysmon);
+            self.modules.registerModule(SYSTEM_MODULE, self.__sysmon)
             
                     
                 
@@ -238,6 +225,7 @@ class TornadoApplication(tornado.web.Application):
         action_config = modules[ACTION_DISPATCHER_MODULE]
         if action_config != None and action_config["enabled"] == True:
             self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
+
             
             
         
@@ -276,17 +264,17 @@ class TornadoApplication(tornado.web.Application):
                 
                 mod = __import__(bot_module_name, fromlist=[bot_class_name])
                 klass = getattr(mod, bot_class_name)
-                self.__service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
-                self.__service_bot.eventhandler = self.handle_event
-                self.__pubsubhub.addEventListener(self.__service_bot)
+                service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
+                service_bot.eventhandler = self.handle_event
+                self.__pubsubhub.addEventListener(service_bot)
                 
                 # Register `servicebot` module'
-                self.modules.registerModule(BOT_SERVICE_MODULE, self.__service_bot)
+                self.modules.registerModule(BOT_SERVICE_MODULE, service_bot)
                 
                 '''
                 Register communication interface with communication hub
                 ''' 
-                self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, self.__service_bot)
+                self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, service_bot)
             
             except ImportError as be:
                 self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
@@ -355,7 +343,12 @@ class TornadoApplication(tornado.web.Application):
             Register communication interface with communication hub
             '''
             self.__communication_hub.register_interface(CHANNEL_SMTP_MAILER, PROACTIVE_CLIENT_TYPE, smtp_mailer)
-        
+            
+            
+        script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
+        if script_runner_conf != None and script_runner_conf["enabled"] == True:
+            script_runner = ScriptRunner(script_runner_conf["conf"])
+            self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
 
         
         # Special settings for debugging and hot reload
@@ -529,22 +522,6 @@ class TornadoApplication(tornado.web.Application):
     @property    
     def action_dispatcher(self):
         return self.__action__dispatcher
-        
-    
-    
-    def __has_internet(self, host="8.8.8.8", port=53, timeout=3):
-        """
-        Host: 8.8.8.8 (google-public-dns-a.google.com)
-        OpenPort: 53/tcp
-        Service: domain (DNS/TCP)
-        """
-        try:
-            socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-            return True
-        except socket.error as ex:
-            return False
-        
 
     
     '''
