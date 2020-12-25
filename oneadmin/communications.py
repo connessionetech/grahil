@@ -365,6 +365,10 @@ class PubSubHub(object):
     async def publish_event_type(self, event:EventType):
         
         if "topic"in event:
+            
+            if event["topic"] not in self.channels and self.__config["allow_dynamic_topics"] == True:
+                self.createChannel({"name": event["topic"], "type": "bidirectional", "queue_size": 0, "max_users": 0})
+        
             if event["topic"] in self.channels:
                 if is_valid_event(event):
                     await self.__submit(event["topic"], event)
