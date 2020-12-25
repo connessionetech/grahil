@@ -376,6 +376,7 @@ class PubSubHub(object):
         
     
     
+    
     '''
         Validates message as `event`for reactionengine
     '''
@@ -384,6 +385,8 @@ class PubSubHub(object):
         if 'topic' in event and 'data' in event:
             return True
         return False
+    
+    
     
     
     
@@ -399,6 +402,8 @@ class PubSubHub(object):
 
 
 
+    
+    
     '''
     Flushes messages from  channel queue into client's message queue actively
     '''

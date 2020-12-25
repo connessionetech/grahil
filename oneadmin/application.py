@@ -44,7 +44,7 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from core.event import EventType, ArbitraryDataEvent
-from abstracts import IMQTTClient
+from abstracts import IMQTTClient, IScriptRunner
 from typing import Text
 
 
@@ -350,7 +350,7 @@ class TornadoApplication(tornado.web.Application):
             script_runner_class_name = script_runner_conf["klass"]
             mod = __import__(script_runner_module_name, fromlist=[script_runner_class_name])
             klass = getattr(mod, script_runner_class_name)
-            script_runner = klass(script_runner_conf["conf"])
+            script_runner:IScriptRunner = klass(script_runner_conf["conf"])
             script_runner.eventhandler = self.handle_event
             self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
 

@@ -21,7 +21,7 @@ import logging
 from tornado.web import HTTPError
 from core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS
 import json
-from abstracts import IMailer
+from abstracts import IMailer, IScriptRunner
 
 
 logger = logging.getLogger(__name__)    
@@ -50,6 +50,10 @@ ACTION_GET_CPU_STATS_NAME = ACTION_PREFIX + "get_cpu_stats"
 ACTION_START_LOG_RECORDING_NAME = ACTION_PREFIX + "start_log_recording"
 
 ACTION_STOP_LOG_RECORDING_NAME = ACTION_PREFIX + "stop_log_recording"
+
+ACTION_START_SCRIPT_EXECUTION_NAME = ACTION_PREFIX + "start_script_execution"
+
+ACTION_STOP_SCRIPT_EXECUTION_NAME = ACTION_PREFIX + "stop_script_execution"
 
 ACTION_CREATE_FOLDER_NAME = ACTION_PREFIX + "create_folder"
 
@@ -141,7 +145,7 @@ def builtin_actions() -> List[Action]:
             ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
-            ActionHttpGet(), ActionSendMail()]
+            ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution()]
 
 
 
@@ -1125,3 +1129,74 @@ class ActionSendMail(Action):
             raise ModuleNotFoundError("`"+SMTP_MAILER_MODULE+"` module does not exist")
 
 
+
+
+
+class ActionStartScriptExecution(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_START_SCRIPT_EXECUTION_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        
+        __script_runner = None
+        __script_name = None
+        
+        if "name" in params:
+            __script_name = params["name"]
+        else:
+            raise AttributeError("missing script name")
+        
+        if modules.hasModule(SCRIPT_RUNNER_MODULE):
+            __script_runner:IScriptRunner = modules.getModule(SCRIPT_RUNNER_MODULE)
+            script_id = __script_runner.start_script(__script_name)
+            return ActionResponse(data = script_id, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SCRIPT_RUNNER_MODULE+"` module does not exist")
+        
+        pass
+
+
+
+
+class ActionStopScriptExecution(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_STOP_SCRIPT_EXECUTION_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __script_runner = None
+        
+        if "script_id" in params:
+            __script_id = params["script_id"]
+        else:
+            raise AttributeError("missing script name")
+        
+        
+        if modules.hasModule(SCRIPT_RUNNER_MODULE):
+            __script_runner:IScriptRunner = modules.getModule(SCRIPT_RUNNER_MODULE)
+            __script_runner.stop_script(__script_id)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+SCRIPT_RUNNER_MODULE+"` module does not exist")
+        pass

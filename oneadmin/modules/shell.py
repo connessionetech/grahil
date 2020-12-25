@@ -9,7 +9,7 @@ from tornado.concurrent import Future
 from tornado.process import Subprocess
 from typing import Text
 import signal
-from abstracts import IEventDispatcher
+from abstracts import IEventDispatcher, IScriptRunner
 import subprocess
 from tornado.iostream import StreamClosedError
 import logging
@@ -19,9 +19,10 @@ from core.event import EVENT_SCRIPT_EXECUTION_STOP,\
     ScriptExecutionEvent
 from core.constants import TOPIC_SCRIPTS
 from utilities import build_script_topic_path
+from exceptions import RunnableScriptError
 
 
-class ScriptRunner(IEventDispatcher):
+class ScriptRunner(IEventDispatcher, IScriptRunner):
     '''
     classdocs
     '''
@@ -38,16 +39,14 @@ class ScriptRunner(IEventDispatcher):
         self.__conf = conf
         self.__scripts = {}
         self.__running_scripts = {}
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         pass
+        
         
     
     
-    def __initialize(self):
-        pass    
-    
-    
-    
+    '''
+    Returns indexed script names
+    '''
     @property
     def script_names(self):
         return self.__scripts.keys()
@@ -55,9 +54,15 @@ class ScriptRunner(IEventDispatcher):
         
         
     
+    '''
+    Sets executable scripts data from external provider via future object
+    '''
     def script_files_from_future(self, future:Future):
         
         try:
+            
+            self.logger.info("Setting scripts data from `Future`")
+            
             files = future.result()
             
             for file in files:
@@ -70,12 +75,21 @@ class ScriptRunner(IEventDispatcher):
                 
         
     
+    
+    '''
+    Getter for executable script data
+    '''
     @property
     def on_scripts(self):
         return self.__scripts
     
     
     
+    
+    
+    '''
+    Setter for executable script data
+    '''
     @on_scripts.setter
     def on_scripts(self, files):
         self.__scripts = files    
@@ -83,7 +97,13 @@ class ScriptRunner(IEventDispatcher):
     
     
     
-    def start_script(self, name):
+    
+    
+    
+    '''
+    Starts script execution by script name
+    '''
+    def start_script(self, name)->Text:
         
         runnable = None
         err = None
@@ -101,7 +121,7 @@ class ScriptRunner(IEventDispatcher):
         except Exception as e:
             err = e
             self.logger.error("Error terminating process gracefully %s", str(e))
-        
+            raise RunnableScriptError(str(e))
         finally:
             
             if not err:
@@ -111,7 +131,11 @@ class ScriptRunner(IEventDispatcher):
     
     
     
-    def stop_script(self, script_id, force=False)->Text:
+    
+    '''
+    Stop script execution by generated script id
+    '''
+    def stop_script(self, script_id)->None:
         
         runnable = None
         err = None
@@ -127,18 +151,52 @@ class ScriptRunner(IEventDispatcher):
         except Exception as e:
             err = e
             self.logger.error("Error terminating process gracefully %s", str(e))
+            raise RunnableScriptError(str(e))
         
         finally:
             
             if not err:
-                del self.__running_scripts[script_id]
+                tornado.ioloop.IOLoop.current().spawn_callback(self.__script_execution_cleanup, script_id)
                 
                 
+    
+    
+    
+    
+    '''
+    Cleans up script from reference
+    '''
+    async def __script_execution_cleanup(self, script_id):
+        runnable = self.__running_scripts[script_id]
+        del runnable
+        del self.__running_scripts[script_id]
+        pass
+                
+    
+    
+    
+    
+    
+    '''
+    Async handler for script execution states
+    '''                 
     async def on_execution_update(self, eventname:str, script_id:str, data:str = {})->None:
-        topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
-        await self.dispatchevent(ScriptExecutionEvent(eventname, topic, data={"output": data}))
+        
+        try:
+            topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
+            await self.dispatchevent(ScriptExecutionEvent(eventname, topic, data={"output": data}))
+        
+        except Exception as e:
+            err = e
+            self.logger.error("Error terminating process gracefully %s", str(e))
+        
+        finally:
+            if eventname == EVENT_SCRIPT_EXECUTION_STOP:
+                await self.__script_execution_cleanup(script_id)
         pass
     
+
+
 
 
 
@@ -159,18 +217,33 @@ class Runnable(object):
         self.__id = SmallUUID().hex
         self.__script_name = script["name"]
         self.__script_path = script["path"]
-        self.__process:Subprocess = None     
-        self.__running = False
-        self.__update_handler = None
+        self.__process:Subprocess = None
+        self.__update_handler = None     
+        self.__running = False    
     
     
     
+    '''
+    Checks to see if script is running
+    '''
+    def is_running(self):
+        return self.__running
+    
+    
+    
+    '''
+    Returns the status update handler for this runnable instance 
+    '''
     @property
     def update_handler(self):
         return self.__update_handler
     
     
     
+    
+    '''
+    Sets the status update handler for this runnable instance 
+    '''
     @update_handler.setter
     def update_handler(self, files):
         self.__update_handler = files
@@ -178,6 +251,9 @@ class Runnable(object):
     
     
     
+    '''
+    Starts script execution process  
+    '''
     def start(self):
         cmd = ["bash", self.__script_path]
         self.__process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=Subprocess.STREAM)
@@ -186,12 +262,19 @@ class Runnable(object):
     
     
     
+    '''
+    Returns the script id for this runnable instance 
+    '''
     @property
     def uuid(self):
         return self.__id
     
     
     
+    
+    '''
+    Captures script output in a loop, till the script executes and handles any abnormal exit accordingly  
+    '''
     async def _run(self):        
         try:
             while True:
@@ -221,6 +304,9 @@ class Runnable(object):
     
     
     
+    '''
+    Stops script execution process  
+    '''
     def stop(self):
         try:
             if self.__running:
@@ -236,7 +322,9 @@ class Runnable(object):
     
     
     
-    
+    '''
+    handles Subprocess exit / execution termination
+    ''' 
     async def __process_closed(self, param=None):
         if self.__running:
             self.__running = False

@@ -25,6 +25,7 @@ from abc import abstractmethod
 from builtins import int, str
 from core.event import EventType
 from typing import List, Text, Callable
+from tornado.concurrent import Future
 
 
 
@@ -602,3 +603,32 @@ class IMQTTClient(object):
     @on_data_handler.setter
     def on_data_handler(self, handler:Callable) ->None:
         self.__topic_data_handler = handler
+        
+        
+
+
+class IScriptRunner(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        
+
+    
+    async def start_script(self, name) ->Text:
+        raise NotImplementedError()
+        pass
+    
+    
+    
+    def stop_script(self, script_id)->Text:
+        raise NotImplementedError()
+    
+    
+   
+    def script_files_from_future(self, future:Future):
+        raise NotImplementedError()
+        pass
