@@ -10,7 +10,6 @@ from tornado.process import Subprocess
 from typing import Text, List, Dict
 import signal
 from abstracts import IEventDispatcher, IScriptRunner
-import subprocess
 from tornado.iostream import StreamClosedError
 import logging
 from smalluuid.smalluuid import SmallUUID
@@ -20,6 +19,7 @@ from core.event import EVENT_SCRIPT_EXECUTION_STOP,\
 from core.constants import TOPIC_SCRIPTS
 from utilities import build_script_topic_path
 from exceptions import RunnableScriptError
+
 
 
 class ScriptRunner(IEventDispatcher, IScriptRunner):
@@ -61,13 +61,13 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         
         try:
             
-            self.logger.info("Setting scripts data from `Future`")
+            self.logger.debug("Setting scripts data from `Future`")
             
             files = future.result()
             
             for file in files:
                 self.__scripts[file["name"]] = file["path"]
-                tornado.ioloop.IOLoop.current().spawn_callback(self.start_script, file["name"])
+                #tornado.ioloop.IOLoop.current().spawn_callback(self.start_script, file["name"])
              
              
         except Exception as e:
@@ -285,7 +285,10 @@ class Runnable(object):
     '''
     Captures script output in a loop, till the script executes and handles any abnormal exit accordingly  
     '''
-    async def _run(self):        
+    async def _run(self):    
+        
+        error = None
+            
         try:
             while True:
 
@@ -300,15 +303,20 @@ class Runnable(object):
             
                 
                 if self.__update_handler:
-                    await self.__update_handler(EVENT_SCRIPT_EXECUTION_PROGRESS, self.uuid, line)
+                    await self.__update_handler(EVENT_SCRIPT_EXECUTION_PROGRESS, self.uuid, line_str)
                 
         except StreamClosedError as se:
-            self.logger.debug("Stream closed")
-            await self.__process_closed()
+            error = se
+            self.logger.error("Stream closed")
                     
-        except Exception as e:                
-            self.logger.error("Error terminating process gracefully %s", str(e))
-            await self.__process_closed()
+        except Exception as e:   
+            error = e             
+            self.logger.error("Error terminating process gracefully %s", str(e))            
+        
+        finally:            
+            if error:
+                await self.__process_closed()
+            
         
     
     
