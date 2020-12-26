@@ -1151,15 +1151,22 @@ class ActionStartScriptExecution(Action):
         
         __script_runner = None
         __script_name = None
+        __script_params = None
+        
         
         if "name" in params:
             __script_name = params["name"]
         else:
             raise AttributeError("missing script name")
         
+        
+        if "args" in params:
+            __script_params:str = str(params["args"])
+        
+        
         if modules.hasModule(SCRIPT_RUNNER_MODULE):
             __script_runner:IScriptRunner = modules.getModule(SCRIPT_RUNNER_MODULE)
-            script_id = __script_runner.start_script(__script_name)
+            script_id = __script_runner.start_script(__script_name, __script_params)
             return ActionResponse(data = script_id, events=[])
         else:
             raise ModuleNotFoundError("`"+SCRIPT_RUNNER_MODULE+"` module does not exist")

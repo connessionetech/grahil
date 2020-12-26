@@ -7,7 +7,7 @@ import tornado
 import os
 from tornado.concurrent import Future
 from tornado.process import Subprocess
-from typing import Text
+from typing import Text, List, Dict
 import signal
 from abstracts import IEventDispatcher, IScriptRunner
 import subprocess
@@ -67,7 +67,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
             
             for file in files:
                 self.__scripts[file["name"]] = file["path"]
-                #tornado.ioloop.IOLoop.current().spawn_callback(self.start_script, file["name"])
+                tornado.ioloop.IOLoop.current().spawn_callback(self.start_script, file["name"])
              
              
         except Exception as e:
@@ -103,7 +103,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     '''
     Starts script execution by script name
     '''
-    def start_script(self, name)->Text:
+    def start_script(self, name, args:str = None)->Text:
         
         runnable = None
         err = None
@@ -114,7 +114,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
             
             runnable = Runnable({"name":name, "path":self.__scripts[name]})
             runnable.update_handler = self.on_execution_update
-            runnable.start()  
+            runnable.start(args)  
             
             return runnable.uuid
             
@@ -254,11 +254,21 @@ class Runnable(object):
     '''
     Starts script execution process  
     '''
-    def start(self):
-        cmd = ["bash", self.__script_path]
+    def start(self, args:str)->None:
+        
+        parameters:List = []
+        
+        if args:
+            args.strip()
+            parameters = args.split(",")            
+        
+        cmd:List = ["bash", self.__script_path]
+        cmd.extend(parameters)
+        
         self.__process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=Subprocess.STREAM)
         self.__process.set_exit_callback(self.__process_closed)
         tornado.ioloop.IOLoop.current().spawn_callback(self._run)
+    
     
     
     
@@ -307,7 +317,7 @@ class Runnable(object):
     '''
     Stops script execution process  
     '''
-    def stop(self):
+    def stop(self)->None:
         try:
             if self.__running:
                 pid = self.__process.pid
