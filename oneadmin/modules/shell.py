@@ -7,7 +7,7 @@ import tornado
 import os
 from tornado.concurrent import Future
 from tornado.process import Subprocess
-from typing import Text, List, Dict
+from typing import Text, List, Dict, Callable
 import signal
 from abstracts import IEventDispatcher, IScriptRunner
 from tornado.iostream import StreamClosedError
@@ -19,6 +19,7 @@ from core.event import EVENT_SCRIPT_EXECUTION_STOP,\
 from core.constants import TOPIC_SCRIPTS
 from utilities import build_script_topic_path
 from exceptions import RunnableScriptError
+from tornado.ioloop import IOLoop
 
 
 
@@ -96,8 +97,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     
     
     
-    
-    
+       
     
     
     '''
@@ -112,7 +112,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
             if name not in self.__scripts.keys():
                 raise LookupError()
             
-            runnable = Runnable({"name":name, "path":self.__scripts[name]})
+            runnable = Runnable({"name":name, "path":self.__scripts[name]}, self.__conf["max_execution_time_seconds"])
             runnable.update_handler = self.on_execution_update
             runnable.start(args)  
             
@@ -171,7 +171,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         del runnable
         del self.__running_scripts[script_id]
         pass
-                
+    
     
     
     
@@ -206,7 +206,7 @@ class Runnable(object):
     classdocs
     '''
 
-    def __init__(self, script=None):
+    def __init__(self, script, max_execution_time=60):
         '''
         Constructor
         '''
@@ -220,6 +220,7 @@ class Runnable(object):
         self.__process:Subprocess = None
         self.__update_handler = None     
         self.__running = False    
+        self.__max_execution_time = max_execution_time
     
     
     
@@ -231,12 +232,14 @@ class Runnable(object):
     
     
     
+    
     '''
     Returns the status update handler for this runnable instance 
     '''
     @property
-    def update_handler(self):
+    def update_handler(self)->Callable:
         return self.__update_handler
+    
     
     
     
@@ -245,8 +248,9 @@ class Runnable(object):
     Sets the status update handler for this runnable instance 
     '''
     @update_handler.setter
-    def update_handler(self, files):
+    def update_handler(self, files) ->None:
         self.__update_handler = files
+    
     
     
     
@@ -266,8 +270,22 @@ class Runnable(object):
         cmd.extend(parameters)
         
         self.__process = Subprocess(cmd, stdout=Subprocess.STREAM, stderr=Subprocess.STREAM)
+        IOLoop.current().call_later(self.__max_execution_time, self.__auto_terminate)
         self.__process.set_exit_callback(self.__process_closed)
         tornado.ioloop.IOLoop.current().spawn_callback(self._run)
+    
+    
+    
+    
+    
+    '''
+    Check and terminate script if not already terminated
+    '''
+    def __auto_terminate(self)->None:
+        if self.is_running():
+            self.stop()
+        pass
+    
     
     
     
@@ -318,7 +336,7 @@ class Runnable(object):
                 await self.__process_closed()
             
         
-    
+        
     
     
     
