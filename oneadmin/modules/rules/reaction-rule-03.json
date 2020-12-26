@@ -1,0 +1,19 @@
+{
+	"id": "reaction-rule-03",
+	"description": "Cron rule to trigget script execution",
+	"listen-to": "{time}",
+	"enabled": false,
+	"trigger": {
+		"on-time-object": {
+			"recurring": true,
+			"using-expression": "48 0 * * *"
+		},
+		"evaluator": null
+	},
+	"response":{
+		"intent": "start_script_execution",
+		"parameters": {
+			"name": "test.sh"
+		}
+	}	
+}
