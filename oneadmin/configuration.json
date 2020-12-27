@@ -19,19 +19,6 @@
 			"token_expiry_hours": 24
 		},
 		"modules": {
-		
-			"sysmon": {
-				"enabled": true,
-				"conf" : {
-					"system_user" : "rajdeeprath",
-					"updater_cron_tab_args" : ">> /home/pi/updater/updater.log 2>&1",					
-					"snapshot_interval_seconds": 10,
-					"log_push_interval_seconds": 0.4,
-					"nic_stats_per_nic": false,
-					"net_connection_filter": "inet",
-					"net_connection_count_only": true
-				}
-			},
 			"pinger": {
 				"enabled": true,
 				"conf" : {
@@ -63,17 +50,48 @@
 					]
 				}
 			},
+			"rpc_gateway": {
+				"enabled": true,
+				"conf" : {
+				}
+			},
+			"reaction_engine": {
+				"enabled": true,
+				"conf" : {
+				}
+			},
+			"action_dispatcher": {
+				"enabled": true,
+				"conf" : {
+				}
+			},
+			"sysmon": {
+				"enabled": true,
+				"module": "oneadmin.modules.system",
+				"klass": "SystemMonitor",
+				"conf" : {
+					"system_user" : "rajdeeprath",
+					"updater_cron_tab_args" : ">> /home/pi/updater/updater.log 2>&1",					
+					"snapshot_interval_seconds": 10,
+					"log_push_interval_seconds": 0.4,
+					"nic_stats_per_nic": false,
+					"net_connection_filter": "inet",
+					"net_connection_count_only": true
+				}
+			},
 			"log_monitor": {
 				"enabled": false,
+				"module": "oneadmin.modules.logmonitor",
+				"klass": "LogMonitor",
 				"conf" : {
 					"retry_time_ge_seconds": 5,
 					"max_messages_chunks": 20,
 					"chunks_collector_interval": 10000,
 					"static_targets": [{
+						"enabled": true,
 						"name": "red5.log",
 						"log_file_path": "/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/red5.log",
-						"topic_path": "/logging/red5pro-server-us-7-2-recording/log/red5.log",
-						"enabled": true
+						"topic_path": "/logging/red5pro-server-us-7-2-recording/log/red5.log"
 					}]
 				}
 			},
@@ -84,7 +102,8 @@
 				"conf" : {
 					"max_messages_chunks": 20,
 					"script_folder": "scripts",
-					"file_types": [".sh", ".bat"]
+					"file_types": [".sh"],
+					"max_execution_time_seconds": 60
 					}
 			},
 			"file_manager": {
@@ -131,18 +150,11 @@
 				"conf": {
 					"max_stream_time_seconds": 300, 
 					"ffmpeg_path" : "/usr/bin/ffmpeg",
-					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
-					"youtube_streamkey" : "3j43-rrdb-g14p-h0mu-dj95"
+					"youtube_endpoint" : "",
+					"youtube_streamkey" : ""
 				}
 			},
-			"rpc_gateway": {
-				"enabled": true,
-				"conf" : {
-				}
-			},
-			"scheduler": {
-				"enabled": true
-			},
+
 			"mqtt_gateway": {
 				"enabled": false,
 				"module": "oneadmin.modules.mqtt",
@@ -178,7 +190,7 @@
 				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
-					"token": "1419938809:AAHlze7ZGsWcnOBe5iOnS7L12YBlnY5emU0",
+					"token": "<token>",
 					"master_user_id": 494506384
 				},
 				"nlp": {
@@ -380,21 +392,6 @@
 						}
 						]
 					}
-				}
-			},
-			"reaction_engine": {
-				"enabled": true,
-				"conf" : {
-				}
-			},
-			"action_executor": {
-				"enabled": true,
-				"conf" : {
-				}
-			},
-			"action_dispatcher": {
-				"enabled": true,
-				"conf" : {
 				}
 			}
 		}

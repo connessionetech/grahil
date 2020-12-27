@@ -189,7 +189,7 @@ class ActionGetSoftwareVersion(Action):
         __sysmon = None
         if modules.hasModule(SYSTEM_MODULE):
                 __sysmon = modules.getModule(SYSTEM_MODULE)
-                __ver = __sysmon.getVersion()
+                __ver = __sysmon.get_version()
                 return ActionResponse(data = __ver, events=[])
         else:
                 raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
@@ -286,7 +286,7 @@ class ActionGetSystemTime(Action):
         
         if modules.hasModule(SYSTEM_MODULE):
             __sysmon = modules.getModule(SYSTEM_MODULE) 
-            result =  __sysmon.getSystemTime()
+            result =  __sysmon.get_system_time()
             return ActionResponse(data = result, events=[])
         else:
             raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
@@ -318,7 +318,7 @@ class ActionGetSystemStats(Action):
         
         if modules.hasModule(SYSTEM_MODULE):
             __sysmon = modules.getModule(SYSTEM_MODULE)        
-            result =  __sysmon.getLastSystemStats()
+            result =  __sysmon.get_last_system_stats_snapshot()
             return ActionResponse(data = result, events=[])
         else:
             raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
@@ -348,7 +348,7 @@ class ActionGetMemoryStats(Action):
         
         if modules.hasModule(SYSTEM_MODULE):
             __sysmon = modules.getModule(SYSTEM_MODULE)
-            result =  __sysmon.getMemorytats()
+            result =  __sysmon.get_memory_stats()
             await asyncio.sleep(.5)
             return ActionResponse(data = result, events=[])
         else:
@@ -378,7 +378,7 @@ class ActionGetCPUStats(Action):
         
         if modules.hasModule(SYSTEM_MODULE):
             __sysmon = modules.getModule(SYSTEM_MODULE)        
-            result =  __sysmon.getCPUStats()
+            result =  __sysmon.get_cpu_stats()
             await asyncio.sleep(.5)
             return ActionResponse(data = result, events=[])
         else:

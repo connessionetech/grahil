@@ -50,15 +50,31 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     '''
     @property
     def script_names(self):
-        return self.__scripts.keys()
+        '''
+        Returns a list of executable script names
+        
+                Parameters:
+                        None
+        
+                Returns:
+                        _names (set): A list of executable script names
+        '''
+        _names = self.__scripts.keys()
+        return _names
     
         
         
     
-    '''
-    Sets executable scripts data from external provider via future object
-    '''
-    def script_files_from_future(self, future:Future):
+    def script_files_from_future(self, future:Future)->None:
+        '''
+        Sets executable scripts data from external provider via future object
+        
+                Parameters:
+                        future (Future): A Future object that provides executable scripts information
+        
+                Returns:
+                        None
+        '''
         
         try:
             
@@ -77,22 +93,35 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         
     
     
-    '''
-    Getter for executable script data
-    '''
     @property
-    def on_scripts(self):
-        return self.__scripts
+    def on_scripts(self) -> Dict:
+        '''
+        Getter for executable script data
+    
+                Parameters:
+                        None
+    
+                Returns:
+                        _scripts (Dict): A dictionary object representing data of executable scripts available to this module
+        '''
+        _scripts = self.__scripts
+        return _scripts
     
     
     
     
     
-    '''
-    Setter for executable script data
-    '''
     @on_scripts.setter
-    def on_scripts(self, files):
+    def on_scripts(self, files:Dict) -> None:
+        '''
+        Setter for executable script data
+    
+                Parameters:
+                        files (Dict): A dictionary object representing data of executable scripts  
+    
+                Returns:
+                        None
+        '''
         self.__scripts = files    
     
     
@@ -100,10 +129,17 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
        
     
     
-    '''
-    Starts script execution by script name
-    '''
-    def start_script(self, name, args:str = None)->Text:
+    def start_script(self, name:str, args:str = None)->Text:
+        '''
+        Starts script execution by script name
+    
+                Parameters:
+                        name (str): Name of the script to be executed. Name must include extension
+                        args (str): A comma separated string of argument needed for the script to be executed 
+    
+                Returns:
+                        uuid (str): Unique id of the runnable script that was started
+        '''
         
         runnable = None
         err = None
@@ -116,7 +152,8 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
             runnable.update_handler = self.on_execution_update
             runnable.start(args)  
             
-            return runnable.uuid
+            uuid = runnable.uuid
+            return uuid
             
         except Exception as e:
             err = e
@@ -132,10 +169,16 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     
     
     
-    '''
-    Stop script execution by generated script id
-    '''
-    def stop_script(self, script_id)->None:
+    def stop_script(self, script_id:str)->None:
+        '''
+        Stop script execution by generated script id
+    
+                Parameters:
+                        script_id (str): ID if the running script
+    
+                Returns:
+                        None
+        '''
         
         runnable = None
         err = None
@@ -162,11 +205,8 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     
     
     
-    
-    '''
-    Cleans up script from reference
-    '''
     async def __script_execution_cleanup(self, script_id):
+        """ Cleans up script from reference """
         runnable = self.__running_scripts[script_id]
         del runnable
         del self.__running_scripts[script_id]
@@ -176,11 +216,8 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     
     
     
-    
-    '''
-    Async handler for script execution states
-    '''                 
     async def on_execution_update(self, eventname:str, script_id:str, data:str = {})->None:
+        """ Async handler for script execution states. This method is called by all executing scripts to notify change of state. """
         
         try:
             topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
@@ -224,41 +261,33 @@ class Runnable(object):
     
     
     
-    '''
-    Checks to see if script is running
-    '''
-    def is_running(self):
+    
+    def is_running(self) ->bool:
+        """ Checks to see if script is running. Returns true if script is running, otherwise false """
         return self.__running
     
     
     
     
-    '''
-    Returns the status update handler for this runnable instance 
-    '''
     @property
     def update_handler(self)->Callable:
+        """ Returns the status update handler function for this runnable instance. """
         return self.__update_handler
     
     
     
     
-    
-    '''
-    Sets the status update handler for this runnable instance 
-    '''
     @update_handler.setter
     def update_handler(self, files) ->None:
+        """ Sets the status update handler for this runnable instance. State changes are sent to this method. """
         self.__update_handler = files
     
     
     
     
     
-    '''
-    Starts script execution process  
-    '''
     def start(self, args:str)->None:
+        """ Starts script execution process   """
         
         parameters:List = []
         
@@ -278,10 +307,8 @@ class Runnable(object):
     
     
     
-    '''
-    Check and terminate script if not already terminated
-    '''
     def __auto_terminate(self)->None:
+        """ Check and terminate script if not already terminated. """
         if self.is_running():
             self.stop()
         pass
@@ -290,20 +317,17 @@ class Runnable(object):
     
     
     
-    '''
-    Returns the script id for this runnable instance 
-    '''
     @property
     def uuid(self):
+        """ Returns the script id for this runnable instance """
         return self.__id
     
     
     
     
-    '''
-    Captures script output in a loop, till the script executes and handles any abnormal exit accordingly  
-    '''
     async def _run(self):    
+        
+        """ Captures script output in a loop, till the script executes and handles any abnormal exit accordingly. """
         
         error = None
             
@@ -339,11 +363,8 @@ class Runnable(object):
         
     
     
-    
-    '''
-    Stops script execution process  
-    '''
     def stop(self)->None:
+        """ Stops script execution process. """
         try:
             if self.__running:
                 pid = self.__process.pid
@@ -358,10 +379,8 @@ class Runnable(object):
     
     
     
-    '''
-    handles Subprocess exit / execution termination
-    ''' 
     async def __process_closed(self, param=None):
+        """ handles Subprocess exit / execution termination. """
         if self.__running:
             self.__running = False
             if self.__update_handler:

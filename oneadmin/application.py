@@ -32,9 +32,7 @@ import os
 
 
 from oneadmin.modules.filesystem import FileManager
-from oneadmin.modules.logmonitor import LogMonitor
 from oneadmin.modules.reaction import ReactionEngine
-from oneadmin.modules.sysmonitor import SystemMonitor
 from oneadmin.core.grahil_core import ModuleRegistry
 import socket
 import asyncio
@@ -44,7 +42,8 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from core.event import EventType, ArbitraryDataEvent
-from abstracts import IMQTTClient, IScriptRunner, IMailer
+from abstracts import IMQTTClient, IScriptRunner, IMailer, ILogMonitor,\
+    ISystemMonitor
 from typing import Text
 
 
@@ -142,13 +141,15 @@ class TornadoApplication(tornado.web.Application):
 
             
 
-
             # Register log monitor module
             log_monitor_config = modules[LOG_MANAGER_MODULE]
             if log_monitor_config != None and log_monitor_config["enabled"] == True:
-                logmonitor = LogMonitor(log_monitor_config["conf"])
-                logmonitor.eventhandler = self.handle_event               
-                    
+                logmon_module_name = log_monitor_config["module"]
+                logmon_class_name = log_monitor_config["klass"]
+                mod = __import__(logmon_module_name, fromlist=[logmon_class_name])
+                klass = getattr(mod, logmon_class_name)
+                logmonitor:ILogMonitor = klass(log_monitor_config["conf"])
+                logmonitor.eventhandler = self.handle_event
                     
                 try:
                     
@@ -161,7 +162,7 @@ class TornadoApplication(tornado.web.Application):
                         
                         log_key = getLogFileKey(log_target)
                         log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-                        logmonitor.registerLogFile({
+                        logmonitor.register_log_file({
                             "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
                         })
                         
@@ -178,16 +179,16 @@ class TornadoApplication(tornado.web.Application):
                     Register static log targets of target 
                     '''
                     
-                    log_monitor_config["static_targets"]
-                    if log_monitor_config["static_targets"] != None:
-                        log_targets = log_monitor_config["static_targets"]
+                    log_monitor_config["conf"]["static_targets"]
+                    if log_monitor_config["conf"]["static_targets"] != None:
+                        log_targets = log_monitor_config["conf"]["static_targets"]
                         for log_target in log_targets: 
                             if log_target["enabled"] == True:
                                 
                                 if not log_target["topic_path"]:
                                     log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
                                 
-                                logmonitor.registerLogFile(log_target)
+                                logmonitor.register_log_file(log_target)
     
                 
                 except Exception as le:
@@ -201,17 +202,21 @@ class TornadoApplication(tornado.web.Application):
             
             
             
-            stats_config = modules[SYSTEM_MODULE]
-            if stats_config != None and stats_config["enabled"] == True:
-                self.__sysmon = SystemMonitor(stats_config["conf"], self.modules)
-                self.__sysmon.eventhandler = self.handle_event
-                self.__sysmon.start_monitor()
+            system_mod_config = modules[SYSTEM_MODULE]
+            if system_mod_config != None and system_mod_config["enabled"] == True:
+                sysmon_module_name = system_mod_config["module"]
+                sysmon_class_name = system_mod_config["klass"]
+                mod = __import__(sysmon_module_name, fromlist=[sysmon_class_name])
+                klass = getattr(mod, sysmon_class_name)
+                sysmon:ISystemMonitor = klass(system_mod_config["conf"], self.modules)
+                sysmon.eventhandler = self.handle_event
+                sysmon.start_monitor()
             
             
-            '''
-            Register `sysmon` module
-            '''
-            self.modules.registerModule(SYSTEM_MODULE, self.__sysmon)
+                '''
+                Register `sysmon` module
+                '''
+                self.modules.registerModule(SYSTEM_MODULE, sysmon)
             
                     
                 

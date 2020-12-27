@@ -24,8 +24,9 @@ import asyncio
 from abc import abstractmethod
 from builtins import int, str
 from core.event import EventType
-from typing import List, Text, Callable
+from typing import List, Text, Callable, Dict
 from tornado.concurrent import Future
+
 
 
 
@@ -632,3 +633,87 @@ class IScriptRunner(object):
     def script_files_from_future(self, future:Future):
         raise NotImplementedError()
         pass
+    
+
+
+class ILogMonitor(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+    
+    
+    
+    def register_log_file(self, log_info:Dict):
+        raise NotImplementedError()
+        pass
+    
+    
+    def deregister_log_file(self, name:str):
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_log_keys(self):
+        raise NotImplementedError()
+        pass
+    
+    def get_log_Info(self, name:str) ->Dict:
+        raise NotImplementedError()
+        pass 
+    
+
+
+class ISystemMonitor(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+    
+    
+    
+    def start_monitor(self) -> None:
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_cpu_stats(self, cached=False) ->Dict:
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_memory_stats(self, unit = "b", cached=False) ->Dict:
+        raise NotImplementedError()
+        pass
+    
+    
+    def schedule__update(self, updater_script:str) ->str:
+        raise NotImplementedError()
+        pass
+    
+    
+    def force_gc(self) ->None:
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_version(self) -> str:
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_last_system_stats_snapshot(self) -> Dict:
+        raise NotImplementedError()
+        pass
+    
+    
+    def get_system_time(self) -> str:
+        raise NotImplementedError()
+        pass
+    

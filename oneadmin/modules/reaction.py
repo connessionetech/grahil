@@ -100,7 +100,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     Overridden to handle events subscribed to
     '''
     async def handleEvent(self, event:EventType):
-        self.logger.info(event["name"] + " received")
+        self.logger.debug(event["name"] + " received")
         await self.__events.put(event)
         pass
     

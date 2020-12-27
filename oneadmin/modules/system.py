@@ -27,15 +27,17 @@ import os
 import gc
 import json
 from pathlib import Path
+from typing import Dict
 
 from crontab import CronTab
 from oneadmin.version import __version__
 from tornado.httpclient import AsyncHTTPClient
-from abstracts import IEventDispatcher
+from abstracts import IEventDispatcher, ISystemMonitor
 from core.event import StatsGeneratedEvent, StatsErrorEvent
 from core.constants import TOPIC_SYSMONITORING
+from builtins import str
 
-class SystemMonitor(IEventDispatcher):
+class SystemMonitor(IEventDispatcher, ISystemMonitor):
     
     def __init__(self, config, modules):
         '''
@@ -80,8 +82,8 @@ class SystemMonitor(IEventDispatcher):
 
 
     
-    def start_monitor(self):
-        tornado.ioloop.IOLoop.current().spawn_callback(self.generateSystemStats)
+    def start_monitor(self) -> None:
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
     pass
 
     
@@ -96,7 +98,7 @@ class SystemMonitor(IEventDispatcher):
     
     
     
-    def getCPUStats(self, cached=False):
+    def get_cpu_stats(self, cached=False) ->Dict:
         
         if cached == False:
             return{
@@ -117,7 +119,7 @@ class SystemMonitor(IEventDispatcher):
     
     
     
-    def getMemorytats(self, unit = "b", cached=False):
+    def get_memory_stats(self, unit = "b", cached=False) ->Dict:
         
         if cached == False:
             
@@ -128,9 +130,9 @@ class SystemMonitor(IEventDispatcher):
             percent_virtual_mem = virtual_memory.percent 
             
             return{
-                "total_virtual_mem": self.valueAsPerUnit(total_virtual_mem, unit),
-                "used_virtual_mem": self.valueAsPerUnit(used_virtual_mem, unit),
-                "free_virtual_mem":self.valueAsPerUnit(free_virtual_mem, unit),
+                "total_virtual_mem": self.__valueAsPerUnit(total_virtual_mem, unit),
+                "used_virtual_mem": self.__valueAsPerUnit(used_virtual_mem, unit),
+                "free_virtual_mem":self.__valueAsPerUnit(free_virtual_mem, unit),
                 "percent_virtual_mem":percent_virtual_mem,
                 "timestamp" : self.__current_milli_time()
                 }
@@ -153,7 +155,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     Schedules updater script for execution -> N minutes from now and returns
     '''
-    def schedule__update(self, updater_script):
+    def schedule__update(self, updater_script:str) ->str:
         
         self.__crontab.remove_all(comment='updater')
         sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1)
@@ -178,7 +180,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     Force GC
     '''
-    def force_gc(self):
+    def force_gc(self) ->None:
         gc.collect()
         pass
     
@@ -189,7 +191,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     get version from version.py
     '''
-    def getVersion(self):
+    def get_version(self) ->str:
         return __version__
         pass
     
@@ -200,7 +202,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     Last generated system stats
     '''
-    def getLastSystemStats(self):
+    def get_last_system_stats_snapshot(self) ->Dict:
         return self.__last_stats
         pass
     
@@ -210,7 +212,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     Last generated system stats
     '''
-    def getSystemTime(self):
+    def get_system_time(self) ->str:
         return self.__last_stats['system_datetime'] if 'system_datetime' in self.__last_stats else datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
         pass
     
@@ -230,7 +232,7 @@ class SystemMonitor(IEventDispatcher):
     '''
     Generates stats snapshot
     '''
-    async def generateSystemStats(self):
+    async def __generateSystemStats(self):
         
         err = None
         stats = {
@@ -272,10 +274,10 @@ class SystemMonitor(IEventDispatcher):
                 percent_disk_space = root_disk_usage.percent
                 
                 
-                part_disk_usage = self.getPartitionsInfo(unit)
+                part_disk_usage = self.__getPartitionsInfo(unit)
                     
                 # connection info    
-                net_connection_info =  self.get_connection_info(self.__config["net_connection_filter"])
+                net_connection_info =  self.__get_connection_info(self.__config["net_connection_filter"])
                 total_net_connections = len(net_connection_info)
                 # part_net_connections = None if self.__config["net_connection_count_only"] == True else net_connection_info
                 
@@ -354,16 +356,16 @@ class SystemMonitor(IEventDispatcher):
                                 "cpu_percent":cpu_percent
                             },
                             "memory_info":{
-                                "total_virtual_mem": self.valueAsPerUnit(total_virtual_mem, unit),
-                                "used_virtual_mem": self.valueAsPerUnit(used_virtual_mem, unit),
-                                "free_virtual_mem":self.valueAsPerUnit(free_virtual_mem, unit),
+                                "total_virtual_mem": self.__valueAsPerUnit(total_virtual_mem, unit),
+                                "used_virtual_mem": self.__valueAsPerUnit(used_virtual_mem, unit),
+                                "free_virtual_mem":self.__valueAsPerUnit(free_virtual_mem, unit),
                                 "percent_virtual_mem":percent_virtual_mem
                             },
                             "disk_info":{
                                 "mount_point": "/",
-                                "total_disk_space": self.valueAsPerUnit(total_disk_space, unit),
-                                "used_disk_space":self.valueAsPerUnit(used_disk_space, unit),
-                                "free_disk_space":self.valueAsPerUnit(free_disk_space, unit),
+                                "total_disk_space": self.__valueAsPerUnit(total_disk_space, unit),
+                                "used_disk_space":self.__valueAsPerUnit(used_disk_space, unit),
+                                "free_disk_space":self.__valueAsPerUnit(free_disk_space, unit),
                                 "percent_disk_space":percent_disk_space,
                                 "part_disk_info":part_disk_usage
                             },
@@ -436,7 +438,7 @@ class SystemMonitor(IEventDispatcher):
     
     
     
-    def valueAsPerUnit(self, value, unit="b"):
+    def __valueAsPerUnit(self, value, unit="b"):
         if unit == "b":
             return value
         elif unit == "kb":
@@ -450,7 +452,7 @@ class SystemMonitor(IEventDispatcher):
                     
                     
                     
-    def get_connection_info(self, connection_filter="all"):
+    def __get_connection_info(self, connection_filter="all"):
         
         info = []
         connections = psutil.net_connections(connection_filter)
@@ -483,7 +485,7 @@ class SystemMonitor(IEventDispatcher):
         return connections
     
 
-    def getPartitionsInfo(self, unit="b"):
+    def __getPartitionsInfo(self, unit="b"):
         part_disk_usage=[]
         partitions = psutil.disk_partitions()
         for partition in partitions:
@@ -495,9 +497,9 @@ class SystemMonitor(IEventDispatcher):
             # percent=22.5
             data = {
                 "mountpoint": partition.mountpoint,
-                "total": self.valueAsPerUnit(partition_data.total, unit),
-                "used": self.valueAsPerUnit(partition_data.used, unit),
-                "free": self.valueAsPerUnit(partition_data.free, unit),
+                "total": self.__valueAsPerUnit(partition_data.total, unit),
+                "used": self.__valueAsPerUnit(partition_data.used, unit),
+                "free": self.__valueAsPerUnit(partition_data.free, unit),
                 "percent": partition_data.percent
             } 
             

@@ -23,11 +23,11 @@ import tornado
 from sys import platform
 from pathlib import Path
 import collections
-from abstracts import IEventDispatcher
+from abstracts import IEventDispatcher, ILogMonitor
 from core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
+from typing import Dict
 
-
-class LogMonitor(IEventDispatcher):
+class LogMonitor(IEventDispatcher, ILogMonitor):
     '''
     classdocs
     '''
@@ -48,7 +48,7 @@ class LogMonitor(IEventDispatcher):
     '''
     Register new log file for monitoring
     '''
-    def registerLogFile(self, log_info):
+    def register_log_file(self, log_info:Dict) -> None:
         
         name = log_info["name"]
         if not name in self.__log_files:
@@ -61,7 +61,7 @@ class LogMonitor(IEventDispatcher):
     '''
     Deregister existing log file from monitoring
     '''
-    def deregisterLogFile(self, name):
+    def deregister_log_file(self, name:str):
         if name in self.__log_files:
             pcallback = self.__log_files[name]["chunk_collector"]
             pcallback.stop()
@@ -74,7 +74,7 @@ class LogMonitor(IEventDispatcher):
     '''
     Get all log file keys that are used as topic names
     '''
-    def getLogFileKeys(self):
+    def get_log_keys(self):
         return self.__log_files.keys() 
     
     
@@ -83,7 +83,7 @@ class LogMonitor(IEventDispatcher):
     '''
     Get all log file keys that are used as topic names
     '''
-    def getLogInfo(self, name):
+    def get_log_Info(self, name:str) ->Dict:
         if name in self.__log_files:
             return self.__log_files[name]
         else:

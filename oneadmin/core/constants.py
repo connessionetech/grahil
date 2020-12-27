@@ -49,8 +49,6 @@ BOT_SERVICE_MODULE = "service_bot"
 
 REACTION_ENGINE_MODULE = "reaction_engine"
 
-ACTION_EXECUTOR_MODULE = "action_executor"
-
 ACTION_DISPATCHER_MODULE = "action_dispatcher"
 
 
@@ -72,7 +70,6 @@ CHANNEL_MQTT = "mqtt_channel"
 
 
 ''' client type'''
-
 
 PROACTIVE_CLIENT_TYPE = "proactive_client_type"
 
