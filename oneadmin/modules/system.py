@@ -51,9 +51,6 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
         
         ''' To refactor'''
         self.__delegate = modules.getModule("target_delegate")
-        self.__filemanager = modules.getModule("file_manager")
-        self.__logmonitor = modules.getModule("log monitor")
-        ''' --- '''
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
@@ -536,8 +533,8 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
         return {
                     "system_stats":True,
                     "target_stats":True if self.__delegate != None else False,
-                    "file_management" : False if self.__filemanager == None else True,
-                    "log_monitoring" : False if self.__logmonitor == None else True,
+                    "file_management" : False,
+                    "log_monitoring" : False,
                     "script_execution" : False
                 }
     

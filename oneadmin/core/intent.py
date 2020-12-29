@@ -16,6 +16,8 @@ INTENT_PREFIX = "intent_"
 Intent name constants
 '''
 
+INTENT_TEST_NAME = INTENT_PREFIX + "test"
+
 INTENT_GET_SOFTWARE_VERSION_NAME = INTENT_PREFIX + "get_software_version"
 
 INTENT_HTTP_GET_NAME = INTENT_PREFIX + "http_get"

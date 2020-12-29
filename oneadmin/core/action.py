@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 ACTION_PREFIX = "action_"
 
+ACTION_TEST_NAME = ACTION_PREFIX + "test"
+
 ACTION_GET_SOFTWARE_VERSION_NAME = ACTION_PREFIX + "get_software_version"
 
 ACTION_HTTP_GET_NAME = ACTION_PREFIX + "http_get"
@@ -145,7 +147,8 @@ def builtin_actions() -> List[Action]:
             ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
-            ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution()]
+            ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution(),
+            ActionTest()]
 
 
 
@@ -803,13 +806,19 @@ class ActionStartLogRecording(Action):
             log_name = params["name"] # log name
             log_info = __logmon.getLogInfo(log_name)
             
-            if hasattr(handler, 'id'):
+            if hasattr(handler, 'id') and "logrecordings" in handler.liveactions:
                 rule_id = handler.id + '-' + log_name
-                topic_path = log_info["topic_path"]                
+                
+                if rule_id in handler.liveactions['logrecordings']:
+                    raise LookupError("log recording is already active for this log")
+                
+                topic_path = log_info["topic_path"]
                 topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
                 filepath = log_info["log_file_path"]
                 rule = buildLogWriterRule(rule_id, topic_path, filepath)
-                handler.liveactions['logrecordings'].add(rule_id) # store reference on client handler
+                
+                # store reference on client handler
+                handler.liveactions['logrecordings'].add(rule_id) 
                 event = StartLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data=rule)
                 return ActionResponse(data = rule_id, events=[event])
         else:
@@ -842,12 +851,20 @@ class ActionStopLogRecording(Action):
             handler = params["handler"]
             log_name = params["name"] # log name
             log_info = __logmon.getLogInfo(log_name)
+            topic_path = log_info["topic_path"]
+            topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
+            filepath = log_info["log_file_path"]
+        
             if hasattr(handler, 'id'):
-                rule_id = params["rule_id"]                                
-                if rule_id in handler.liveactions['logrecordings']:
-                    handler.liveactions['logrecordings'].remove(rule_id) # remove reference on client handler
+                rule_id = params["rule_id"]
+                if rule_id not in handler.liveactions['logrecordings']:
+                    raise LookupError("There is no log recording active for this log.")
                 
-            event = StopLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data={"rule_id": rule_id})
+                # remove reference on client handler
+                handler.liveactions['logrecordings'].remove(rule_id) 
+                rule = buildLogWriterRule(rule_id, topic_path, filepath)
+                
+            event = StopLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data=rule)
             return ActionResponse(data = rule_id, events=[event])
         
         else:
@@ -1207,3 +1224,22 @@ class ActionStopScriptExecution(Action):
         else:
             raise ModuleNotFoundError("`"+SCRIPT_RUNNER_MODULE+"` module does not exist")
         pass
+
+
+
+class ActionTest(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_TEST_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        return ActionResponse(data = None, events=[])     

@@ -26,74 +26,59 @@ from aiofile.aio import AIOFile
 from tornado.ioloop import IOLoop
 import json
 from oneadmin.exceptions import FileSystemOperationError, RulesError
-from oneadmin.abstracts import EventHandler
+from oneadmin.abstracts import IEventHandler
 import asyncio
 from datetime import datetime
 from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
-from abstracts import IEventDispatcher
-from core.event import EventType, EVENT_STATS_GENERATED
-from core.constants import TOPIC_SYSMONITORING, TOPIC_LOG_ACTIONS
+from abstracts import IEventDispatcher, IReactionEngine
+from core.event import EventType, EVENT_STATS_GENERATED, EVENT_ANY,\
+    EVENT_LOG_RECORDING_START
+from core.constants import TOPIC_ANY
 from core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
 from core.components import ActionDispatcher
-from core.grahil_types import Modules
-from core.action import ACTION_START_LOG_RECORDING_NAME,\
-    ACTION_STOP_LOG_RECORDING_NAME
 
 
 
-class ReactionEngine(IEventDispatcher, EventHandler):
+class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
     
     
 
-    def __init__(self, conf, modules:Modules=None, action_dispatcher:ActionDispatcher=None):
+    def __init__(self, conf, action_dispatcher:ActionDispatcher=None):
         '''
         Constructor
         '''
         super().__init__()
         
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__conf = conf        
-        self.__evaluator__modules={}
-        self.__reaction__modules={}  
+        self.__conf = conf          
         self.__topics_of_intertest = {}
-        self.__system__modules = modules
+        self.__rules = {}
+        self.__events = Queue()
         self.__action_dispatcher = action_dispatcher
         self.__task_scheduler = TornadoScheduler()
-            
+
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         
-        if modules.hasModule("file_manager"):
-            self.file_manager = modules.getModule("file_manager")
-            
-        self._initialize()
         
     
     
-    def _initialize(self):
-        self.__rules = {}
-        self.__events = Queue(maxsize=50)
-        self.__task_scheduler.start()     
+    def __initialize(self):
+        
+        if "topics_of_interest" in self.__conf:
+            self.set_topics_of_interests(self.__conf["topics_of_interest"])
+        
+        if "events_of_interest" in self.__conf:
+            self.set_events_of_interests(self.__conf["events_of_interest"])
+        
+        self.__task_scheduler.start()
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         
-        
-    '''
-    Overridden to provide list of events that we are interested to listen to 
-    '''
-    def get_events_of_interests(self)-> set:
-        return [EVENT_STATS_GENERATED, ACTION_START_LOG_RECORDING_NAME, ACTION_STOP_LOG_RECORDING_NAME]
-    
-    
-    
-    '''
-    Overridden to provide list of events that we are interested to listen to 
-    '''
-    def get_topics_of_interests(self)-> set:
-        return [TOPIC_SYSMONITORING, TOPIC_LOG_ACTIONS]
-    
+   
     
     
     '''
@@ -126,20 +111,9 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                     raise Exception("Invalid cron expression " + str(cron_str))
         except Exception as e:  
                 self.logger.error("Error registering timed event. " + str(e))
-        
-        
-        
-    @property
-    def system_modules(self):
-        return self.__system__modules
     
-    
-    
-    @system_modules.setter
-    def system_modules(self, provider):
-        self.__system__modules = provider
         
-        
+    
     
     @property
     def action_dispatcher(self):
@@ -152,6 +126,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         self.__action_dispatcher = _dispatcher
     
     
+    
     '''
         Processes events from queue
     '''
@@ -162,7 +137,8 @@ class ReactionEngine(IEventDispatcher, EventHandler):
                 # always process events in parallel
                 tornado.ioloop.IOLoop.current().spawn_callback(self.process_event_with_rules, event) 
             except Exception as e:  
-                self.logger.error("Error processing event. " + str(e))
+                err = "Error processing event" + str(e)
+                self.logger.error(err)
             finally:
                 self.__events.task_done()
         pass
@@ -174,19 +150,35 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     '''
     async def process_event_with_rules(self, event:EventType):
         
-        for ruleid, rule in self.__rules.items():
-            if rule.is_applicable(event):
+        
+        try:
+        
+            if event["name"] == EVENT_LOG_RECORDING_START:
+                rule = event["data"]
+                self.registerRule(rule)
                 
-                evaluator:RuleExecutionEvaluator = rule.trigger.evaluator
-                
-                if evaluator:
-                    evaluator.evaluate(event)
+            elif event["name"] == EVENT_LOG_RECORDING_START:
+                rule = event["data"]
+                self.deregisterRule(rule["id"])
+            
+            
+            
+            for ruleid, rule in self.__rules.items():
+                if rule.is_applicable(event):
                     
-                
-                
-                self.logger.info("Processing event %s for rule %s", str(event), ruleid)
-                # always process multipel rules for 6the event in parallel
-                tornado.ioloop.IOLoop.current().spawn_callback(self.__respondToEvent, rule, event)
+                    evaluator:RuleExecutionEvaluator = rule.trigger.evaluator
+                    
+                    if evaluator:
+                        evaluator.evaluate(event)
+                    
+                    self.logger.info("Processing event %s for rule %s", str(event), ruleid)
+                    # always process multiple rules for 6the event in parallel
+                    tornado.ioloop.IOLoop.current().spawn_callback(self.__respondToEvent, rule, event)
+         
+        except Exception as e:
+            
+            err = "Error processing event" + str(e)
+            self.logger.error(err)
                 
 
 
@@ -283,23 +275,13 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         
         return rule
 
-    
-    
-    def create_rule(self, event, rule):
-        self.registerRule(rule)
-        
-        
-    
-    def delete_rule(self, id):
-        self.deregisterRule(id)
-        
         
     
     
     '''
         Check to see if rule exists by id (v2.0)
     '''     
-    def hasRule(self, id):
+    def has_rule(self, id:str)->bool:
         if id in self.__rules and self.__rules[id] != None:
             return True
         return False
@@ -346,7 +328,7 @@ class ReactionEngine(IEventDispatcher, EventHandler):
     '''
         Delete rule and topic of interest (v2.0)
     '''
-    def deregisterRule(self, id:str):
+    def deregisterRule(self, id:str)->None:
         if id in self.__rules and self.__rules[id] != None:
             try:
                 rule:ReactionRule = self.__rules[id]
@@ -413,21 +395,6 @@ class ReactionEngine(IEventDispatcher, EventHandler):
         except Exception as e:    
             raise FileSystemOperationError("Unable to list path " + filepath + ".Cause " + str(e))
         pass
-    
-    
-    
-    
-    '''
-        Notifies an event to reaction engine (v2.0)
-    '''
-    async def notifyEvent(self, event):
-        
-        topic = event["topic"]
-        
-        if topic in self.__topics_of_intertest:
-            self.logger.debug("Adding event to list for processing " + str(event))
-            await self.__events.put(event)
-            pass
     
     
     

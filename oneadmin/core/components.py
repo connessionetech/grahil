@@ -25,9 +25,53 @@ from oneadmin.core.grahil_types import Modules
 from core.event import EVENT_KEY
 from typing import Dict,Any
 from core.constants import TARGET_DELEGATE_MODULE, built_in_client_types
-from abstracts import TargetProcess, IClientChannel, EventHandler,\
+from abstracts import TargetProcess, IClientChannel, IEventHandler,\
     IEventDispatcher
 from typing_extensions import TypedDict
+
+
+
+
+class VirtualHandler(object):
+    '''
+    Acts as a handler delegate on behalf of client channels
+    '''
+    
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.messages = Queue()
+        self.id = str(uuid.uuid4())
+        self.liveactions = {}
+        self.liveactions['logrecordings'] = set()
+        self.liveactions['scriptexecutions'] = set()
+        self.finished = False
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__run)
+        pass
+    
+    
+    
+    def close(self):
+        self.finished = True
+        pass
+    
+    
+    
+    async def submit(self, message):
+        await self.messages.put(message) 
+        pass
+    
+    
+    
+    async def __run(self):
+        while not self.finished:
+            try:
+                message = await self.messages.get()
+                self.send(message)
+            except Exception as e:
+                pass
+            finally:
+                self.messages.task_done()
+
 
 
 
@@ -293,7 +337,7 @@ class ActionDispatcher(object):
 '''
 Delegate interface for communication layer across the application
 ''' 
-class CommunicationHub(EventHandler, IEventDispatcher):
+class CommunicationHub(IEventHandler, IEventDispatcher):
     
     '''
     classdocs

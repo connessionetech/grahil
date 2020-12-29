@@ -19,6 +19,8 @@ EVENT CONSTANTS
 '''
 
 
+EVENT_ANY = "*"
+
 EVENT_STATS_GENERATED = "stats_generated"
 
 EVENT_SCRIPT_EXECUTION_START = "script_execution_started"

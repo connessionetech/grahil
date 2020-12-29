@@ -19,12 +19,6 @@
 			"token_expiry_hours": 24
 		},
 		"modules": {
-			"pinger": {
-				"enabled": true,
-				"conf" : {
-					"ping_interval_seconds": 15
-				}
-			},
 			"pubsub": {
 				"enabled": true,
 				"conf" : {
@@ -50,6 +44,12 @@
 					]
 				}
 			},
+			"pinger": {
+				"enabled": true,
+				"conf" : {
+					"ping_interval_seconds": 15
+				}
+			},
 			"rpc_gateway": {
 				"enabled": true,
 				"conf" : {
@@ -57,7 +57,11 @@
 			},
 			"reaction_engine": {
 				"enabled": true,
+				"module": "oneadmin.modules.reaction",
+				"klass": "ReactionEngine",
 				"conf" : {
+				"topics_of_interest": ["/stats", "/log/actions"],
+				"events_of_interest": ["stats_generated", "log_record_start", "log_record_stop"]
 				}
 			},
 			"action_dispatcher": {
@@ -190,7 +194,7 @@
 				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
-					"token": "<token>",
+					"token": "",
 					"master_user_id": 494506384
 				},
 				"nlp": {
@@ -387,7 +391,17 @@
 							"responses": ["mail sent"],
 							"action": {
 								"pre_response": "sending email",
-								"parameters" : {"subject": "thsi is a test", "content": "hello this is a test"}
+								"parameters" : {"subject": "this is a test", "content": "hello this is a test"}
+							}
+						},
+						{
+							"intent": "test",
+							"seed": "test",
+							"keywords": ["test"],
+							"responses": ["test complete"],
+							"action": {
+								"pre_response": "running test",
+								"parameters" : {}
 							}
 						}
 						]

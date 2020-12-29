@@ -23,9 +23,11 @@ import logging
 import asyncio
 from abc import abstractmethod
 from builtins import int, str
-from core.event import EventType
+from core.event import EventType, EVENT_ANY
 from typing import List, Text, Callable, Dict
 from tornado.concurrent import Future
+from core.constants import TOPIC_ANY
+from core.rules import ReactionRule
 
 
 
@@ -443,7 +445,7 @@ class TargetProcess(IEventDispatcher):
 
 
 
-class EventHandler(object):
+class IEventHandler(object):
     '''
     classdocs
     '''
@@ -454,16 +456,24 @@ class EventHandler(object):
         Constructor
         '''
         super().__init__()
-        self.__topics_of_interest = []
-        self.__events_of_interest = []
+        self.__topics_of_interest = [TOPIC_ANY]
+        self.__events_of_interest = [EVENT_ANY]
       
     
     def get_events_of_interests(self)-> List:
         return self.__events_of_interest 
     
     
+    def set_events_of_interests(self, events:List)-> None:
+        self.__events_of_interest = events
+    
+    
     def get_topics_of_interests(self)-> List:
-        return self.__topics_of_interest        
+        return self.__topics_of_interest
+    
+    
+    def set_topics_of_interests(self, topics:List)-> None:
+        self.__topics_of_interest = topics        
         
         
     async def _notifyEvent(self, event:EventType):
@@ -717,3 +727,47 @@ class ISystemMonitor(object):
         raise NotImplementedError()
         pass
     
+    
+
+
+class IReactionEngine(object):
+    
+    
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+    
+    
+    
+    @property
+    def action_dispatcher(self):
+        raise NotImplementedError()
+    
+    
+    
+    @action_dispatcher.setter
+    def action_dispatcher(self, _dispatcher):
+        raise NotImplementedError()
+    
+    
+    
+    def has_rule(self, id:str)->bool:
+        raise NotImplementedError()
+    
+    
+    
+    
+    def registerRule(self, rule:ReactionRule) ->None:
+        raise NotImplementedError()
+    
+    
+    
+    async def process_event_with_rules(self, event:EventType):
+        raise NotImplementedError()
+    
+    
+    
+    def deregisterRule(self, id:str)->None:
+        raise NotImplementedError()

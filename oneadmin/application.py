@@ -32,7 +32,6 @@ import os
 
 
 from oneadmin.modules.filesystem import FileManager
-from oneadmin.modules.reaction import ReactionEngine
 from oneadmin.core.grahil_core import ModuleRegistry
 import socket
 import asyncio
@@ -42,8 +41,7 @@ from core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE,\
     REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT,\
     SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from core.event import EventType, ArbitraryDataEvent
-from abstracts import IMQTTClient, IScriptRunner, IMailer, ILogMonitor,\
-    ISystemMonitor
+from abstracts import IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine
 from typing import Text
 
 
@@ -64,12 +62,11 @@ class TornadoApplication(tornado.web.Application):
         try:
             self.__filemanager = None
             self.__pubsubhub = None
-            self.__reaction_engine = None
             self.__action__dispatcher = None
             self.__communication_hub = CommunicationHub()                                
             
          
-            # Initializing pubsub hub
+            ''' Initializing pubsub module '''
             pubsub_conf = modules[PUBSUBHUB_MODULE]
             self.__pubsubhub:PubSubHub = PubSubHub(pubsub_conf["conf"])
             self.__pubsubhub.activate_message_flush()
@@ -77,6 +74,13 @@ class TornadoApplication(tornado.web.Application):
             
             if self.__pubsubhub != None:
                 self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub)
+                
+                
+            
+            ''' Initializing action executor '''
+            action_config = modules[ACTION_DISPATCHER_MODULE]
+            if action_config != None and action_config["enabled"] == True:
+                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
                 
                 
                 
@@ -219,167 +223,167 @@ class TornadoApplication(tornado.web.Application):
                 self.modules.registerModule(SYSTEM_MODULE, sysmon)
             
                     
-                
-        except Exception as e:
-            self.logger.error("Oops!,%s,occurred." + str(e))
         
-        
-                
-        action_config = modules[ACTION_DISPATCHER_MODULE]
-        if action_config != None and action_config["enabled"] == True:
-            self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
-
+            ''' Reaction engine -> to send commands to reaction engine use pubsub '''
+            # Register reaction engine
+            
+            reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
+            if reaction_engine_conf["enabled"] == True:
+                reaction_module_name = reaction_engine_conf["module"]
+                reaction_class_name = reaction_engine_conf["klass"]
+                mod = __import__(reaction_module_name, fromlist=[reaction_class_name])
+                klass = getattr(mod, reaction_class_name)
+                reaction_engine:IReactionEngine = klass(reaction_engine_conf["conf"], self.__action__dispatcher)
+                reaction_engine.eventhandler = self.handle_event
+                self.__pubsubhub.addEventListener(reaction_engine)
             
             
-        
-        ''' Reaction engine -> to send commands to reaction engine use pubsub '''
-        # Register reaction engine
-        
-        reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
-        if reaction_engine_conf["enabled"] == True:
-            self.__reaction_engine = ReactionEngine(reaction_engine_conf["conf"], self.modules, self.__action__dispatcher)
-            self.__reaction_engine.eventhandler = self.handle_event
-            # Inform pubsubhub of the reaction engine presence
-            self.__pubsubhub.addEventListener(self.__reaction_engine)
-        
-        
-        ''' Bot -> to send commands to bot use pubsub '''
-        
-        bot_config =  modules[BOT_SERVICE_MODULE]
-        if bot_config != None and bot_config["enabled"] == True:
-            bot_module_name = bot_config["module"]
-            bot_class_name = bot_config["klass"]
             
-            nlp_engine = None
-        
-            try:
+            
+            ''' Bot -> to send commands to bot use pubsub '''
+            
+            bot_config =  modules[BOT_SERVICE_MODULE]
+            if bot_config != None and bot_config["enabled"] == True:
+                bot_module_name = bot_config["module"]
+                bot_class_name = bot_config["klass"]
                 
+                nlp_engine = None
+            
                 try:
-                    nlp_module_name = bot_config["nlp"]["module"]
-                    nlp_module_config = bot_config["nlp"]["conf"]
-                    nlp_class_name = bot_config["nlp"]["klass"]
-                    nlp_mod = __import__(nlp_module_name, fromlist=[nlp_class_name])
-                    nlp_klass = getattr(nlp_mod, nlp_class_name)
-                    nlp_engine = nlp_klass(self.__filemanager, nlp_module_config)
+                    
+                    try:
+                        nlp_module_name = bot_config["nlp"]["module"]
+                        nlp_module_config = bot_config["nlp"]["conf"]
+                        nlp_class_name = bot_config["nlp"]["klass"]
+                        nlp_mod = __import__(nlp_module_name, fromlist=[nlp_class_name])
+                        nlp_klass = getattr(nlp_mod, nlp_class_name)
+                        nlp_engine = nlp_klass(self.__filemanager, nlp_module_config)
+                    except ImportError as be:
+                        self.logger.warn("Module by name " + nlp_module_name + " was not found and will not be loaded")
+                    
+                    
+                    mod = __import__(bot_module_name, fromlist=[bot_class_name])
+                    klass = getattr(mod, bot_class_name)
+                    service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
+                    service_bot.eventhandler = self.handle_event
+                    self.__pubsubhub.addEventListener(service_bot)
+                    
+                    # Register `servicebot` module'
+                    self.modules.registerModule(BOT_SERVICE_MODULE, service_bot)
+                    
+                    '''
+                    Register communication interface with communication hub
+                    ''' 
+                    self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, service_bot)
+                
                 except ImportError as be:
-                    self.logger.warn("Module by name " + nlp_module_name + " was not found and will not be loaded")
+                    self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
+                        
+        
+        
                 
-                
-                mod = __import__(bot_module_name, fromlist=[bot_class_name])
-                klass = getattr(mod, bot_class_name)
-                service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
-                service_bot.eventhandler = self.handle_event
-                self.__pubsubhub.addEventListener(service_bot)
-                
-                # Register `servicebot` module'
-                self.modules.registerModule(BOT_SERVICE_MODULE, service_bot)
-                
-                '''
-                Register communication interface with communication hub
-                ''' 
-                self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, service_bot)
-            
-            except ImportError as be:
-                self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-                
-
-
-        
-        ''' Registering RPC engine for Webclients '''
-        # Initializing rpc gateway
-        rpc_gateway_conf = modules[RPC_GATEWAY_MODULE]
-        self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__dispatcher)
-        
-        '''
-        Register `rpc gateway` module
-        '''
-        self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
-        
-        '''
-        Register communication interface with communication hub
-        '''
-        self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
-        
-        
-        
-        '''
-        Register `mqtt gateway` module
-        '''
-        
-        mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
-        if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
-            mqtt_module_name = mqtt_gateway_conf["module"]
-            mqtt_class_name = mqtt_gateway_conf["klass"]
-            mod = __import__(mqtt_module_name, fromlist=[mqtt_class_name])
-            klass = getattr(mod, mqtt_class_name)
-            mqtt_gateway:IMQTTClient = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
-            mqtt_gateway.on_data_handler = self.on_telemetry_data
-            
+            ''' Registering RPC engine for Webclients '''
+            # Initializing rpc gateway
+            rpc_gateway_conf = modules[RPC_GATEWAY_MODULE]
+            self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__dispatcher)
             
             '''
             Register `rpc gateway` module
             '''
-            self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt_gateway)
+            self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
             
             '''
             Register communication interface with communication hub
             '''
-            self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt_gateway)
-        
-        
-        
-        '''
-        Register `smtp mailer` module
-        '''
+            self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
             
-        smtp_mailer_conf = modules[SMTP_MAILER_MODULE]
-        if smtp_mailer_conf != None and smtp_mailer_conf["enabled"] == True:
-            smtp_module_name = smtp_mailer_conf["module"]
-            smtp_class_name = smtp_mailer_conf["klass"]
-            mod = __import__(smtp_module_name, fromlist=[smtp_class_name])
-            klass = getattr(mod, smtp_class_name)
-            smtp_mailer:IMailer = klass(smtp_mailer_conf["conf"])
             
-            self.modules.registerModule(SMTP_MAILER_MODULE, smtp_mailer)
             
             '''
-            Register communication interface with communication hub
+            Register `mqtt gateway` module
             '''
-            self.__communication_hub.register_interface(CHANNEL_SMTP_MAILER, PROACTIVE_CLIENT_TYPE, smtp_mailer)
             
-           
-           
-           
-        '''
-        Register `script_runner` module
-        '''
+            mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
+            if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
+                mqtt_module_name = mqtt_gateway_conf["module"]
+                mqtt_class_name = mqtt_gateway_conf["klass"]
+                mod = __import__(mqtt_module_name, fromlist=[mqtt_class_name])
+                klass = getattr(mod, mqtt_class_name)
+                mqtt_gateway:IMQTTClient = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
+                mqtt_gateway.on_data_handler = self.on_telemetry_data
+                
+                
+                '''
+                Register `rpc gateway` module
+                '''
+                self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt_gateway)
+                
+                '''
+                Register communication interface with communication hub
+                '''
+                self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt_gateway)
+            
+            
+            
+            '''
+            Register `smtp mailer` module
+            '''
+                
+            smtp_mailer_conf = modules[SMTP_MAILER_MODULE]
+            if smtp_mailer_conf != None and smtp_mailer_conf["enabled"] == True:
+                smtp_module_name = smtp_mailer_conf["module"]
+                smtp_class_name = smtp_mailer_conf["klass"]
+                mod = __import__(smtp_module_name, fromlist=[smtp_class_name])
+                klass = getattr(mod, smtp_class_name)
+                smtp_mailer:IMailer = klass(smtp_mailer_conf["conf"])
+                
+                self.modules.registerModule(SMTP_MAILER_MODULE, smtp_mailer)
+                
+                '''
+                Register communication interface with communication hub
+                '''
+                self.__communication_hub.register_interface(CHANNEL_SMTP_MAILER, PROACTIVE_CLIENT_TYPE, smtp_mailer)
+                
                
-        script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
-        if script_runner_conf != None and script_runner_conf["enabled"] == True:
-            script_runner_module_name = script_runner_conf["module"]
-            script_runner_class_name = script_runner_conf["klass"]
-            mod = __import__(script_runner_module_name, fromlist=[script_runner_class_name])
-            klass = getattr(mod, script_runner_class_name)
-            script_runner:IScriptRunner = klass(script_runner_conf["conf"])
-            script_runner.eventhandler = self.handle_event
-            self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
+               
+               
+            '''
+            Register `script_runner` module
+            '''
+                   
+            script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
+            if script_runner_conf != None and script_runner_conf["enabled"] == True:
+                script_runner_module_name = script_runner_conf["module"]
+                script_runner_class_name = script_runner_conf["klass"]
+                mod = __import__(script_runner_module_name, fromlist=[script_runner_class_name])
+                klass = getattr(mod, script_runner_class_name)
+                script_runner:IScriptRunner = klass(script_runner_conf["conf"])
+                script_runner.eventhandler = self.handle_event
+                self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
+                
+                self.modules.registerModule(SCRIPT_RUNNER_MODULE, script_runner)
+                
+                
+                
+                
+            # Special settings for debugging and hot reload
+            settings["debug"] = conf["server"]["debug_mode"]        
+            settings["autoreload"] = conf["server"]["hot_reload"]
             
-            self.modules.registerModule(SCRIPT_RUNNER_MODULE, script_runner)
+            # Watch configuration files
+            self.addwatchfiles(settings["app_configuration"])
+            self.addwatchfiles(settings["users_configuration"])
+        
+        
+            tornado.web.Application.__init__(self, url_patterns, **settings)
 
         
+        except Exception as e:
+            
+            self.logger.error("Oops! an error occurred initializing application.%s", str(e))
         
         
-        
-        # Special settings for debugging and hot reload
-        settings["debug"] = conf["server"]["debug_mode"]        
-        settings["autoreload"] = conf["server"]["hot_reload"]
-        
-        # Watch configuration files
-        self.addwatchfiles(settings["app_configuration"])
-        self.addwatchfiles(settings["users_configuration"])
-        
-        
-        tornado.web.Application.__init__(self, url_patterns, **settings)
+
         
         
     '''

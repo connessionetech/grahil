@@ -7,6 +7,8 @@ Created on 26-Nov-2020
 
 ''' topic names'''
 
+TOPIC_ANY = "*"
+
 TOPIC_LOG_ACTIONS = "/log/actions"
 
 TOPIC_LOGMONITORING = "/logging"
