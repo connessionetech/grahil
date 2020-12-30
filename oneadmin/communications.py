@@ -421,18 +421,15 @@ class PubSubHub(object):
                 if len(clients) > 0:
                     self.logger.debug("Pushing message %s to %s subscribers...",format(message), len(clients))
                     for clients in clients:
-                        await clients.submit(message)                
-                                
+                        await clients.submit(message)
                 try:
-                    # Notify notifyable components of the system
                     for listener in self.__listeners:
                         await listener._notifyEvent(message)                            
                 except Exception as e:
-                        err = "An error occurred notifying %s while reacting to this event.%s"
-                        self.logger.error(err, str(notifyable), str(e))
+                        self.logger.error("An error occurred notifying %s while reacting to this event.%s", str(listener), str(e))
                 
-            except:
-                logging.error("Oops!,%s,occurred.", sys.exc_info()[0])
+            except Exception as e:
+                logging.error("Oops!,%s,occurred.", str(e))
             finally:            
                 msgque.task_done()
 

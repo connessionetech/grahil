@@ -33,9 +33,9 @@ import uuid
 from oneadmin import responsebuilder
 from settings import settings
 from oneadmin.exceptions import RPCError, AccessPermissionsError
-from core.constants import TOPIC_PING
+from core.constants import TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
 from core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME,\
-    INTENT_DELETE_FILE_NAME
+    INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
 
 
 # Create a base class
@@ -311,22 +311,23 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         pass
     
     
+    
     def __clearSubscriptions(self):
         modules = self.application.modules
-        pubsubhub = modules.getModule("pubsub")
+        pubsubhub = modules.getModule(PUBSUBHUB_MODULE)
         self.application.unregisterClient(self)
         pubsubhub.clearsubscriptions(self)
         pass
     
     
+    
     async def __cancelRecordings(self):
-        modules = self.application.modules
-        rpc_gateway = modules.getModule("rpc_gateway")
-        if rpc_gateway != None:  
-            for k in self.liveactions['logrecordings'].copy():
-                await rpc_gateway.stop_log_recording(self, [k])
+        __action_dispatcher = self.application.action_dispatcher
+        for k in self.liveactions['logrecordings'].copy():
+            await __action_dispatcher.handle_request(None, INTENT_STOP_LOG_RECORDING_NAME, {"rule_id": k, "handler": self})
 
 
+    
     async def on_message(self, message):
         self.logger.info("got message %r", message)
         parsed = tornado.escape.json_decode(message)
@@ -334,12 +335,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         pass
     
     
+    
     async def __processMessages(self, message):
         
         modules = self.application.modules
         
-        if modules.hasModule("rpc_gateway"):
-            rpcgateway = modules.getModule("rpc_gateway")
+        if modules.hasModule(RPC_GATEWAY_MODULE):
+            rpcgateway = modules.getModule(RPC_GATEWAY_MODULE)
         
             err = None
             response = None

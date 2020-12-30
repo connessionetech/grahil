@@ -855,14 +855,15 @@ class ActionStopLogRecording(Action):
         if modules.hasModule(LOG_MANAGER_MODULE):
             __logmon = modules.getModule(LOG_MANAGER_MODULE)
             handler = params["handler"]
-            log_name = params["name"] # log name
-            log_info = __logmon.getLogInfo(log_name)
-            topic_path = log_info["topic_path"]
-            topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
-            filepath = log_info["log_file_path"]
-        
+            
             if hasattr(handler, 'id'):
-                rule_id = params["rule_id"]
+                rule_id:str = params["rule_id"]
+                log_name:str = rule_id.replace(handler.id + "-", "")
+                log_info = __logmon.get_log_info(log_name)
+                topic_path = log_info["topic_path"]
+                topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
+                filepath = log_info["log_file_path"]
+                
                 if rule_id not in handler.liveactions['logrecordings']:
                     raise LookupError("There is no log recording active for this log.")
                 

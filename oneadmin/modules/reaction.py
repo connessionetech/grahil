@@ -34,7 +34,7 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
 from abstracts import IEventDispatcher, IReactionEngine
 from core.event import EventType, EVENT_STATS_GENERATED, EVENT_ANY,\
-    EVENT_LOG_RECORDING_START
+    EVENT_LOG_RECORDING_START, EVENT_LOG_RECORDING_STOP
 from core.constants import TOPIC_ANY
 from core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from builtins import str
@@ -158,9 +158,9 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                 rule = self._parse_rule(rule_data)
                 self.register_rule(rule)
                 
-            elif event["name"] == EVENT_LOG_RECORDING_START:
+            elif event["name"] == EVENT_LOG_RECORDING_STOP:
                 rule_data = event["data"]
-                self.deregister_rule(rule["id"])
+                self.deregister_rule(rule_data["id"])
             
             
             
@@ -342,7 +342,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                 else:
                     self.__topics_of_intertest[rule.target_topic]["num_rules"] = num_rules_for_topic
                 
-                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + len(num_rules_for_topic))
+                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))
             
             except Exception as e:
                 err = "Unable to register rule " + str(e)
@@ -350,7 +350,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
         
             finally:
                 del self.__rules[id]
-                self.logger.info("Total topics " + len(self.__topics_of_intertest))  
+                self.logger.info("Total topics " + str(len(self.__topics_of_intertest)))  
     
             
     
