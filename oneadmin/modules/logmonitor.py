@@ -55,7 +55,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
             self.__log_files[name] = log_info
             self.__log_store[name] = collections.deque([], self.__conf["max_messages_chunks"])
             tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, name)
-            tornado.ioloop.IOLoop.current().spawn_callback(self.__schedule_chunk_processing, name)    
+            #tornado.ioloop.IOLoop.current().spawn_callback(self.__schedule_chunk_processing, name)    
     
     
     '''
@@ -63,11 +63,36 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
     '''
     def deregister_log_file(self, name:str):
         if name in self.__log_files:
-            pcallback = self.__log_files[name]["chunk_collector"]
-            pcallback.stop()
+            '''
+            if "chunk_collector" in self.__log_files[name]:
+                pcallback = self.__log_files[name]["chunk_collector"]
+                pcallback.stop()
+            ''' 
             del self.__log_files[name]
             del self.__log_store[name]
             # Stop tail
+    
+    
+    
+    def enable_chunk_generation(self, logname:str) ->None:
+        """ Enable logchunk collection. call collector every few seconds """
+        if "chunk_collector" not in self.__log_files[logname]:
+            callback = tornado.ioloop.PeriodicCallback(lambda: self.__chunk_collector(logname), self.__conf["chunks_collector_interval"])
+            self.__log_files[logname]["chunk_collector"] = callback;
+            callback.start()
+        
+        pass
+    
+    
+    
+    def disable_chunk_generation(self, logname:str) ->None:
+        """ Disables logchunk collection. """
+        if "chunk_collector" in self.__log_files[logname]:
+                pcallback = self.__log_files[logname]["chunk_collector"]
+                pcallback.stop()
+                del self.__log_files[logname]["chunk_collector"]
+                
+        pass
             
             
     
@@ -83,7 +108,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
     '''
     Get all log file keys that are used as topic names
     '''
-    def get_log_Info(self, name:str) ->Dict:
+    def get_log_info(self, name:str) ->Dict:
         if name in self.__log_files:
             return self.__log_files[name]
         else:
@@ -91,11 +116,9 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
         
     
     
-    ''' call collector every 15 seconds '''
+    
     def __schedule_chunk_processing(self, logname):
-        callback = tornado.ioloop.PeriodicCallback(lambda: self.__chunk_collector(logname), self.__conf["chunks_collector_interval"])
-        self.__log_files[logname]["chunk_collector"] = callback;
-        callback.start()
+        self.enable_chunk_generation(logname)
         pass
     
     
@@ -116,7 +139,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
             
             if len(q)>0: 
                 log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                await self.dispatchevent(LogChunkEvent(log_topic_path, data=q.copy(), meta={"log_name": logname}))
+                await self.dispatchevent(LogChunkEvent(log_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
                 self.__log_store[logname].clear()
                 self.__log_store[logname] = None
                 self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"])                    
@@ -178,8 +201,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
                     ''' max_messages_chunks < 100 causes bug while writing log '''
                     if len(q)>=self.__conf["max_messages_chunks"] :
                         log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                        await self.dispatchevent(LogChunkEvent(log_topic_path, data=q.copy(), meta={"log_name": logname}))
-                        
+                        await self.dispatchevent(LogChunkEvent(log_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
                         self.__log_store[logname].clear()
                         self.__log_store[logname] = None
                         self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"]) 

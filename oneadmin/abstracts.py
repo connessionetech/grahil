@@ -477,8 +477,8 @@ class IEventHandler(object):
         
         
     async def _notifyEvent(self, event:EventType):
-        if event["topic"] in self.get_topics_of_interests():
-            if event["name"] in self.get_events_of_interests():
+        if event["topic"] in self.get_topics_of_interests() or TOPIC_ANY in self.get_topics_of_interests():
+            if event["name"] in self.get_events_of_interests() or EVENT_ANY in self.get_events_of_interests():
                 await self.handleEvent(event)
         pass
     
@@ -671,10 +671,21 @@ class ILogMonitor(object):
         raise NotImplementedError()
         pass
     
-    def get_log_Info(self, name:str) ->Dict:
-        raise NotImplementedError()
-        pass 
     
+    def get_log_info(self, name:str) ->Dict:
+        raise NotImplementedError()
+        pass
+    
+    
+    def enable_chunk_generation(self, logname:str) ->None:
+        raise NotImplementedError()
+        pass
+    
+    
+    
+    def disable_chunk_generation(self, logname:str) ->None:
+        raise NotImplementedError()
+        pass
 
 
 class ISystemMonitor(object):
@@ -759,7 +770,7 @@ class IReactionEngine(object):
     
     
     
-    def registerRule(self, rule:ReactionRule) ->None:
+    def register_rule(self, rule:ReactionRule) ->None:
         raise NotImplementedError()
     
     
@@ -769,5 +780,5 @@ class IReactionEngine(object):
     
     
     
-    def deregisterRule(self, id:str)->None:
+    def deregister_rule(self, id:str)->None:
         raise NotImplementedError()

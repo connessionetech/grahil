@@ -19,7 +19,8 @@ from tornado.httpclient import AsyncHTTPClient
 import urllib
 import logging
 from tornado.web import HTTPError
-from core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS
+from core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS,\
+    FILE_MANAGER_MODULE
 import json
 from abstracts import IMailer, IScriptRunner
 
@@ -95,6 +96,8 @@ ACTION_RUN_DIAGNOSTICS_NAME = ACTION_PREFIX + "run_diagnostics"
 
 ACTION_SEND_MAIL_NAME = ACTION_PREFIX + "send_mail"
 
+ACTION_WRITE_LOG_CHUNKS_NAME = ACTION_PREFIX + "write_log_chunks"
+
 
 
 
@@ -148,7 +151,7 @@ def builtin_actions() -> List[Action]:
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
             ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution(),
-            ActionTest()]
+            ActionTest(), ActionWriteLogChunks()]
 
 
 
@@ -804,7 +807,7 @@ class ActionStartLogRecording(Action):
             __logmon = modules.getModule(LOG_MANAGER_MODULE)
             handler = params["handler"]
             log_name = params["name"] # log name
-            log_info = __logmon.getLogInfo(log_name)
+            log_info = __logmon.get_log_info(log_name)
             
             if hasattr(handler, 'id') and "logrecordings" in handler.liveactions:
                 rule_id = handler.id + '-' + log_name
@@ -816,6 +819,9 @@ class ActionStartLogRecording(Action):
                 topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
                 filepath = log_info["log_file_path"]
                 rule = buildLogWriterRule(rule_id, topic_path, filepath)
+                
+                # tell logmon to enable chunk generation
+                __logmon.enable_chunk_generation(log_name)
                 
                 # store reference on client handler
                 handler.liveactions['logrecordings'].add(rule_id) 
@@ -860,6 +866,9 @@ class ActionStopLogRecording(Action):
                 if rule_id not in handler.liveactions['logrecordings']:
                     raise LookupError("There is no log recording active for this log.")
                 
+                # We dont tell logmon to disable chunk generation because theer might be others who still want chunk generation
+                #__logmon.disable_chunk_generation(log_name)
+                
                 # remove reference on client handler
                 handler.liveactions['logrecordings'].remove(rule_id) 
                 rule = buildLogWriterRule(rule_id, topic_path, filepath)
@@ -869,6 +878,38 @@ class ActionStopLogRecording(Action):
         
         else:
             raise ModuleNotFoundError("`"+LOG_MANAGER_MODULE+"` module does not exist")
+        
+
+
+
+class ActionWriteLogChunks(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_WRITE_LOG_CHUNKS_NAME
+    
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __filenamanger = None
+        
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filenamanger = modules.getModule(FILE_MANAGER_MODULE)
+            chunks = params["__event__"]["data"]["content"]
+            path = params["destination"]
+            await __filenamanger.write_file_stream(path, chunks)
+            #event = StartLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data=rule)
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
             
 
 

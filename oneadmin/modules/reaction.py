@@ -154,12 +154,13 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
         try:
         
             if event["name"] == EVENT_LOG_RECORDING_START:
-                rule = event["data"]
-                self.registerRule(rule)
+                rule_data = event["data"]
+                rule = self._parse_rule(rule_data)
+                self.register_rule(rule)
                 
             elif event["name"] == EVENT_LOG_RECORDING_START:
-                rule = event["data"]
-                self.deregisterRule(rule["id"])
+                rule_data = event["data"]
+                self.deregister_rule(rule["id"])
             
             
             
@@ -208,7 +209,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                             continue
                         
                         rule = self._parse_rule(rule_data)                        
-                        self.registerRule(rule)
+                        self.register_rule(rule)
             else:
                 raise FileNotFoundError("File : " + path + " does not exist.")
             
@@ -291,7 +292,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
     '''
         Register rules for specified topic of interest (v2.0)
     '''    
-    def registerRule(self, rule:ReactionRule) ->None:
+    def register_rule(self, rule:ReactionRule) ->None:
         
         try:
             if isinstance(rule.trigger, TimeTrigger):
@@ -328,7 +329,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
     '''
         Delete rule and topic of interest (v2.0)
     '''
-    def deregisterRule(self, id:str)->None:
+    def deregister_rule(self, id:str)->None:
         if id in self.__rules and self.__rules[id] != None:
             try:
                 rule:ReactionRule = self.__rules[id]

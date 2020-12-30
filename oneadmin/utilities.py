@@ -20,6 +20,7 @@ import ntpath
 import os
 import json
 import filetype
+from core.intent import INTENT_WRITE_LOG_CHUNKS_NAME
 
 
 
@@ -160,27 +161,31 @@ def path_leaf(path):
         return tail or ntpath.basename(head)
     
 
-''' builds log writer rule dynamically '''        
-def buildLogWriterRule(id, topic, filepath):
+''' creates dynamic log writer rule dynamically '''        
+def buildLogWriterRule(rule_id, topic, filepath):
     name = path_leaf(filepath)
-    output_path = os.path.join(os.path.dirname(filepath),  "ondemand-" + id)
-    return {
-        "id": id,
-        "description": "Rule for log recording " + name,
-        "listen-to": ""+ topic + "",
-        "enabled": True,
-        "trigger":{
-            "on-payload-object": "data",
-            "on-content": "*",
-            "using-condition": "equals",
-            "evaluator-func": None
-        },
-        "response":{
-            "action": "start_log_record",
-            "reaction-func": "standard_reactions.write_log",
-            "reaction-params": {
-                "filepath": "" + output_path + ""
-            }
-        }    
-    }
+    output_path = os.path.join(os.path.dirname(filepath),  "ondemand-" + rule_id)
+    return{
+            "id": rule_id,
+            "description": "Rule for log recording " + name,
+            "listen-to": ""+ topic + "",
+            "enabled": True,
+            "trigger":{
+                "on-payload-object": {
+                    "key":"data",
+                    "on-content": "*",
+                    "on-condition": "equals"
+                },        
+                "evaluator": None
+            },
+            "response":{
+                "nonce" : False,
+                "intent": "" + INTENT_WRITE_LOG_CHUNKS_NAME + "",
+                "parameters": {
+                    "destination": "" + output_path + ""
+                }
+            }    
+        }
+    
+    
     pass

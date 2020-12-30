@@ -5,6 +5,18 @@ Created on 26-Nov-2020
 '''
 
 
+''' attribute names'''
+
+ATTR_CHUNK_COLLECTOR = "chunk_collector"
+
+ATTR_CONTENT = "content"
+
+ATTR_NAME = "name"
+
+ATTR_LOG_NAME = "log_name"
+
+
+
 ''' topic names'''
 
 TOPIC_ANY = "*"
