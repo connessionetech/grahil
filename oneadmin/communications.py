@@ -308,6 +308,15 @@ class PubSubHub(object):
     def removeChannel(self, topicname):
         for k in list(self.channels.keys()):
             if k == topicname:
+                channel = self.channels[topicname]
+                
+                # possible logic to cleanly dispose queue content
+                msgque:Queue = channel[2] #queue
+                while msgque.qsize() > 0:
+                    item = msgque.get_nowait()
+                    msgque.task_done()
+                                        
+                del msgque
                 del self.channels[topicname]
                 self.logger.info("Removed channel %s", topicname)
         pass
@@ -407,30 +416,45 @@ class PubSubHub(object):
     '''
     Flushes messages from  channel queue into client's message queue actively
     '''
-    async def __flush_messages(self, topic):
+    async def __flush_messages(self, topic):        
         while True:
-            if(not topic in self.channels):
-                break
             
-            channel = self.channels[topic]
-            msgque = channel[2] #queue
             try:
-                message = await msgque.get()
+                if(not topic in self.channels):
+                    break
                 
-                clients = channel[3] #set
+                channel = self.channels[topic]
+                msgque:Queue = channel[2] #queue
+                clients:set = channel[3] #set
+                
+                message = await msgque.get()                
+                
                 if len(clients) > 0:
                     self.logger.debug("Pushing message %s to %s subscribers...",format(message), len(clients))
-                    for clients in clients:
-                        await clients.submit(message)
+                    
+                    ''' pushing to clients '''
+                    try:    
+                        for clients in clients:
+                            await clients.submit(message)
+                    except Exception as e:
+                        logging.error("An error occurred pushing messages to client %s for topic %s. Cause : %s.", str(client), topic, str(e))
+                    
+                
+                ''' pushing to listeners '''
                 try:
                     for listener in self.__listeners:
                         await listener._notifyEvent(message)                            
                 except Exception as e:
                         self.logger.error("An error occurred notifying %s while reacting to this event.%s", str(listener), str(e))
                 
-            except Exception as e:
-                logging.error("Oops!,%s,occurred.", str(e))
-            finally:            
+            except GeneratorExit as ge:
+                logging.error("GeneratorExit occurred")
+                return
+            
+            except Exception as re:
+                logging.error("Unexpected error occurred, which caused by %s", str(re))
+                
+            finally:
                 msgque.task_done()
 
 
