@@ -6,7 +6,7 @@ Created on 29-Nov-2020
 
 from typing import List 
 from typing import Text
-from core import grahil_types
+from oneadmin.core import grahil_types
 
 
 INTENT_PREFIX = "intent_"

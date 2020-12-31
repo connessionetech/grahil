@@ -3,27 +3,29 @@ Created on 20-Oct-2020
 
 @author: root
 '''
-import logging
-import tornado
 
-import json
-import sys
-from aiogram import Bot, Dispatcher, types
-from tornado.queues import Queue
-import uuid
-from oneadmin.exceptions import *
-from aiogram.utils import exceptions
-from oneadmin.utilities import isVideo, isImage
-from tornado.platform import asyncio
-from aiogram.types.input_file import InputFile
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
 from oneadmin.abstracts import ServiceBot
 from oneadmin.abstracts import IEventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
-from core.components import ActionDispatcher
-from abstracts import IntentProvider, IClientChannel
-from exceptions import RPCError
-from core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
+from oneadmin.core.components import ActionDispatcher
+from oneadmin.abstracts import IntentProvider, IClientChannel
+from oneadmin.exceptions import RPCError
+from oneadmin.core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
+from oneadmin.exceptions import *
+from oneadmin.utilities import isVideo, isImage
+
+import logging
+import tornado
+import json
+import sys
+import uuid
+from aiogram.utils import exceptions
+from tornado.platform import asyncio
+from aiogram.types.input_file import InputFile
+from aiogram import Bot, Dispatcher, types
+from tornado.queues import Queue
+
 
 
 class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):

@@ -3,19 +3,16 @@ Created on 08-Dec-2020
 
 @author: root
 '''
+from oneadmin.core.event import EventType
+
 from builtins import str
 from enum import Enum
 from typing import Text
 import re
-from core.event import EventType
 
 
 SIMPLE_RULE_EVALUATOR = "SimpleRuleEvaluator"
-
 REG_EX_RULE_EVALUATOR = "RegExRuleEvaluator"
-
-
-
 
 
 

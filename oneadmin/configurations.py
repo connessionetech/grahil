@@ -16,10 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from oneadmin.exceptions import ConfigurationLoadError
+
+
 import json
 import logging
 import os
-from oneadmin.exceptions import ConfigurationLoadError
+
 
 
 

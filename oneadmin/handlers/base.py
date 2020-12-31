@@ -16,26 +16,25 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from oneadmin.responsebuilder import formatSuccessResponse,formatErrorResponse ,formatProgressResponse, formatErrorRPCResponse
+from oneadmin.core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME, INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
+from oneadmin.communications import PubSubHub
+from oneadmin import responsebuilder
+from oneadmin.exceptions import RPCError, AccessPermissionsError
+from oneadmin.core.constants import TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
+
+import base64
+import uuid
 import tornado.web
 import logging
 import tornado.websocket
 import json
 from user_agents import parse
-from oneadmin.responsebuilder import formatSuccessResponse,formatErrorResponse ,\
-    formatProgressResponse, formatErrorRPCResponse
-from oneadmin.communications import PubSubHub
+from settings import settings
+from tornado.escape import utf8
 from tornado.httputil import parse_multipart_form_data
 from tornado.queues import Queue
-from tornado.websocket import WebSocketClosedError
-import base64
-from tornado.escape import utf8
-import uuid
-from oneadmin import responsebuilder
-from settings import settings
-from oneadmin.exceptions import RPCError, AccessPermissionsError
-from core.constants import TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
-from core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME,\
-    INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
+from tornado.websocket import WebSocketClosedError  
 
 
 # Create a base class

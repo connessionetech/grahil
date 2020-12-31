@@ -9,12 +9,10 @@ import re
 #from sklearn.metrics.pairwise import cosine_similarity
 
 import nltk
-
 import warnings
 import logging
 import tornado
 import random
-
 import copy
 
 

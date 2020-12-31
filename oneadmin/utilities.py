@@ -15,12 +15,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+from oneadmin.core.intent import INTENT_WRITE_LOG_CHUNKS_NAME
 
 import ntpath
 import os
 import json
 import filetype
-from core.intent import INTENT_WRITE_LOG_CHUNKS_NAME
+
 
 
 

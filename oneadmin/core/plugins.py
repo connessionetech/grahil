@@ -4,7 +4,7 @@ Created on 08-Dec-2020
 @author: root
 '''
 from typing import Text, Dict, List
-from abstracts import IntentProvider
+from oneadmin.abstracts import IntentProvider
 
 
 
@@ -14,7 +14,7 @@ def builtin_plugins() -> List[PluginBase]:
 
 
 
-class PluginBase(object):
+class IPluginBase(object):
     '''
     classdocs
     '''
@@ -38,7 +38,7 @@ class PluginBase(object):
 
     
     
-class IntentPluginBase(PluginBase):
+class IntentPluginBase(IPluginBase):
     '''
     Abstract class to facilitate intercepting intent requests to the action dispatcher 
     '''

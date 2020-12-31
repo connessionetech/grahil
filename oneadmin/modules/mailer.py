@@ -3,12 +3,13 @@ Created on 20-Dec-2020
 
 @author: root
 '''
+
+from oneadmin.abstracts import IMailer
+
 from builtins import str
 from email.message import EmailMessage
 from typing import Text
 import aiosmtplib
-from abstracts import IMailer
-
 
 
 class SMTPMailer(IMailer):

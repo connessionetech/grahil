@@ -16,9 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+from oneadmin.abstracts import IEventDispatcher, ISystemMonitor
+from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
+from oneadmin.core.constants import TOPIC_SYSMONITORING
+from oneadmin.version import __version__
+
 import psutil
-from tornado.concurrent import asyncio
-from time import time
 import logging
 import tornado
 import platform
@@ -26,16 +29,14 @@ import datetime
 import os
 import gc
 import json
-from pathlib import Path
-from typing import Dict
 
+from typing import Dict
+from tornado.concurrent import asyncio
+from time import time
 from crontab import CronTab
-from oneadmin.version import __version__
 from tornado.httpclient import AsyncHTTPClient
-from abstracts import IEventDispatcher, ISystemMonitor
-from core.event import StatsGeneratedEvent, StatsErrorEvent
-from core.constants import TOPIC_SYSMONITORING
 from builtins import str
+
 
 class SystemMonitor(IEventDispatcher, ISystemMonitor):
     

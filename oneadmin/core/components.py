@@ -4,6 +4,19 @@ Created on 29-Nov-2020
 @author: root
 '''
 
+from oneadmin.core.constants import *
+from oneadmin.core.event import EventType
+from oneadmin.abstracts import IntentProvider
+from oneadmin.exceptions import ActionError
+from oneadmin.core.intent import built_in_intents, INTENT_PREFIX
+from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_action_names, action_from_name
+from oneadmin.core.grahil_types import Modules
+from oneadmin.core.event import EVENT_KEY
+from oneadmin.core.constants import TARGET_DELEGATE_MODULE, built_in_client_types
+from oneadmin.abstracts import TargetProcess, IClientChannel, IEventHandler, IEventDispatcher
+
+from typing import Dict,Any
+from typing_extensions import TypedDict
 import logging
 import tornado
 from tornado.queues import Queue
@@ -14,22 +27,6 @@ from typing import Text
 from typing import List
 from builtins import str
 import copy
-
-from oneadmin.core.constants import *
-from oneadmin.core.event import EventType
-from oneadmin.abstracts import IntentProvider
-from oneadmin.exceptions import ActionError
-from oneadmin.core.intent import built_in_intents, INTENT_PREFIX
-from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_action_names, action_from_name
-from oneadmin.core.grahil_types import Modules
-from core.event import EVENT_KEY
-from typing import Dict,Any
-from core.constants import TARGET_DELEGATE_MODULE, built_in_client_types
-from abstracts import TargetProcess, IClientChannel, IEventHandler,\
-    IEventDispatcher
-from typing_extensions import TypedDict
-
-
 
 
 class VirtualHandler(object):
@@ -301,7 +298,7 @@ class ActionDispatcher(object):
                 requestid = task_definition["requestid"]
                 intent:str = task_definition["intent"]
                 args:dict = task_definition["params"]
-                requester = task_definition["requester"]
+                requester:IntentProvider = task_definition["requester"]
                 action:Action = self.__action_book[intent_name]["action"]
                 
                 executable = copy.deepcopy(action)  
