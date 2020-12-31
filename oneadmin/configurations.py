@@ -1,5 +1,5 @@
 '''
-This file is part of `Reactivity` 
+This file is part of `Grahil` 
 Copyright 2018 Connessione Technologies
 
 This program is free software: you can redistribute it and/or modify
