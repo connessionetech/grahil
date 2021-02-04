@@ -17,13 +17,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.handlers import base
+from tornado.web import url
 
 
-url_patterns = [
-    (r"/", base.MainHandler),
-    (r"/file/read", base.FileReadHandler),
-    (r"/file/write", base.FileWriteHandler),
-    (r"/file/download", base.FileDownloadHandler),
-    (r"/file/delete", base.FileDeleteeHandler),
-    (r"/ws", base.WebSocketHandler),
-]
+def get_url_patterns(rest:bool, ws:bool):
+    
+    if rest and not ws:
+        return [
+            url(r"/", base.MainHandler),
+            url(r"/file/read", base.FileReadHandler),
+            url(r"/file/write", base.FileWriteHandler),
+            url(r"/file/download", base.FileDownloadHandler),
+            url(r"/file/delete", base.FileDeleteeHandler)
+            ]
+    elif ws and not rest:
+        return [
+            url(r"/ws", base.WebSocketHandler),
+            ]
+    elif ws and rest:
+        return [
+            url(r"/", base.MainHandler),
+            url(r"/file/read", base.FileReadHandler),
+            url(r"/file/write", base.FileWriteHandler),
+            url(r"/file/download", base.FileDownloadHandler),
+            url(r"/file/delete", base.FileDeleteeHandler),
+            url(r"/ws", base.WebSocketHandler),
+            ]

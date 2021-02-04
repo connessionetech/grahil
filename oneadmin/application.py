@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.urls import url_patterns
 from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
@@ -40,6 +39,7 @@ from requests.api import get
 from settings import settings
 from tornado import autoreload
 from typing import Text
+from urls import get_url_patterns
 
 
 
@@ -360,21 +360,39 @@ class TornadoApplication(tornado.web.Application):
                 self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
                 
                 self.modules.registerModule(SCRIPT_RUNNER_MODULE, script_runner)
-                
-                
-                
+            
+            
+            server_config = conf["server"]
+
                 
             # Special settings for debugging and hot reload
-            settings["debug"] = conf["server"]["debug_mode"]        
-            settings["autoreload"] = conf["server"]["hot_reload"]
+            settings["debug"] = server_config["debug_mode"]        
+            settings["autoreload"] = server_config["hot_reload"]
             
             # Watch configuration files
             self.addwatchfiles(settings["app_configuration"])
             self.addwatchfiles(settings["users_configuration"])
-        
-        
-            tornado.web.Application.__init__(self, url_patterns, **settings)
-
+            
+            # runtime enabling of endpoints 
+            endpoint_rest_api_config = None
+            endpoint_ws_config = None
+            endpoint_rest_support = False
+            endpoint_ws_support = False  
+            
+            if "api" in server_config:
+                endpoint_rest_api_config = server_config["api"]
+                if endpoint_rest_api_config and endpoint_rest_api_config["enabled"] == True:
+                    endpoint_rest_support = True
+                
+            
+            if "ws" in server_config:
+                endpoint_ws_config = server_config["ws"]
+                if endpoint_ws_config and endpoint_ws_config["enabled"] == True:
+                    endpoint_ws_support = True
+                
+                
+            patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)        
+            tornado.web.Application.__init__(self, patterns, **settings)
         
         except Exception as e:
             

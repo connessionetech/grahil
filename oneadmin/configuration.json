@@ -6,7 +6,13 @@
 			"https_port": 8000,
 			"bind_host": "127.0.0.1",
 			"debug_mode": true,
-			"hot_reload": false
+			"hot_reload": false,
+			"api": {
+				"enabled": true
+			},
+			"ws": {
+				"enabled": true
+			}
 		},
 		"ssl": {
 			"enabled": false,
@@ -60,8 +66,8 @@
 				"module": "oneadmin.modules.reaction",
 				"klass": "ReactionEngine",
 				"conf" : {
-				"topics_of_interest": ["/stats", "/log/actions"],
-				"events_of_interest": ["stats_generated", "log_record_start", "log_record_stop"]
+				"topics_of_interest": ["*"],
+				"events_of_interest": ["*"]
 				}
 			},
 			"action_dispatcher": {
@@ -73,9 +79,7 @@
 				"enabled": true,
 				"module": "oneadmin.modules.system",
 				"klass": "SystemMonitor",
-				"conf" : {
-					"system_user" : "rajdeeprath",
-					"updater_cron_tab_args" : ">> /home/pi/updater/updater.log 2>&1",					
+				"conf" : {					
 					"snapshot_interval_seconds": 10,
 					"log_push_interval_seconds": 0.4,
 					"nic_stats_per_nic": false,
@@ -84,7 +88,7 @@
 				}
 			},
 			"log_monitor": {
-				"enabled": false,
+				"enabled": true,
 				"module": "oneadmin.modules.logmonitor",
 				"klass": "LogMonitor",
 				"conf" : {
@@ -92,10 +96,7 @@
 					"max_messages_chunks": 20,
 					"chunks_collector_interval": 10000,
 					"static_targets": [{
-						"enabled": true,
-						"name": "red5.log",
-						"log_file_path": "/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/red5.log",
-						"topic_path": "/logging/red5pro-server-us-7-2-recording/log/red5.log"
+						"enabled": true
 					}]
 				}
 			},
@@ -117,9 +118,6 @@
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
 					"accessible_paths": [
-						"/home/rajdeeprath/red5pro-servers/red5pro-server-us-7.2-recording/log/",
-						"/home/rajdeeprath/",
-						"/home/rajdeeprath/github/grahil-py"
 					],
 					"allowed_read_extensions": [
 						".properties",
@@ -137,7 +135,7 @@
 						".ini",
 						".log"
 					],
-					"upload_dir": "/home/rajdeeprath/uploads/",
+					"upload_dir": "",
 					"upload_dir_perm": "0o755",
 					"max_streamed_size": 52428800,
 					"max_upload_size": 52428800,
@@ -154,7 +152,7 @@
 				"conf": {
 					"max_stream_time_seconds": 300, 
 					"ffmpeg_path" : "/usr/bin/ffmpeg",
-					"youtube_endpoint" : "",
+					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
 					"youtube_streamkey" : ""
 				}
 			},
@@ -167,8 +165,6 @@
 					"host": "127.0.0.1",
 					"reconnect_wait_time_seconds": 5,
 					"topic_filters":[
-						"floors/rooftop/",
-						"floors/+/humidity"
 					],
 					"subscriptions":[
 						{"topic": "floors/#", "qos": 0}
@@ -183,10 +179,10 @@
 					"hostname": "smtp.gmail.com",
 					"port": 465,
 					"tls": true,
-					"default_from": "from@gmail.com",
-					"default_to": "to@gmail.com",
-					"default_username": "username",
-					"default_password": "password"
+					"default_from": "",
+					"default_to": "",
+					"default_username": "",
+					"default_password": ""
 				}
 			},
 			"service_bot": {
