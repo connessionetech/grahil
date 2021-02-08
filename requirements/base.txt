@@ -8,7 +8,6 @@ pyfastcopy==1.0.3
 smalluuid==1.0.0
 requests==2.22.0
 APScheduler==3.6.2
-croniter==0.3.35
 aiogram==2.10.1
 nltk
 scikit-learn

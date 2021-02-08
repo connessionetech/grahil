@@ -39,6 +39,8 @@ from typing import Text
 from typing import List
 from builtins import str
 import copy
+from tornado.ioloop import IOLoop
+from concurrent.futures.thread import ThreadPoolExecutor
 
 
 class VirtualHandler(object):
@@ -101,6 +103,7 @@ class ActionDispatcher(object):
         self.__modules = modules
         self.__action_book = {}
         self.__request_register = {}
+        self.__executor = ThreadPoolExecutor(max_workers=4)
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
     pass
@@ -114,7 +117,7 @@ class ActionDispatcher(object):
             
             try:
                 action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
-                action = action_from_name(action_name)
+                action:Action = action_from_name(action_name)
                 
                 if action:
                     self.registerActionforIntent(intent_name, action)
@@ -176,7 +179,7 @@ class ActionDispatcher(object):
         if intent_name in self.__action_book:
             raise ValueError("intent "+intent_name+" is already registered for an action")
         
-        action = action_from_name(action_name)
+        action:Action = action_from_name(action_name)
         
         self.__action_book[intent_name] =  {"action": action, "requests": Queue(maxsize=5)} # make 5 configurable
         tornado.ioloop.IOLoop.current().spawn_callback(self.__task_processor, intent_name)
@@ -257,7 +260,16 @@ class ActionDispatcher(object):
         try:
             action:Action = self.__action_book[intent_name]["action"]
             executable = copy.deepcopy(action)          
-            result:ActionResponse = await executable.execute(requester, self.__modules, params)
+            result:ActionResponse = None
+            
+            if action.is_async():
+                result = await executable.execute(requester, self.__modules, params)
+            else:
+                result = await IOLoop.current().run_in_executor(
+                    self.__executor,
+                    executable.execute, requester, self.__modules, params
+                    )
+            
             events = result.events
             return result.data
                              

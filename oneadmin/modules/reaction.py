@@ -40,6 +40,7 @@ from croniter.croniter import croniter
 from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
 from builtins import str
+from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
 
 
 
@@ -75,11 +76,28 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
         if "events_of_interest" in self.__conf:
             self.set_events_of_interests(self.__conf["events_of_interest"])
         
+        self.__task_scheduler.add_listener(self.scheduler_events_listener, EVENT_ALL)
         self.__task_scheduler.start()
+        
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__loadRules)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
+    
+    
+    
+    '''
+    Listen to scheduler events
+    '''
+    def scheduler_events_listener(self, event:SchedulerEvent):
         
+        self.logger.info("code %s", str(event.code))
+        
+        '''
+        if event.exception:
+            self.logger.error('The job crashed')
+        else:
+            self.logger.debug('Job executed successfully')
+        '''    
    
     
     

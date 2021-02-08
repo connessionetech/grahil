@@ -134,6 +134,14 @@ class Action(object):
     
     
     '''
+    Declares whether the action is asynchronous or synchronous
+    '''
+    def is_async(self) -> bool:
+        return True
+    
+    
+    
+    '''
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
@@ -1093,22 +1101,8 @@ class ActionUnUpdateSoftwre(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        __sysmon = None
+        pass
         
-        if modules.hasModule(FILE_MANAGER_MODULE):
-            __file_manager = modules.getModule(FILE_MANAGER_MODULE)
-            if(__file_manager != None):
-                __updater_script = await __file_manager.get_updater_script()
-            
-                if modules.hasModule(SYSTEM_MODULE):
-                    __sysmon = modules.getModule(SYSTEM_MODULE)
-                    __sysmon.schedule__update(__updater_script)
-                    return ActionResponse(data = None, events=[])
-                else:
-                    raise ModuleNotFoundError("`"+SYSTEM_MODULE+"` module does not exist")
-        else:
-                    raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
-
 
 
 

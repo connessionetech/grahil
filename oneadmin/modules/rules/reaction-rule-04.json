@@ -1,0 +1,20 @@
+{
+	"id": "reaction-rule-04",
+	"description": "Cron rule to trigger water pump",
+	"listen-to": "{time}",
+	"enabled": true,
+	"trigger": {
+		"on-time-object": {
+			"recurring": true,
+			"using-expression": "0 6 * * mon,wed,fri"
+		},
+		"evaluator": null
+	},
+	"response":{
+		"intent": "http_get",
+		"parameters": {
+			"url": "http://192.168.1.18/switch/1/set",
+			"queryparams": {}
+		}
+	}	
+}

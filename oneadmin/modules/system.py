@@ -33,7 +33,6 @@ import json
 from typing import Dict
 from tornado.concurrent import asyncio
 from time import time
-from crontab import CronTab
 from tornado.httpclient import AsyncHTTPClient
 from builtins import str
 
@@ -56,9 +55,7 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
         self.__external_ip = None
-        
-        # must specify logged in user in config for contab to work
-        self.__crontab = CronTab(user=config["system_user"]) if "system_user" in config else True 
+         
         #tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
     pass
 
@@ -150,30 +147,7 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
     
     
     
-    '''
-    Schedules updater script for execution -> N minutes from now and returns
-    '''
-    def schedule__update(self, updater_script:str) ->str:
         
-        self.__crontab.remove_all(comment='updater')
-        sch_time = datetime.datetime.now() + datetime.timedelta(minutes=1)
-        
-        os.chmod(updater_script, 0o755)
-        
-        args = ""
-        if "updater_cron_tab_args" in self.__config:
-            args = self.__config["updater_cron_tab_args"]
-        
-        cmd = str(updater_script) + " " + str(args)
-        self.logger.info("Setting : %s for crontab", cmd)
-        
-        job = self.__crontab.new(command=cmd)
-        job.setall(sch_time)
-        job.set_comment("updater")
-        self.__crontab.write()
-        return sch_time.strftime("%m/%d/%Y, %H:%M:%S")
-    
-    
     
     '''
     Force GC
