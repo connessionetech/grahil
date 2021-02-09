@@ -88,7 +88,7 @@
 				}
 			},
 			"log_monitor": {
-				"enabled": true,
+				"enabled": false,
 				"module": "oneadmin.modules.logmonitor",
 				"klass": "LogMonitor",
 				"conf" : {
@@ -96,12 +96,11 @@
 					"max_messages_chunks": 20,
 					"chunks_collector_interval": 10000,
 					"static_targets": [{
-						"enabled": true
 					}]
 				}
 			},
 			"script_runner": {
-				"enabled": true,
+				"enabled": false,
 				"module": "oneadmin.modules.shell",
 				"klass": "ScriptRunner",
 				"conf" : {
@@ -118,6 +117,7 @@
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
 					"accessible_paths": [
+						"/home/rajdeeprath/"
 					],
 					"allowed_read_extensions": [
 						".properties",
@@ -135,25 +135,20 @@
 						".ini",
 						".log"
 					],
-					"upload_dir": "",
+					"upload_dir": "~/uploads/",
 					"upload_dir_perm": "0o755",
 					"max_streamed_size": 52428800,
 					"max_upload_size": 52428800,
 					"permits_cleanup_interval_seconds": 30,
 					"permit_expire_time_milliseconds": 60000,
-					"max_parallel_uploads": 10,
-					"updater_dir": "/home/pi/updater"  
+					"max_parallel_uploads": 10
 				}
 			},
 			"target_delegate": {
-				"enabled": true,
+				"enabled": false,
 				"module": "oneadmin.modules.RPISmartDeviceDelegate",
 				"klass": "TargetDelegate",
 				"conf": {
-					"max_stream_time_seconds": 300, 
-					"ffmpeg_path" : "/usr/bin/ffmpeg",
-					"youtube_endpoint" : "rtmp://a.rtmp.youtube.com/live2",
-					"youtube_streamkey" : ""
 				}
 			},
 
@@ -165,6 +160,8 @@
 					"host": "127.0.0.1",
 					"reconnect_wait_time_seconds": 5,
 					"topic_filters":[
+						"floors/rooftop/",
+						"floors/+/humidity"
 					],
 					"subscriptions":[
 						{"topic": "floors/#", "qos": 0}
@@ -186,12 +183,12 @@
 				}
 			},
 			"service_bot": {
-				"enabled": true,
+				"enabled": false,
 				"module": "oneadmin.modules.bots",
 				"klass": "TelegramBot",
 				"conf": {
 					"token": "",
-					"master_user_id": 494506384
+					"master_user_id": null
 				},
 				"nlp": {
 					"module": "oneadmin.modules.interpreters",
@@ -276,127 +273,6 @@
 							"responses": ["gc done!"],
 							"action": {
 								"pre_response": "Reclaiming memory..",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "update_software",
-							"seed": "update",
-							"keywords": ["schedule update", "update", "update now"],
-							"responses": ["Update scheduled"],
-							"action": {
-								"pre_response": "Scheduling update",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_capture_photo",
-							"seed": "photograph",
-							"keywords": ["show me a photo", "click a photo", "take a pic", "show me what you see", "what do you see", "share a photo", "snap a pic"],
-							"responses": ["here is a photo", "let me get you a snap", "this is what i have"],
-							"action": {
-								"pre_response": "Preparing photo",
-								"method" : "fulfillRequest",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_capture_video",
-							"seed": "video",
-							"keywords": ["shoot a video", "record a video", "capture video", "take a video"],
-							"responses": ["here is a video", "here is a recording", "this is what i have"],
-							"action": {
-								"pre_response": "Preparing video",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_move_left",
-							"seed": "left",
-							"keywords": ["turn left", "look left"],
-							"responses": ["turned left", "moved"],
-							"action": {
-								"pre_response": "turning left",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_move_right",
-							"seed": "right",
-							"keywords": ["turn right", "look right"],
-							"responses": ["turned right", "moved"],
-							"action": {
-								"pre_response": "turning right",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_move_up",
-							"seed": "up",
-							"keywords": ["look up", "move up"],
-							"responses": ["done"],
-							"action": {
-								"pre_response": "looking up",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_move_down",
-							"seed": "down",
-							"keywords": ["look down", "move down"],
-							"responses": ["done"],
-							"action": {
-								"pre_response": "looking down",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_get_weather",
-							"seed": "weather",
-							"keywords": ["what is the humidity level", "what is the temperature", "get weather info", "show temperature", "show humidity"],
-							"responses": ["here is what it feels like"],
-							"action": {
-								"pre_response": "fetching weather report",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_publish_stream",
-							"seed": "publish",
-							"keywords": ["start streaming", "start publishing", "publish camera"],
-							"responses": ["initialized"],
-							"action": {
-								"pre_response": "starting stream",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "delegate_unpublish_stream",
-							"seed": "unpublish",
-							"keywords": ["stop streaming", "stop publishing", "publish camera"],
-							"responses": ["deinitialized stream"],
-							"action": {
-								"pre_response": "stopping",
-								"parameters" : {}
-							}
-						},
-						{
-							"intent": "send_mail",
-							"seed": "email",
-							"keywords": ["send mail", "email", "mail to", "notify by mail"],
-							"responses": ["mail sent"],
-							"action": {
-								"pre_response": "sending email",
-								"parameters" : {"subject": "this is a test", "content": "hello this is a test"}
-							}
-						},
-						{
-							"intent": "test",
-							"seed": "test",
-							"keywords": ["test"],
-							"responses": ["test complete"],
-							"action": {
-								"pre_response": "running test",
 								"parameters" : {}
 							}
 						}
