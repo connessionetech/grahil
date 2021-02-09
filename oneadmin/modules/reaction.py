@@ -392,9 +392,13 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                         rule = json.loads(content)
                         return rule
                 except:
-                    raise FileSystemOperationError(sys.exc_info()[0] + "Could not read file " + filepath)
-                finally:
-                    pass
+                    self.logger.error("Could not read file." + str(sys.exc_info()[0]) + "Retrying another way")
+                    try:
+                        with open(file, 'r+') as content:
+                            self.config = json.load(content)
+                    
+                    except:
+                        self.logger.error("Could not read file." + str(sys.exc_info()[0]) + "Retrying another way")
             else:
                 raise FileSystemOperationError("Not a file " + str(filepath))
         else:
