@@ -505,7 +505,7 @@ class TornadoApplication(tornado.web.Application):
     Handles arbitrary events from all modules
     ''' 
     async def handle_event(self, event:EventType):
-        self.logger.info("handle_event for " + str(event["name"]))
+        self.logger.debug("handle_event for " + str(event["name"]))
         await self.__pubsubhub.publish_event_type(event) 
         pass
     
