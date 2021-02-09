@@ -24,12 +24,12 @@ from oneadmin.abstracts import IntentProvider
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from oneadmin.abstracts import IMailer, IScriptRunner
+from oneadmin.version import __version__
 
 import urllib
 import logging
 import json
 from tornado.concurrent import asyncio
-from version import __version__
 from typing import Text, Dict, List,NamedTuple
 from tornado.concurrent import asyncio
 from tornado.httpclient import AsyncHTTPClient

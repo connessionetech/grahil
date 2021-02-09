@@ -17,8 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import re
-#from sklearn.feature_extraction.text import TfidfVectorizer
-#from sklearn.metrics.pairwise import cosine_similarity
 
 import nltk
 import warnings
