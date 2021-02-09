@@ -395,7 +395,8 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                     self.logger.error("Could not read file." + str(sys.exc_info()[0]) + "Retrying another way")
                     try:
                         with open(file, 'r+') as content:
-                            self.config = json.load(content)
+                            rule = json.load(content)
+                            return rule
                     
                     except:
                         self.logger.error("Could not read file." + str(sys.exc_info()[0]) + "Retrying another way")
