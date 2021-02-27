@@ -20,7 +20,7 @@ from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
 from oneadmin.communications import PubSubHub, RPCGateway, Pinger
-from oneadmin.modules.filesystem import FileManager
+from oneadmin.filesystem import FileManager
 from oneadmin.core.grahil_core import ModuleRegistry
 from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub

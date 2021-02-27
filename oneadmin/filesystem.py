@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.exceptions import *
+from oneadmin.core.constants import FILE_MANAGER_MODULE
 from oneadmin.abstracts import IEventDispatcher
 
 import sys
@@ -27,7 +28,6 @@ import tornado
 import datetime as dt
 import shutil
 import asyncio
-import tempfile
 import os.path
 
 from pathlib import Path
@@ -44,6 +44,10 @@ from _collections import deque
 from builtins import str
 from typing import List, Text, Callable
 from tornado.concurrent import Future
+import pathlib
+
+
+
 
 class FileManager(IEventDispatcher):
     '''
@@ -67,6 +71,11 @@ class FileManager(IEventDispatcher):
         self.__uploaddir = config["upload_dir"]
         self.__allowed_read_extensions = self.__config["allowed_read_extensions"]
         self.__allowed_write_extensions = self.__config["allowed_write_extensions"]
+        
+        self.__allowed_system_read_extensions = ["py"]
+        self.__allowed_system_write_extensions = []
+        
+        
         self.__uploads = {}
         self.__filestreams = {}
         
@@ -76,6 +85,19 @@ class FileManager(IEventDispatcher):
             tornado.ioloop.IOLoop.current().spawn_callback(self.clean_tmp_downloads)
         
         pass  
+    
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("TO DO")
+        pass
+        
+        
+        
+    
+    def name(self) -> Text:
+        return FILE_MANAGER_MODULE
             
     
     
@@ -120,6 +142,24 @@ class FileManager(IEventDispatcher):
     @property
     def allowed_write_extensions(self):
         return self.__allowed_write_extensions
+    
+    
+    
+    '''
+        Return allowed system read extensions
+    '''
+    @property
+    def allowed_system_read_extensions(self):
+        return self.__allowed_system_read_extensions
+    
+    
+    
+    '''
+        Return allowed system write extensions
+    '''
+    @property
+    def allowed_system_write_extensions(self):
+        return self.__allowed_system_write_extensions
     
     
     
@@ -796,28 +836,57 @@ class FileManager(IEventDispatcher):
         except Exception as ex1:
             raise FileSystemOperationError("Could not write to file " + filename + "." +  str(ex1))
         
+    
+    
+    
+    
+    def get_modules(self):
+        
+        current_directory = pathlib.Path(__file__).parent.absolute()
+        file = Path(os.path.join(current_directory, "modules"))
+        path = file.absolute()
+        if file.exists():
+            files_listing = []
+            files = os.listdir(str(path))
+            for name in files:
+                listing_path = Path(os.path.join(path, name))
+                if(listing_path.is_dir() == False and listing_path.is_file() == False):
+                    continue
+                files_listing.append(Path(name).stem)
+                
+            return files_listing
+        else:
+            raise FileSystemOperationError("Invalid path " + path + " or file " + filename + " not found")    
+    
+    
+    
+    
+        
         
     
     '''
-    Fetches a list of files of specified types from a  path cand returns the response via a deferred object  
+    Fetches a list of files of specified types from a  path cand returns the response via a deferred object
+    Note: System method, not for API usage  
     '''
-    def list_files(self, callback:Callable, folder:Text, file_types:List=["*"], path:Text = None)->None:
+    def list_files(self, callback:Callable, path:Text, file_types:List=["*"])->None:
         
         if path != None and (not self.is_path_included(path)):
             raise FileSystemOperationError("Requested path is not within allowed path")
         
         for file_type in file_types:
             if not file_type in self.__allowed_read_extensions:
-                raise Exception("Extension "+file_type+" is not permitted in a write operation")
-            
+                raise FileSystemOperationError("Extension "+file_type+" is not permitted in a write operation")
+        
+        '''
         if path == None:
             root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         else:
-            root_path = path 
+            root_path = path
+        ''' 
         
         directory_content_future:Future = Future()
         directory_content_future.add_done_callback(callback)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__list_files, directory_content_future, folder, file_types, root_path)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__list_files, directory_content_future, path, file_types)
         pass
     
     
@@ -825,12 +894,12 @@ class FileManager(IEventDispatcher):
     '''
     (internal : async) Fetches a list of files of specified types from a  path
     '''
-    async def __list_files(self, directory_content_future:Future, folder:Text, file_types:List=["*"], path:Text=None)->None:
+    async def __list_files(self, directory_content_future:Future, path:Text, file_types:List=["*"])->None:
         
         files = []
          
         try:
-            script_folder = os.path.join(path,  folder)    
+            script_folder = path    
             contents = await self.browse_content(script_folder)
                         
             for content in contents:
@@ -845,8 +914,6 @@ class FileManager(IEventDispatcher):
         except Exception as e:
             directory_content_future.set_exception(e)
         pass
-
-        
         
     
     async def get_updater_script(self):
