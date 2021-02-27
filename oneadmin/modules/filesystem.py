@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from oneadmin.exceptions import *
 from oneadmin.core.constants import FILE_MANAGER_MODULE
 from oneadmin.abstracts import IEventDispatcher
+from oneadmin.abstracts import IModule
 
 import sys
 import logging
@@ -49,7 +50,8 @@ import pathlib
 
 
 
-class FileManager(IEventDispatcher):
+
+class FileManager(IModule):
     '''
     classdocs
     '''

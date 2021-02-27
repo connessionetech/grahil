@@ -1,0 +1,9 @@
+{
+				"enabled": true,
+				"module": "oneadmin.modules.reaction",
+				"klass": "ReactionEngine",
+				"conf" : {
+				"topics_of_interest": ["*"],
+				"events_of_interest": ["*"]
+				}
+}

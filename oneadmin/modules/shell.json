@@ -1,0 +1,11 @@
+{
+				"enabled": false,
+				"module": "oneadmin.modules.shell",
+				"klass": "ScriptRunner",
+				"conf" : {
+					"max_messages_chunks": 20,
+					"script_folder": "scripts",
+					"file_types": [".sh"],
+					"max_execution_time_seconds": 60
+					}
+}

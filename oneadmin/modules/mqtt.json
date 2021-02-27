@@ -1,0 +1,16 @@
+{
+				"enabled": false,
+				"module": "oneadmin.modules.mqtt",
+				"klass": "MQTTGateway",
+				"conf" : {
+					"host": "127.0.0.1",
+					"reconnect_wait_time_seconds": 5,
+					"topic_filters":[
+						"floors/rooftop/",
+						"floors/+/humidity"
+					],
+					"subscriptions":[
+						{"topic": "floors/#", "qos": 0}
+					]
+				}
+}

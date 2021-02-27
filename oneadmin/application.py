@@ -20,7 +20,7 @@ from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
 from oneadmin.communications import PubSubHub, RPCGateway, Pinger
-from oneadmin.filesystem import FileManager
+#from oneadmin.modules.filesystem import FileManager
 from oneadmin.core.grahil_core import ModuleRegistry
 from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub
@@ -57,9 +57,10 @@ class TornadoApplication(tornado.web.Application):
             self.__filemanager = None
             self.__pubsubhub = None
             self.__action__dispatcher = None
-            self.__communication_hub = CommunicationHub()                                
+            self.__communication_hub = CommunicationHub()  
             
-         
+            
+            
             ''' Initializing pubsub module '''
             pubsub_conf = modules[PUBSUBHUB_MODULE]
             self.__pubsubhub:PubSubHub = PubSubHub(pubsub_conf["conf"])
@@ -67,17 +68,10 @@ class TornadoApplication(tornado.web.Application):
             
             
             if self.__pubsubhub != None:
-                self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub)
-                
+                self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub) 
                 
             
-            ''' Initializing action executor '''
-            action_config = modules[ACTION_DISPATCHER_MODULE]
-            if action_config != None and action_config["enabled"] == True:
-                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
-                
-                
-                
+            
             ''' Initializing pinger module used for sending keep-alive heartbeat to socket connections'''
             pinger_conf = modules[PINGER_MODULE]
             pinger = Pinger(pinger_conf["conf"])
@@ -91,271 +85,9 @@ class TornadoApplication(tornado.web.Application):
             
             
             
-            ''' Conditional instantiation of file manager '''
-            # Register filemanager module
-            filemanager_config = modules[FILE_MANAGER_MODULE]
-            if filemanager_config != None and filemanager_config["enabled"] == True:
-                
-                accessible_paths = []
-                
-                ''' Get static declared accessible paths from configuration '''
-                accessible_static_paths = filemanager_config["conf"]["accessible_paths"]
-                for accessible_static_path in accessible_static_paths:
-                    accessible_paths.append(accessible_static_path)
-                
-                self.__filemanager = FileManager(filemanager_config["conf"], accessible_paths)
-                self.__filemanager.eventhandler = self.handle_event
-                
-                '''
-                Register `file_manager` module
-                '''
-                self.modules.registerModule(FILE_MANAGER_MODULE, self.__filemanager)
             
             
             
-            ''' Conditional instantiation of {target} handler '''
-            delegate_conf = modules[TARGET_DELEGATE_MODULE];
-            if delegate_conf != None and delegate_conf["enabled"] == True:
-                module_name = delegate_conf["module"]
-                class_name = delegate_conf["klass"]
-                
-                try:
-                    mod = __import__(module_name, fromlist=[class_name])
-                    klass = getattr(mod, class_name)
-                    self.__delegate = klass(delegate_conf["conf"])
-                    
-                    if self.__delegate is not None:
-                        self.__delegate.eventcallback = self.handleDelegateEvents
-                        self.__delegate.eventhandler = self.handle_event
-                except ImportError as de:
-                    self.logger.warn("Module by name %s was not found and will not be loaded", module_name)
-                
-                '''
-                Register `target_delegate` module
-                '''
-                if self.__delegate != None:
-                    self.modules.registerModule(TARGET_DELEGATE_MODULE, self.__delegate);
-                    
-
-            
-
-            # Register log monitor module
-            log_monitor_config = modules[LOG_MANAGER_MODULE]
-            if log_monitor_config != None and log_monitor_config["enabled"] == True:
-                logmon_module_name = log_monitor_config["module"]
-                logmon_class_name = log_monitor_config["klass"]
-                mod = __import__(logmon_module_name, fromlist=[logmon_class_name])
-                klass = getattr(mod, logmon_class_name)
-                logmonitor:ILogMonitor = klass(log_monitor_config["conf"])
-                logmonitor.eventhandler = self.handle_event
-                    
-                try:
-                    
-                    ''' 
-                    Register dynamic log targets of target 
-                    '''
-                    
-                    dynamic_log_targets = []
-                    for log_target in dynamic_log_targets:
-                        
-                        log_key = getLogFileKey(log_target)
-                        log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-                        logmonitor.register_log_file({
-                            "name": log_key, "topic_path": log__topic_path, "log_file_path": log_target
-                        })
-                        
-                        # Register channel per log
-                        channel_info = {}
-                        channel_info["name"] = log__topic_path  
-                        channel_info['type'] = "subscription"
-                        channel_info["queue_size"] = 1
-                        channel_info["max_users"]  = 0
-                        self.__pubsubhub.createChannel(channel_info)
-                    
-                    
-                    ''' 
-                    Register static log targets of target 
-                    '''
-                    
-                    log_monitor_config["conf"]["static_targets"]
-                    if log_monitor_config["conf"]["static_targets"] != None:
-                        log_targets = log_monitor_config["conf"]["static_targets"]
-                        for log_target in log_targets: 
-                            if log_target["enabled"] == True:
-                                
-                                if not log_target["topic_path"]:
-                                    log_target["topic_path"] = buildTopicPath(PubSubHub.LOGMONITORING, log_target["name"])
-                                
-                                logmonitor.register_log_file(log_target)
-    
-                
-                except Exception as le:
-                    self.logger.error("Error processing log monitor configuration. %s", str(le))
-                            
-                        
-                '''
-                Register `log monitor` module
-                '''
-                self.modules.registerModule(LOG_MANAGER_MODULE, logmonitor);
-            
-            
-            
-            system_mod_config = modules[SYSTEM_MODULE]
-            if system_mod_config != None and system_mod_config["enabled"] == True:
-                sysmon_module_name = system_mod_config["module"]
-                sysmon_class_name = system_mod_config["klass"]
-                mod = __import__(sysmon_module_name, fromlist=[sysmon_class_name])
-                klass = getattr(mod, sysmon_class_name)
-                sysmon:ISystemMonitor = klass(system_mod_config["conf"], self.modules)
-                sysmon.eventhandler = self.handle_event
-                sysmon.start_monitor()
-            
-            
-                '''
-                Register `sysmon` module
-                '''
-                self.modules.registerModule(SYSTEM_MODULE, sysmon)
-            
-                    
-        
-            ''' Reaction engine -> to send commands to reaction engine use pubsub '''
-            # Register reaction engine
-            
-            reaction_engine_conf = modules[REACTION_ENGINE_MODULE];
-            if reaction_engine_conf["enabled"] == True:
-                reaction_module_name = reaction_engine_conf["module"]
-                reaction_class_name = reaction_engine_conf["klass"]
-                mod = __import__(reaction_module_name, fromlist=[reaction_class_name])
-                klass = getattr(mod, reaction_class_name)
-                reaction_engine:IReactionEngine = klass(reaction_engine_conf["conf"], self.__action__dispatcher)
-                reaction_engine.eventhandler = self.handle_event
-                self.__pubsubhub.addEventListener(reaction_engine)
-            
-            
-            
-            
-            ''' Bot -> to send commands to bot use pubsub '''
-            
-            bot_config =  modules[BOT_SERVICE_MODULE]
-            if bot_config != None and bot_config["enabled"] == True:
-                bot_module_name = bot_config["module"]
-                bot_class_name = bot_config["klass"]
-                
-                nlp_engine = None
-            
-                try:
-                    
-                    try:
-                        nlp_module_name = bot_config["nlp"]["module"]
-                        nlp_module_config = bot_config["nlp"]["conf"]
-                        nlp_class_name = bot_config["nlp"]["klass"]
-                        nlp_mod = __import__(nlp_module_name, fromlist=[nlp_class_name])
-                        nlp_klass = getattr(nlp_mod, nlp_class_name)
-                        nlp_engine = nlp_klass(self.__filemanager, nlp_module_config)
-                    except ImportError as be:
-                        self.logger.warn("Module by name " + nlp_module_name + " was not found and will not be loaded")
-                    
-                    
-                    mod = __import__(bot_module_name, fromlist=[bot_class_name])
-                    klass = getattr(mod, bot_class_name)
-                    service_bot = klass(bot_config, self.__action__dispatcher, nlp_engine)
-                    service_bot.eventhandler = self.handle_event
-                    self.__pubsubhub.addEventListener(service_bot)
-                    
-                    # Register `servicebot` module'
-                    self.modules.registerModule(BOT_SERVICE_MODULE, service_bot)
-                    
-                    '''
-                    Register communication interface with communication hub
-                    ''' 
-                    self.__communication_hub.register_interface(CHANNEL_CHAT_BOT, PROACTIVE_CLIENT_TYPE, service_bot)
-                
-                except ImportError as be:
-                    self.logger.warn("Module by name " + bot_module_name + " was not found and will not be loaded")
-                        
-        
-        
-                
-            ''' Registering RPC engine for Webclients '''
-            # Initializing rpc gateway
-            rpc_gateway_conf = modules[RPC_GATEWAY_MODULE]
-            self.__rpc_gateway = RPCGateway(rpc_gateway_conf["conf"], self.__action__dispatcher)
-            
-            '''
-            Register `rpc gateway` module
-            '''
-            self.modules.registerModule(RPC_GATEWAY_MODULE, self.__rpc_gateway)
-            
-            '''
-            Register communication interface with communication hub
-            '''
-            self.__communication_hub.register_interface(CHANNEL_WEBSOCKET_RPC, REACTIVE_CLIENT_TYPE, self.__rpc_gateway)
-            
-            
-            
-            '''
-            Register `mqtt gateway` module
-            '''
-            
-            mqtt_gateway_conf = modules[MQTT_GATEWAY_MODULE]
-            if mqtt_gateway_conf != None and mqtt_gateway_conf["enabled"] == True:
-                mqtt_module_name = mqtt_gateway_conf["module"]
-                mqtt_class_name = mqtt_gateway_conf["klass"]
-                mod = __import__(mqtt_module_name, fromlist=[mqtt_class_name])
-                klass = getattr(mod, mqtt_class_name)
-                mqtt_gateway:IMQTTClient = klass(mqtt_gateway_conf["conf"], self.__action__dispatcher)
-                mqtt_gateway.on_data_handler = self.on_telemetry_data
-                
-                
-                '''
-                Register `rpc gateway` module
-                '''
-                self.modules.registerModule(MQTT_GATEWAY_MODULE, mqtt_gateway)
-                
-                '''
-                Register communication interface with communication hub
-                '''
-                self.__communication_hub.register_interface(CHANNEL_MQTT, PROACTIVE_CLIENT_TYPE, mqtt_gateway)
-            
-            
-            
-            '''
-            Register `smtp mailer` module
-            '''
-                
-            smtp_mailer_conf = modules[SMTP_MAILER_MODULE]
-            if smtp_mailer_conf != None and smtp_mailer_conf["enabled"] == True:
-                smtp_module_name = smtp_mailer_conf["module"]
-                smtp_class_name = smtp_mailer_conf["klass"]
-                mod = __import__(smtp_module_name, fromlist=[smtp_class_name])
-                klass = getattr(mod, smtp_class_name)
-                smtp_mailer:IMailer = klass(smtp_mailer_conf["conf"])
-                
-                self.modules.registerModule(SMTP_MAILER_MODULE, smtp_mailer)
-                
-                '''
-                Register communication interface with communication hub
-                '''
-                self.__communication_hub.register_interface(CHANNEL_SMTP_MAILER, PROACTIVE_CLIENT_TYPE, smtp_mailer)
-                
-               
-               
-               
-            '''
-            Register `script_runner` module
-            '''
-                   
-            script_runner_conf = modules[SCRIPT_RUNNER_MODULE] 
-            if script_runner_conf != None and script_runner_conf["enabled"] == True:
-                script_runner_module_name = script_runner_conf["module"]
-                script_runner_class_name = script_runner_conf["klass"]
-                mod = __import__(script_runner_module_name, fromlist=[script_runner_class_name])
-                klass = getattr(mod, script_runner_class_name)
-                script_runner:IScriptRunner = klass(script_runner_conf["conf"])
-                script_runner.eventhandler = self.handle_event
-                self.__filemanager.list_files(script_runner.script_files_from_future, script_runner_conf["conf"]["script_folder"], script_runner_conf["conf"]["file_types"])
-                
-                self.modules.registerModule(SCRIPT_RUNNER_MODULE, script_runner)
             
             
             server_config = conf["server"]
