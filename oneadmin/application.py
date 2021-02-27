@@ -28,13 +28,17 @@ from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_T
 from oneadmin.core.event import EventType, ArbitraryDataEvent
 from oneadmin.abstracts import IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine
 from oneadmin.urls import get_url_patterns
-from settings import settings
+from oneadmin.abstracts import IModule
+
 
 import logging
 import tornado
-import os
+import os, json, sys
 from tornado import autoreload
-from typing import Text
+from typing import Text, List
+from oneadmin.exceptions import ConfigurationLoadError
+from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
+
 
 
 
@@ -84,9 +88,49 @@ class TornadoApplication(tornado.web.Application):
             self.modules.registerModule(PINGER_MODULE, pinger);
             
             
+            ''' -------------------------------'''
+                        
+            root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+            package_path = os.path.join(root_path, __BASE_PACKAGE__)
+            modules_path = os.path.join(package_path, __MODULES__PACKAGE__)
+            json_files:List = [pos_json for pos_json in os.listdir(modules_path) if pos_json.endswith('.json')]
+            module_configs:List = []
+            
+            for mod_json in json_files:
+                                
+                conf_path = os.path.join(modules_path, mod_json)
+                config = self.load_module_config(conf_path)
+                
+                if not "enabled" in config or config["enabled"] == False:
+                    continue
+                
+                if not "order" in config:
+                    config["order"] = 0
+                
+                config["name"] = os.path.splitext(mod_json)[0]
+                    
+                
+                module_configs.append(config)
+                
+                
+            
+            ''' sorting module configs by load order '''
+            sorted_module_configs = sorted(module_configs, key = lambda i: i['order'])
+            
+            
+            for sorted_config in sorted_module_configs:
+                module_name = __BASE_PACKAGE__ + "." + __MODULES__PACKAGE__ + "." + sorted_config["name"]
+                module_class_name = sorted_config["klass"]
+                self.logger.info("preparing module %s", module_name)
+                mod = __import__(module_name, fromlist=[module_class_name])
+                klass = getattr(mod, module_class_name)
+                mod_instance:IModule = klass(sorted_config["conf"])
+                mod_instance.eventhandler = self.handle_event
+                mod_instance.initialize()
             
             
             
+            ''' -------------------------------'''
             
             
             
@@ -125,6 +169,25 @@ class TornadoApplication(tornado.web.Application):
         except Exception as e:
             
             self.logger.error("Oops! an error occurred initializing application.%s", str(e))
+            
+    
+    
+    
+    def load_module_config(self, json_data_file):
+        
+        try:
+            self.logger.info("Loading " + json_data_file)
+            
+            if os.path.exists(json_data_file):
+                with open(json_data_file, 'r+') as json_data:
+                    return json.load(json_data)
+            else:
+                raise FileNotFoundError("File : " + json_data_file + " does not exist.")
+        
+        except Exception as e:
+            err = "Unable to load configuration file " + json_data_file + ".cause" + str(e)
+            self.logger.error(err)
+            raise ConfigurationLoadError(err)
         
         
 

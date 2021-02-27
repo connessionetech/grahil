@@ -1,5 +1,6 @@
 {
 				"enabled": false,
+				"order": -1,
 				"module": "oneadmin.modules.mqtt",
 				"klass": "MQTTGateway",
 				"conf" : {

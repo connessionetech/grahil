@@ -58,7 +58,7 @@ class FileManager(IModule):
     
     MAX_WORKERS = 2
 
-    def __init__(self, config, accessible_paths=[]):
+    def __init__(self, config):
         '''
         Constructor
         '''
@@ -67,8 +67,15 @@ class FileManager(IModule):
         self.logger = logging.getLogger(self.__class__.__name__)        
         self.__config = config
         
+        
+        accessible_paths = []
+        accessible_paths.append(settings["reports_folder"])
+        accessible_static_paths = config["accessible_paths"]
+        for accessible_static_path in accessible_static_paths:
+            accessible_paths.append(accessible_static_path)
+        
         self.__accessible_paths = accessible_paths
-        self.__accessible_paths.append(settings["reports_folder"])        
+                
         
         self.__uploaddir = config["upload_dir"]
         self.__allowed_read_extensions = self.__config["allowed_read_extensions"]
@@ -83,8 +90,8 @@ class FileManager(IModule):
         
         #tornado.ioloop.IOLoop.current().spawn_callback(self.clean_upload_permits)
         
-        if self.__config["auto_clean_tmp_directories"] != None and self.__config["auto_clean_tmp_directories"] != False:
-            tornado.ioloop.IOLoop.current().spawn_callback(self.clean_tmp_downloads)
+        #if self.__config["auto_clean_tmp_directories"] != None and self.__config["auto_clean_tmp_directories"] != False:
+            #tornado.ioloop.IOLoop.current().spawn_callback(self.clean_tmp_downloads)
         
         pass  
     
@@ -92,7 +99,7 @@ class FileManager(IModule):
     
     
     def initialize(self) ->None:
-        self.logger.info("TO DO")
+        self.logger.info("Module init")
         pass
         
         

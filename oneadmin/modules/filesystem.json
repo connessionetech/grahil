@@ -1,5 +1,6 @@
 {
 				"enabled": true,
+				"klass": "FileManager",
 				"order": -1,
 				"conf" : {
 					"auto_clean_tmp_directories": false,

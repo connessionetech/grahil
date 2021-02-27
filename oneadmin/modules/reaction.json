@@ -1,5 +1,5 @@
 {
-				"enabled": true,
+				"enabled": false,
 				"module": "oneadmin.modules.reaction",
 				"klass": "ReactionEngine",
 				"conf" : {

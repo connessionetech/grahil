@@ -52,6 +52,19 @@ class IEventDispatcher(object):
         if self.__eventHandler:
             await self.__eventHandler(event)
         pass
+    
+    
+class IModule(IEventDispatcher):
+    
+    
+    def __init__(self):
+        super().__init__()
+    
+    
+    def initialize(self) ->None:
+        raise NotImplementedError
+    
+    pass
 
 
 class TargetProcess(IEventDispatcher):
