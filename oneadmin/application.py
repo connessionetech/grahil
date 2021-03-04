@@ -26,18 +26,20 @@ from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub
 from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from oneadmin.core.event import EventType, ArbitraryDataEvent
-from oneadmin.abstracts import IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine
+from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider
 from oneadmin.urls import get_url_patterns
-from oneadmin.abstracts import IModule
+from oneadmin.abstracts import IntentProvider
 
 
 import logging
 import tornado
 import os, json, sys
 from tornado import autoreload
-from typing import Text, List
+from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
 from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
+from builtins import issubclass
+
 
 
 
@@ -108,14 +110,16 @@ class TornadoApplication(tornado.web.Application):
                     config["order"] = 0
                 
                 config["name"] = os.path.splitext(mod_json)[0]
-                    
-                
                 module_configs.append(config)
                 
                 
             
             ''' sorting module configs by load order '''
             sorted_module_configs = sorted(module_configs, key = lambda i: i['order'])
+            
+            
+            listener_modules:List = []
+            actionable_modules:List = []
             
             
             for sorted_config in sorted_module_configs:
@@ -126,12 +130,31 @@ class TornadoApplication(tornado.web.Application):
                 klass = getattr(mod, module_class_name)
                 mod_instance:IModule = klass(sorted_config["conf"])
                 mod_instance.eventhandler = self.handle_event
+                
+                if isinstance(mod_instance, IEventHandler):
+                    listener_modules.append(mod_instance)
+                
+                if isinstance(mod_instance, IntentProvider):
+                    actionable_modules.append(mod_instance)
+                
                 mod_instance.initialize()
+                
             
             
+            ''' Attach event listener modules'''
+            
+            for listener_mod in  listener_modules:
+                self.__pubsubhub.addEventListener(listener_mod)
+                
+                
+            
+            ''' Assign intent request handler to all intent providers '''
+            
+            for actionable_mod in  actionable_modules:
+                actionable_mod.intenthandler = self.handle_intent_request
+                
             
             ''' -------------------------------'''
-            
             
             
             server_config = conf["server"]
@@ -307,11 +330,11 @@ class TornadoApplication(tornado.web.Application):
     
     
     '''
-    Handles events from telemetry channel if available
+    Handles action requests from all modules
     ''' 
-    async def on_telemetry_data(self, topic:Text, data:dict)->None:
-        event:EventType = ArbitraryDataEvent(topic, data)
-        await self.handle_event(event) 
+    async def handle_intent_request(self, source:IntentProvider, intent:Text, args:Dict, event:EventType=None):
+        self.logger.debug("handle_actionable intent for " + str(source))
+        await self.action_dispatcher.handle_request(source, intent, args, event)
         pass
     
    

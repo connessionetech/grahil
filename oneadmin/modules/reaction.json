@@ -1,6 +1,5 @@
 {
-				"enabled": false,
-				"module": "oneadmin.modules.reaction",
+				"enabled": true,
 				"klass": "ReactionEngine",
 				"conf" : {
 				"topics_of_interest": ["*"],

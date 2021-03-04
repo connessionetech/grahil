@@ -21,8 +21,7 @@ from oneadmin.core.event import EventType, EVENT_STATS_GENERATED, EVENT_ANY, EVE
 from oneadmin.core.constants import TOPIC_ANY
 from oneadmin.core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from oneadmin.exceptions import FileSystemOperationError, RulesError
-from oneadmin.abstracts import IEventHandler
-from oneadmin.core.components import ActionDispatcher
+from oneadmin.abstracts import IEventHandler,IModule, IntentProvider
 
 
 import json
@@ -45,11 +44,12 @@ from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
 
 
 
-class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
+
+class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     
     
 
-    def __init__(self, conf, action_dispatcher:ActionDispatcher=None):
+    def __init__(self, conf):
         '''
         Constructor
         '''
@@ -60,10 +60,15 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
         self.__topics_of_intertest = {}
         self.__rules = {}
         self.__events = Queue()
-        self.__action_dispatcher = action_dispatcher
         self.__task_scheduler = TornadoScheduler()
 
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
+        
+    
+    
+    def initialize(self)->None:
+        self.logger.info("Module init")
+        pass
         
         
     
@@ -131,19 +136,6 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
                     raise Exception("Invalid cron expression " + str(cron_str))
         except Exception as e:  
                 self.logger.error("Error registering timed event. " + str(e))
-    
-        
-    
-    
-    @property
-    def action_dispatcher(self):
-        return self.__action_dispatcher
-    
-    
-    
-    @action_dispatcher.setter
-    def action_dispatcher(self, _dispatcher):
-        self.__action_dispatcher = _dispatcher
     
     
     
@@ -436,7 +428,7 @@ class ReactionEngine(IEventDispatcher, IEventHandler, IReactionEngine):
             if rule.state != RuleState.READY:
                 raise RulesError("Rule cannot be eligible for execution")
             
-            await self.__action_dispatcher.handle_request(None, response.intent, response.parameters, event)            
+            await self.notifyintent(response.intent, response.parameters, event)            
             
             if response.nonce:
                 rule.state = RuleState.DONE

@@ -1,6 +1,5 @@
 {
 				"enabled": false,
-				"module": "oneadmin.modules.shell",
 				"klass": "ScriptRunner",
 				"conf" : {
 					"max_messages_chunks": 20,

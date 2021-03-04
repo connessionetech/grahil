@@ -1,7 +1,6 @@
 {
-				"module": "oneadmin.modules.mailer",
 				"klass": "SMTPMailer",
-				"enabled": false,
+				"enabled": true,
 				"conf" : {
 					"hostname": "smtp.gmail.com",
 					"port": 465,

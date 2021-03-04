@@ -1,6 +1,5 @@
 {
 				"enabled": false,
-				"module": "oneadmin.modules.system",
 				"klass": "SystemMonitor",
 				"conf" : {					
 					"snapshot_interval_seconds": 10,

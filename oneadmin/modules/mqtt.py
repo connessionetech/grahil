@@ -16,18 +16,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, IntentProvider, IClientChannel, IMQTTClient
-from oneadmin.core.components import ActionDispatcher
+from oneadmin.abstracts import IntentProvider, IClientChannel, IMQTTClient, IModule
 from oneadmin.exceptions import RPCError
 from oneadmin.utilities import is_data_message, is_command_message, has_sender_id_message,has_uuid_message, requires_ack_message
 from oneadmin.responsebuilder import formatSuccessMQTTResponse, formatErrorMQTTResponse,formatAckMQTTResponse
+from oneadmin.core.event import TelemetryDataEvent
 
 import sys
 import json
 import asyncio
 import tornado
 import logging
-from tornado.platform import asyncio
 from contextlib import AsyncExitStack
 from asyncio_mqtt import Client, MqttError
 from builtins import str
@@ -36,7 +35,8 @@ from typing import Text, Callable, List
 
 
 
-class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel):
+
+class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
     '''
     Class to handle command and data communication over MQTT.
     
@@ -112,7 +112,7 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
     
     '''
     
-    def __init__(self, conf:dict, executor:ActionDispatcher) ->None:
+    def __init__(self, conf:dict) ->None:
         '''
         Constructor
         '''
@@ -120,7 +120,6 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
         super().__init__()
         
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.__action_dispatcher = executor
         self.__conf = conf       
         self.__requests = {}
         self.__mgsqueue = Queue()
@@ -128,6 +127,12 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
+        pass
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
         pass
     
     
@@ -289,7 +294,7 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
                 
                 args = {} if data["params"] is None else data["params"]
                 args["handler"]= self
-                requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+                requestid = await self.notifyintent(intent, args)
                 self.__requests[requestid] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
             
             elif is_data_message(message):
@@ -299,8 +304,7 @@ class MQTTGateway(IMQTTClient, IEventDispatcher, IntentProvider, IClientChannel)
                     self.__requests[local_request_id] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
                     await self.__mgsqueue.put({"requestid": local_request_id, "message": response})
                 
-                if self.on_data_handler:
-                    await self.on_data_handler(topic, data)
+                self.dispatchevent(TelemetryDataEvent(topic, data))
                     
         except Exception as le:
             

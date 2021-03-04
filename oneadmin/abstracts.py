@@ -456,47 +456,6 @@ class TargetProcess(IEventDispatcher):
 
 
 
-class IEventHandler(object):
-    '''
-    classdocs
-    '''
-
-
-    def __init__(self):
-        '''
-        Constructor
-        '''
-        super().__init__()
-        self.__topics_of_interest = [TOPIC_ANY]
-        self.__events_of_interest = [EVENT_ANY]
-      
-    
-    def get_events_of_interests(self)-> List:
-        return self.__events_of_interest 
-    
-    
-    def set_events_of_interests(self, events:List)-> None:
-        self.__events_of_interest = events
-    
-    
-    def get_topics_of_interests(self)-> List:
-        return self.__topics_of_interest
-    
-    
-    def set_topics_of_interests(self, topics:List)-> None:
-        self.__topics_of_interest = topics        
-        
-        
-    async def _notifyEvent(self, event:EventType):
-        if event["topic"] in self.get_topics_of_interests() or TOPIC_ANY in self.get_topics_of_interests():
-            if event["name"] in self.get_events_of_interests() or EVENT_ANY in self.get_events_of_interests():
-                await self.handleEvent(event)
-        pass
-    
-    
-    async def handleEvent(self, event):
-        pass  
-    
 
 
 
@@ -557,6 +516,25 @@ class IntentProvider(object):
         Constructor
         '''
         super().__init__()
+        self.__intenthandler = None
+    
+    
+    @property
+    def intenthandler(self) ->Callable:
+        return self.__intenthandler
+    
+    
+    
+    @intenthandler.setter
+    def intenthandler(self, handler:Callable) ->None:
+        self.__intenthandler = handler
+
+
+    
+    async def notifyintent(self, intent:Text, args:Dict, event:EventType=None) -> None:
+        if self.__intenthandler:
+            await self.__intenthandler(self, intent, args, event)
+        pass
     
 
     def onIntentProcessResult(self, requestid:str, result:object) -> None:
@@ -615,16 +593,6 @@ class IMQTTClient(object):
     async def publish_to_topics(self, topics:List[str], message:str, callback:Callable=None)->None:
         raise NotImplementedError()
         pass
-    
-    
-    @property
-    def on_data_handler(self) ->Callable:
-        return self.__topic_data_handler
-    
-    
-    @on_data_handler.setter
-    def on_data_handler(self, handler:Callable) ->None:
-        self.__topic_data_handler = handler
         
         
 
@@ -763,16 +731,7 @@ class IReactionEngine(object):
     
     
     
-    @property
-    def action_dispatcher(self):
-        raise NotImplementedError()
-    
-    
-    
-    @action_dispatcher.setter
-    def action_dispatcher(self, _dispatcher):
-        raise NotImplementedError()
-    
+   
     
     
     def has_rule(self, id:str)->bool:
@@ -793,3 +752,46 @@ class IReactionEngine(object):
     
     def deregister_rule(self, id:str)->None:
         raise NotImplementedError()
+    
+
+
+class IEventHandler(object):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        self.__topics_of_interest = [TOPIC_ANY]
+        self.__events_of_interest = [EVENT_ANY]
+      
+    
+    def get_events_of_interests(self)-> List:
+        return self.__events_of_interest 
+    
+    
+    def set_events_of_interests(self, events:List)-> None:
+        self.__events_of_interest = events
+    
+    
+    def get_topics_of_interests(self)-> List:
+        return self.__topics_of_interest
+    
+    
+    def set_topics_of_interests(self, topics:List)-> None:
+        self.__topics_of_interest = topics        
+        
+        
+    async def _notifyEvent(self, event:EventType):
+        if event["topic"] in self.get_topics_of_interests() or TOPIC_ANY in self.get_topics_of_interests():
+            if event["name"] in self.get_events_of_interests() or EVENT_ANY in self.get_events_of_interests():
+                await self.handleEvent(event)
+        pass
+    
+    
+    async def handleEvent(self, event):
+        pass
