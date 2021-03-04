@@ -23,7 +23,6 @@ from oneadmin.abstracts import IEventDispatcher, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import EventType, PingEvent, is_valid_event
 from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING
-from oneadmin.core.components import ActionDispatcher
 
 
 import logging
@@ -37,43 +36,17 @@ from tornado.websocket import websocket_connect
 
 
 
-class Pinger(IEventDispatcher):
-    
-    def __init__(self, conf):
-        self.__conf = conf;
-        pass
-    
-    
-    async def __generatePing(self):
-        while True:
-            ping = datetime.datetime.utcnow().timestamp()
-            await self.dispatchevent(PingEvent(topic=TOPIC_PING, data={"timestamp": ping}))
-                        
-            if self.__conf["ping_interval_seconds"] is not None:
-                await asyncio.sleep(self.__conf["ping_interval_seconds"])
-        pass
-    
-    
-    def start(self):  
-        if self.__conf is not None:      
-            tornado.ioloop.IOLoop.current().spawn_callback(self.__generatePing)
-        pass
-
-
- 
-
 
 class RPCGateway(IEventDispatcher, IntentProvider, IClientChannel):
     '''
     Class to handle RPC style communication over websockets.
     '''
     
-    def __init__(self, conf, executor:ActionDispatcher):
+    def __init__(self, conf):
         '''
         Constructor
         '''
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.__action_dispatcher = executor       
+        self.logger = logging.getLogger(self.__class__.__name__)       
         self.__requests = {}
         self.__mgsqueue = Queue()
         
@@ -105,7 +78,7 @@ class RPCGateway(IEventDispatcher, IntentProvider, IClientChannel):
         args["handler"]= wshandler
         
         try:
-            requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+            requestid = await self.notifyintent(intent, args)
             self.__requests[requestid] = {"local_request_id": local_request_id, "handler": wshandler}
         
         except:

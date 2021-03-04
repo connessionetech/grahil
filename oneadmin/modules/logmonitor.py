@@ -16,8 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, ILogMonitor
+from oneadmin.abstracts import IModule, ILogMonitor
 from oneadmin.core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
+from oneadmin.utilities import buildTopicPath
+from oneadmin.core.constants import TOPIC_LOGMONITORING
 
 import logging
 import tornado
@@ -28,7 +30,8 @@ from sys import platform
 from pathlib import Path
 from typing import Dict
 
-class LogMonitor(IEventDispatcher, ILogMonitor):
+
+class LogMonitor(IModule, ILogMonitor):
     '''
     classdocs
     '''
@@ -43,7 +46,37 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
         self.__conf = conf
         self.__log_files = {}
         self.__log_store = {}            
-        pass    
+        pass  
+    
+    
+    
+    def initialize(self)->None:
+        self.logger.info("Module init")
+        self.register_static_log_targets()
+        pass 
+    
+    
+    
+    
+    def register_static_log_targets(self)->None:
+        
+        ''' 
+        Register static log targets of target 
+        '''
+        
+        static_log_targets = self.__conf["static_targets"]
+        if static_log_targets != None:
+            for log_target in static_log_targets: 
+                if log_target["enabled"] == True:
+                    
+                    if not log_target["topic_path"]:
+                        log_target["topic_path"] = buildTopicPath(TOPIC_LOGMONITORING, log_target["name"])
+                    
+                    self.register_log_file(log_target)
+                    
+                    
+    
+    
     
     
     '''
@@ -193,7 +226,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
                     self.logger.debug("nothing to show")
                     await asyncio.sleep(.2)
                 else:
-                    self.dispatchevent(LogLineEvent(log_topic_path, data={"output": str(line, 'utf-8')}, meta={"log_name": logname}))
+                    await self.dispatchevent(LogLineEvent(log_topic_path, data={"output": str(line, 'utf-8')}, meta={"log_name": logname}))
                         
                     ''' Collect log lines in a queue till  it reaches queue size limit'''    
                     q = self.__log_store[logname];
@@ -212,7 +245,7 @@ class LogMonitor(IEventDispatcher, ILogMonitor):
             err = "An error occurred in monitoring log." + str(e)
             self.logger.warning(err)
             
-            self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
+            await self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
             
             if logname in self.__log_files:
                 await self._retry(logname)

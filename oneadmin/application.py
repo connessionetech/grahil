@@ -19,14 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.utilities import buildTopicPath
 from oneadmin.utilities import getLogFileKey
-from oneadmin.communications import PubSubHub, RPCGateway, Pinger
+from oneadmin.communications import PubSubHub, RPCGateway
 #from oneadmin.modules.filesystem import FileManager
 from oneadmin.core.grahil_core import ModuleRegistry
 from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub
 from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_WEBSOCKET_RPC, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
 from oneadmin.core.event import EventType, ArbitraryDataEvent
-from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider
+from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider, TargetProcess
 from oneadmin.urls import get_url_patterns
 from oneadmin.abstracts import IntentProvider
 
@@ -76,19 +76,7 @@ class TornadoApplication(tornado.web.Application):
             if self.__pubsubhub != None:
                 self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub) 
                 
-            
-            
-            ''' Initializing pinger module used for sending keep-alive heartbeat to socket connections'''
-            pinger_conf = modules[PINGER_MODULE]
-            pinger = Pinger(pinger_conf["conf"])
-            pinger.eventhandler = self.handle_event
-            pinger.start()       
-                 
-            '''
-            Register `pinger` module
-            '''
-            self.modules.registerModule(PINGER_MODULE, pinger);
-            
+           
             
             ''' -------------------------------'''
                         
@@ -120,6 +108,7 @@ class TornadoApplication(tornado.web.Application):
             
             listener_modules:List = []
             actionable_modules:List = []
+            target_delegate:TargetProcess = None
             
             
             for sorted_config in sorted_module_configs:
@@ -136,6 +125,10 @@ class TornadoApplication(tornado.web.Application):
                 
                 if isinstance(mod_instance, IntentProvider):
                     actionable_modules.append(mod_instance)
+                
+                ''' Special handling for special module -> target delegate '''    
+                if isinstance(mod_instance, TargetProcess):
+                    target_delegate = mod_instance
                 
                 mod_instance.initialize()
                 
@@ -220,87 +213,7 @@ class TornadoApplication(tornado.web.Application):
         Gets system wide capabilities
     '''
     def get_system_capabilities(self):
-        
-        modules = self.__config["modules"]
-        
-            
-        
-        target_delegate_config = modules["target_delegate"]
-        delegate = self.modules.getModule("target_delegate");
-        process_management_declaration = {}
-        if delegate != None:
-            process_management_declaration = {
-                "installed": delegate.isTargetInstalled(),
-                "running": delegate.is_proc_running(),
-                "stopping": delegate.is_proc_stopping(),
-                "starting": delegate.is_proc_starting(),
-                "can_start": True,
-                "can_stop": True,
-            }
-        
-        
-        
-        # Declare system monitoring
-        stats_config = modules["sysmon"]        
-        sysmon_declaration = {}       
-        if stats_config != None:
-            sysmon_declaration = {
-                "enabled": stats_config["enabled"],
-                "new_stats_interval": stats_config["conf"]["snapshot_interval_seconds"],
-                "topics": "/stats"
-            }
-            
-        
-            
-        
-        # Declare log monitoring
-        log_monitor_config = modules["log_monitor"]
-        logmon = self.modules.getModule("log monitor");
-        logmon_declaration = {} 
-        if logmon != None:
-            logmon_declaration = {
-                "enabled": log_monitor_config["enabled"],
-                "renderer": "fixed_limit_text_area"
-            }
-            
-        
-        
-        # Declare file management
-        file_manager_config = modules["file_manager"]
-        filemanager = self.modules.getModule("file_manager");
-        file_management_declaration = {} 
-        if logmon != None:
-            file_management_declaration = {
-                "enabled": file_manager_config["enabled"],
-                "max_upload_size": file_manager_config["conf"]["max_upload_size"],
-                "max_parallel_uploads": file_manager_config["conf"]["max_parallel_uploads"],
-                "allowed_read_extensions": file_manager_config["conf"]["allowed_read_extensions"],
-                "allowed_write_extensions": file_manager_config["conf"]["allowed_write_extensions"],
-                "can_read": True,
-                "can_write": True,
-                "can_browse": False,
-                "renderer": None
-            }
-            
-        
-            
-        # Define system wide capabilities
-        capabilities = {
-            "services":{
-                "process_control":process_management_declaration,
-                "system":{
-                    "monitoring":sysmon_declaration,
-                    "diagnostic": None,
-                },
-                "log_management":{
-                    "monitoring" : logmon_declaration
-                },
-                "file_management":file_management_declaration
-            }
-        }
-        
-        
-        return capabilities
+        return {}
     
     
     
@@ -308,24 +221,45 @@ class TornadoApplication(tornado.web.Application):
     def addwatchfiles(self, *paths):
         for p in paths:
             autoreload.watch(os.path.abspath(p))
+            
+            
+            
+    
+    '''
+    Handles dynamic request for log monitoring
+    ''' 
+    async def handle_log_monitoring_request(self, logfile):
+        
+        try:
+            log_key = getLogFileKey(logfile)
+            log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
+            logmonitor.register_log_file({
+                "name": log_key, "topic_path": log__topic_path, "log_file_path": logfile
+            })
+            
+            self.__pubsubhub.createChannel({"name":log__topic_path, "type": "subscription", "queue_size":1, "max_users":0})
+        
+        except Exception as e:
+            self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
     
     
     
     
+    '''
     async def handleDelegateEvents(self, event):
         self.logger.debug("Event received from delegate")
         await self.__pubsubhub.publish_event(event)
-        pass   
+    '''
     
     
   
+    
     '''
     Handles arbitrary events from all modules
     ''' 
     async def handle_event(self, event:EventType):
         self.logger.debug("handle_event for " + str(event["name"]))
-        await self.__pubsubhub.publish_event_type(event) 
-        pass
+        await self.__pubsubhub.publish_event_type(event)
     
     
     
@@ -335,7 +269,6 @@ class TornadoApplication(tornado.web.Application):
     async def handle_intent_request(self, source:IntentProvider, intent:Text, args:Dict, event:EventType=None):
         self.logger.debug("handle_actionable intent for " + str(source))
         await self.action_dispatcher.handle_request(source, intent, args, event)
-        pass
     
    
     
