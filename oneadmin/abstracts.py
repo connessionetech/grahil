@@ -67,7 +67,10 @@ class IModule(IEventDispatcher):
     pass
 
 
-class TargetProcess(IEventDispatcher):
+'''
+Base class for a target delegate implementation used to manage and monitor a system process/software
+'''
+class TargetProcess(IModule):
     '''
     classdocs
     '''
@@ -81,6 +84,7 @@ class TargetProcess(IEventDispatcher):
         self.__allowed_read_extensions = ['*']
         self.__allowed_write_extensions = ['*']
         self.__procname=procname
+        self.__alias=None
         self.__pid_procname=procname
         self.__service__path = service_path 
         self.__pid=None
@@ -97,6 +101,7 @@ class TargetProcess(IEventDispatcher):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__initialize()
     
+    
     def __initialize(self):
         '''
         do init
@@ -106,9 +111,16 @@ class TargetProcess(IEventDispatcher):
     
     
     
+    def initialize(self) ->None:
+        self.logger.info("Module init")
+        pass
+        
+    
+    
     @property
     def eventcallback(self):
         return self.__event_callback
+    
     
     
     @eventcallback.setter
@@ -123,12 +135,12 @@ class TargetProcess(IEventDispatcher):
         return self.__target_installed
     
     
-    
     '''
         Sets the installed state of target on the system or not
     '''
     def setTargetInstalled(self, installed):
-        self.__target_installed = installed    
+        self.__target_installed = installed
+            
         
     '''
         Returns root path of the target
@@ -137,8 +149,10 @@ class TargetProcess(IEventDispatcher):
         return self.__root
     
     
+    
     def getAllowedReadExtensions(self):
         return self.__allowed_read_extensions
+    
     
     
     def setAllowedReadExtensions(self, extensions):
@@ -147,8 +161,10 @@ class TargetProcess(IEventDispatcher):
         self.__allowed_read_extensions = extensions
     
     
+    
     def getAllowedWriteExtensions(self):
         return self.__allowed_write_extensions
+    
     
     
     def setAllowedWriteExtensions(self, extensions):
@@ -189,6 +205,24 @@ class TargetProcess(IEventDispatcher):
     '''
     def setPidProcName(self, procname):
         self.__pid_procname = procname
+        
+        
+    
+    '''
+        Returns target alias if available otherwise return target process name
+    '''
+    def getAlias(self):
+        return self.__alias if self.__alias != None else self.__pid_procname
+    
+    
+    '''
+        Sets target alias
+    '''
+    def setAlias(self, alias):
+        self.__alias = alias
+    
+    
+    
      
     
     '''
@@ -459,7 +493,7 @@ class TargetProcess(IEventDispatcher):
 
 
 
-class ServiceBot(IEventDispatcher):
+class ServiceBot(IModule):
     '''
     classdocs
     '''
@@ -470,16 +504,16 @@ class ServiceBot(IEventDispatcher):
         Constructor
         '''
         super().__init__()
-        self._initialize()
-        pass
-        
-        
-    def _initialize(self):
         self.__webhook = False
         self.__supports_webhook = False
         self.__webhook_handler_url_config = None
         self.__webhook_secret = None
         pass
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
     
     
     

@@ -108,7 +108,7 @@ class TornadoApplication(tornado.web.Application):
             
             listener_modules:List = []
             actionable_modules:List = []
-            target_delegate:TargetProcess = None
+            target_delegates:List = []
             
             
             for sorted_config in sorted_module_configs:
@@ -120,34 +120,42 @@ class TornadoApplication(tornado.web.Application):
                 mod_instance:IModule = klass(sorted_config["conf"])
                 mod_instance.eventhandler = self.handle_event
                 
+                
                 if isinstance(mod_instance, IEventHandler):
                     listener_modules.append(mod_instance)
                 
                 if isinstance(mod_instance, IntentProvider):
                     actionable_modules.append(mod_instance)
                 
-                ''' Special handling for special module -> target delegate '''    
                 if isinstance(mod_instance, TargetProcess):
-                    target_delegate = mod_instance
+                    self.logger.info("Deferring initialization of module %s", module_name)
+                    target_delegates.append(mod_instance)
+                    continue
+                
                 
                 mod_instance.initialize()
                 
             
             
-            ''' Attach event listener modules'''
-            
-            for listener_mod in  listener_modules:
-                self.__pubsubhub.addEventListener(listener_mod)
-                
-                
-            
-            ''' Assign intent request handler to all intent providers '''
+            ''' Assign intent request handler to all eligible modules '''
             
             for actionable_mod in  actionable_modules:
                 actionable_mod.intenthandler = self.handle_intent_request
                 
+                
             
-            ''' -------------------------------'''
+            ''' Attach event listener to eligible modules'''
+            
+            for listener_mod in  listener_modules:
+                self.__pubsubhub.addEventListener(listener_mod)
+                
+            
+            
+            ''' Initialize all delegates in the end '''
+                
+            for delegate in  target_delegates:
+                delegate.initialize()                
+            
             
             
             server_config = conf["server"]

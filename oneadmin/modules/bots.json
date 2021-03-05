@@ -1,0 +1,95 @@
+{
+	"enabled": false,
+	"order": 100,
+	"klass": "TelegramBot",
+	"conf": {
+		"token": "",
+		"master_user_id": null,
+		"interpreter": {
+			"module": "oneadmin.modules.deps.interpreters",
+			"klass": "DefaultInterpreter",
+			"conf": {
+				"knowledge": "",
+				"vocabulary": [{
+						"intent": "greet",
+						"seed": "hello",
+						"keywords": [],
+						"responses": ["nice to meet you"],
+						"action": {}
+					},
+					{
+						"intent": "get_system_stats",
+						"seed": "statistics",
+						"keywords": ["give me some system info", "show system stats", "get system statistics", "share system stats", "show system status"],
+						"responses": ["the stats are looking like this", "here are the stats"],
+						"action": {
+							"pre_response": "fetching system stats",
+							"method": "get_system_stats",
+							"parameters": {}
+						}
+					},
+					{
+						"intent": "bye",
+						"seed": "goodbye",
+						"keywords": [],
+						"responses": ["nice talking to you", "hope to see you again", "bye bye and take care"],
+						"action": {}
+					},
+					{
+						"intent": "get_cpu_stats",
+						"seed": "processor",
+						"keywords": ["show cpu info", "show cpu usage", "show cpu data", "what is the cpu load", "show cpu stats"],
+						"responses": ["here are the cpu stats", "this is what the cpu stats look like"],
+						"action": {
+							"pre_response": "fetching cpu stats",
+							"method": "get_cpu_stats",
+							"parameters": {}
+						}
+					},
+					{
+						"intent": "get_memory_stats",
+						"seed": "memory",
+						"keywords": ["show memory info", "show memory stats", "what is the memory load", "how much memory is free", "how much memory is in use"],
+						"responses": ["here are the memory stats", "this is what the memory info looks like"],
+						"action": {
+							"pre_response": "fetching memory stats",
+							"method": "get_memory_stats",
+							"parameters": {}
+						}
+					},
+					{
+						"intent": "get_system_time",
+						"seed": "now",
+						"keywords": ["show time", "tell me the time", "whats the time", "what is the time", "what time is it now", "show current time", "whats the time", "current time"],
+						"responses": ["here you are..", "today's date and time...", "it is.."],
+						"action": {
+							"pre_response": "let me check...",
+							"method": "get_system_time",
+							"parameters": {}
+						}
+					},
+					{
+						"intent": "reboot_system",
+						"seed": "reboot",
+						"keywords": ["restart", "reset"],
+						"responses": ["Restarted"],
+						"action": {
+							"pre_response": "Restarting..",
+							"parameters": {}
+						}
+					},
+					{
+						"intent": "force_garbage_collection",
+						"seed": "recycle",
+						"keywords": ["garbage collect", "reclaim"],
+						"responses": ["gc done!"],
+						"action": {
+							"pre_response": "Reclaiming memory..",
+							"parameters": {}
+						}
+					}
+				]
+			}
+		}
+	}
+}

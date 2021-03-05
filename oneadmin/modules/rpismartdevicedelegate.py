@@ -99,6 +99,14 @@ class TargetDelegate(TargetProcess):
     
     
     
+    
+    def initialize(self) ->None:
+        super().initialize()
+        self.logger.info("Module init")
+        pass
+    
+    
+    
     '''
     Initializes the RPI pins 
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/

@@ -20,12 +20,12 @@ from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotRes
 from oneadmin.abstracts import ServiceBot
 from oneadmin.abstracts import IEventHandler
 from oneadmin.utilities import is_notification_event, is_data_notification_event
-from oneadmin.core.components import ActionDispatcher
 from oneadmin.abstracts import IntentProvider, IClientChannel
 from oneadmin.exceptions import RPCError
 from oneadmin.core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
 from oneadmin.exceptions import *
 from oneadmin.utilities import isVideo, isImage
+from oneadmin.version import __version__
 
 import logging
 import tornado
@@ -40,6 +40,7 @@ from tornado.queues import Queue
 
 
 
+
 class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     
     dp = None;
@@ -48,7 +49,7 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     classdocs
     '''
 
-    def __init__(self, conf:object, executor:ActionDispatcher, nlp_engine=None):
+    def __init__(self, conf:dict):
         '''
         Constructor
         '''
@@ -59,13 +60,17 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
         self.__supports_webhook = False
         self.__uid = None
         self.__conf = conf
-        self.__action_dispatcher = executor
-        self.__nlp_engine = nlp_engine
         self.__requests = {}
         self.__mgsqueue = Queue()
         self.__eventsqueue = Queue()
         self.id = str(uuid.uuid4())
         self.__bot_master = None
+        
+    
+    
+    def initialize(self) ->None:
+        super().initialize()
+        self.initialize_interpreter()
         
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
@@ -73,24 +78,47 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     
     
     
+    def initialize_interpreter(self):
+        
+        try:
+            self.logger.info("preparing interpreter")
+            
+            interpreter_conf = self.__conf["interpreter"]
+            interpreter_module_name = interpreter_conf["module"]
+            interpreter_klass_name = interpreter_conf["klass"]
+            
+            interpreter_module = __import__(interpreter_module_name, fromlist=[interpreter_klass_name])
+            interpreter_klass = getattr(interpreter_module, interpreter_klass_name)
+            
+            interpreter_instance = interpreter_klass(interpreter_conf["conf"])
+            
+            self.__nlp_engine = interpreter_instance
+        
+        except ImportError as be:
+            
+            self.__nlp_engine = None
+            self.logger.warn("Interpreter was not found and will not be loaded")
+    
+    
+    
+    
     async def __activate_bot(self):
     
         try:
-            self.__bot = Bot(token=self.__conf['conf']['token'])
+            self.__bot = Bot(token=self.__conf['token'])
             self.__disp = Dispatcher(self.__bot)
-            
             
             self.__disp.register_message_handler(self.start_handler, commands={"start", "restart"})
             self.__disp.register_message_handler(self.handleMessages)
             
             
             ''' Assign master user if specified '''
-            if "master_user_id" in self.__conf['conf']:
-                if self.__conf['conf']["master_user_id"] != "":
-                    self.__bot_master = self.__conf['conf']["master_user_id"]
+            if "master_user_id" in self.__conf:
+                if self.__conf["master_user_id"] != "":
+                    self.__bot_master = self.__conf["master_user_id"]
                     self.logger.debug(f"Bot master ID %s", str(self.__bot_master))
-                    version = await self.__action_dispatcher.handle_request_direct(self, INTENT_GET_SOFTWARE_VERSION_NAME, {})
-                    await self.send_message(self.__bot_master, "Bot version:"+version+"\nI am listening..")                
+                    #version = await self.__action_dispatcher.handle_request_direct(self, INTENT_GET_SOFTWARE_VERSION_NAME, {})
+                    await self.send_message(self.__bot_master, "Bot version:"+__version__+"\nI am listening..")                
                     
             
             '''    
@@ -136,7 +164,7 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
         
         try:
             await message.answer(pre_response)
-            requestid = await self.__action_dispatcher.handle_request(self, intent, args)
+            requestid = await self.notifyintent(intent, args)
             self.__requests[requestid] = {"local_request_id": local_request_id, "handler": wshandler, "response": response, "subject": message}
         
         except:
