@@ -154,7 +154,7 @@ class TornadoApplication(tornado.web.Application):
             ''' Initialize all delegates in the end '''
                 
             for delegate in  target_delegates:
-                delegate.initialize()                
+                delegate.initialize()
             
             
             
