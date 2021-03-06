@@ -50,6 +50,8 @@ class TargetDelegate(TargetProcess):
     classdocs
     '''    
     
+    NAME = "target_delegate"
+    
     SERVICE_PATH = None
     SERVO1 = 17
     SERVO2 = 27
@@ -100,12 +102,9 @@ class TargetDelegate(TargetProcess):
     
     
     
-    def initialize(self) ->None:
-        super().initialize()
-        self.logger.info("Module init")
-        pass
-    
-    
+    def getname(self) ->Text:
+        return TargetDelegate.NAME
+        
     
     '''
     Initializes the RPI pins 

@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, ISystemMonitor
+from oneadmin.abstracts import IModule, ISystemMonitor
 from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
 from oneadmin.core.constants import TOPIC_SYSMONITORING
 from oneadmin.version import __version__
@@ -30,14 +30,18 @@ import os
 import gc
 import json
 
-from typing import Dict
+from typing import Dict, Text
 from tornado.concurrent import asyncio
 from time import time
 from tornado.httpclient import AsyncHTTPClient
 from builtins import str
 
 
-class SystemMonitor(IEventDispatcher, ISystemMonitor):
+class SystemMonitor(IModule, ISystemMonitor):
+    
+    
+    NAME = "sysmon"
+    
     
     def __init__(self, config, modules):
         '''
@@ -58,6 +62,18 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
          
         #tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
     pass
+
+
+
+
+    def initialize(self) ->None:
+        self.logger.info("Module init")
+        pass
+
+
+
+    def getname(self) ->Text:
+        return SystemMonitor.NAME
 
 
 

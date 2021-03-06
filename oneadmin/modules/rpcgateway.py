@@ -17,12 +17,16 @@ import sys
 import tornado
 
 from tornado.queues import Queue
+from typing import Text
 
 
 class RPCGateway(IModule, IntentProvider, IClientChannel):
     '''
     Class to handle RPC style communication over websockets.
     '''
+    
+    NAME = "rpc_gateway"
+    
     
     def __init__(self, conf):
         '''
@@ -33,6 +37,11 @@ class RPCGateway(IModule, IntentProvider, IClientChannel):
         self.__mgsqueue = Queue()
         pass
     
+    
+    
+        
+    def getname(self) ->Text:
+        return RPCGateway.NAME 
     
     
     def initialize(self) ->None:

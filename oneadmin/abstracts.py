@@ -64,6 +64,11 @@ class IModule(IEventDispatcher):
     def initialize(self) ->None:
         raise NotImplementedError
     
+    
+    def getname(self) ->Text:
+        raise NotImplementedError
+    
+    
     pass
 
 
@@ -99,7 +104,13 @@ class TargetProcess(IModule):
         self.__capabilities = {}
         self.__arbitrary_method_namespace=invocable_namespace
         self.logger = logging.getLogger(self.__class__.__name__)
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
         self.__initialize()
+        
     
     
     def __initialize(self):
@@ -108,15 +119,9 @@ class TargetProcess(IModule):
         '''
         '''if(not os.path.isdir(self.__root)):
             ("Target location {} does not exist or is not a directory".format(self.__root))'''
-    
-    
-    
-    def initialize(self) ->None:
-        self.logger.info("Module init")
-        pass
         
-    
-    
+        
+        
     @property
     def eventcallback(self):
         return self.__event_callback

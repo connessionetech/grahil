@@ -75,11 +75,9 @@ class TornadoApplication(tornado.web.Application):
             
             if self.__pubsubhub != None:
                 self.modules.registerModule(PUBSUBHUB_MODULE, self.__pubsubhub) 
-                
            
             
-            ''' -------------------------------'''
-                        
+            
             root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
             package_path = os.path.join(root_path, __BASE_PACKAGE__)
             modules_path = os.path.join(package_path, __MODULES__PACKAGE__)
@@ -112,28 +110,36 @@ class TornadoApplication(tornado.web.Application):
             
             
             for sorted_config in sorted_module_configs:
-                module_name = __BASE_PACKAGE__ + "." + __MODULES__PACKAGE__ + "." + sorted_config["name"]
-                module_class_name = sorted_config["klass"]
-                self.logger.info("preparing module %s", module_name)
-                mod = __import__(module_name, fromlist=[module_class_name])
-                klass = getattr(mod, module_class_name)
-                mod_instance:IModule = klass(sorted_config["conf"])
-                mod_instance.eventhandler = self.handle_event
                 
+                try:
                 
-                if isinstance(mod_instance, IEventHandler):
-                    listener_modules.append(mod_instance)
+                    module_name = __BASE_PACKAGE__ + "." + __MODULES__PACKAGE__ + "." + sorted_config["name"]
+                    module_class_name = sorted_config["klass"]
+                    self.logger.info("preparing module %s", module_name)
+                    mod = __import__(module_name, fromlist=[module_class_name])
+                    klass = getattr(mod, module_class_name)
+                    mod_instance:IModule = klass(sorted_config["conf"])
+                    mod_id = mod_instance.getname()
+                    mod_instance.eventhandler = self.handle_event
+                    mod_instance.initialize()
+                    
+                    
+                    if isinstance(mod_instance, IEventHandler):
+                        listener_modules.append(mod_instance)
+                    
+                    if isinstance(mod_instance, IntentProvider):
+                        actionable_modules.append(mod_instance)
+                    
+                    if isinstance(mod_instance, TargetProcess):
+                        target_delegates.append(mod_instance)
+                    
+                    
+                    self.modules.registerModule(mod_instance, mod_id)
                 
-                if isinstance(mod_instance, IntentProvider):
-                    actionable_modules.append(mod_instance)
-                
-                if isinstance(mod_instance, TargetProcess):
-                    self.logger.info("Deferring initialization of module %s", module_name)
-                    target_delegates.append(mod_instance)
-                    continue
-                
-                
-                mod_instance.initialize()
+                except Exception as e:
+                    
+                    self.logger.error("Error initializing module " + mod_instance + ".Cause : " + str(e))
+                     
                 
             
             
@@ -148,13 +154,7 @@ class TornadoApplication(tornado.web.Application):
             
             for listener_mod in  listener_modules:
                 self.__pubsubhub.addEventListener(listener_mod)
-                
-            
-            
-            ''' Initialize all delegates in the end '''
-                
-            for delegate in  target_delegates:
-                delegate.initialize()
+
             
             
             
@@ -193,7 +193,9 @@ class TornadoApplication(tornado.web.Application):
         except Exception as e:
             
             self.logger.error("Oops! an error occurred initializing application.%s", str(e))
-            
+
+    
+    
     
     
     

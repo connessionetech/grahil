@@ -28,13 +28,16 @@ from tornado.process import Subprocess
 from tornado.concurrent import asyncio
 from sys import platform
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Text
 
 
 class LogMonitor(IModule, ILogMonitor):
     '''
     classdocs
     '''
+    
+    NAME = "log_monitor"
+    
 
     def __init__(self, conf):
         '''
@@ -46,7 +49,12 @@ class LogMonitor(IModule, ILogMonitor):
         self.__conf = conf
         self.__log_files = {}
         self.__log_store = {}            
-        pass  
+        pass 
+    
+    
+    
+    def getname(self) ->Text:
+        return LogMonitor.NAME 
     
     
     

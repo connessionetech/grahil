@@ -25,15 +25,26 @@ import logging
 import tornado
 import datetime
 import asyncio
+from typing import Text
 
 
 
 class Pinger(IModule):
     
+    
+    NAME = "pinger"
+    
+    
     def __init__(self, conf):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
         pass
+    
+    
+    
+    def getname(self) ->Text:
+        return Pinger.NAME
+    
     
     
     def initialize(self) ->None:

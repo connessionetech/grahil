@@ -40,6 +40,7 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
 from builtins import str
 from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
+from typing import Text
 
 
 
@@ -47,6 +48,8 @@ from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
 
 class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     
+    
+    NAME = "reaction_engine"
     
 
     def __init__(self, conf):
@@ -63,7 +66,11 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
         self.__task_scheduler = TornadoScheduler()
 
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
-        
+    
+    
+    
+    def getname(self) ->Text:
+        return ReactionEngine.NAME    
     
     
     def initialize(self)->None:

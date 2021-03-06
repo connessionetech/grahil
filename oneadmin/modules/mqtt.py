@@ -37,6 +37,10 @@ from typing import Text, Callable, List
 
 
 class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
+    
+    
+    NAME = "mqtt_gateway"
+    
     '''
     Class to handle command and data communication over MQTT.
     
@@ -128,6 +132,11 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         pass
+    
+    
+    
+    def getname(self) ->Text:
+        return MQTTGateway.NAME
     
     
     

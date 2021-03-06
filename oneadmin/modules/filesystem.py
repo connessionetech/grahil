@@ -56,7 +56,9 @@ class FileManager(IModule):
     classdocs
     '''
     
-    MAX_WORKERS = 2
+    NAME = "file_manager"
+    
+    
 
     def __init__(self, config):
         '''
@@ -94,6 +96,11 @@ class FileManager(IModule):
             #tornado.ioloop.IOLoop.current().spawn_callback(self.clean_tmp_downloads)
         
         pass  
+    
+    
+    
+    def getname(self) ->Text:
+        return FileManager.NAME
     
     
     

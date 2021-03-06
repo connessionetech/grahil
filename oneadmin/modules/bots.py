@@ -37,13 +37,14 @@ from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
 from aiogram import Bot, Dispatcher, types
 from tornado.queues import Queue
+from typing import Text
 
 
 
 
 class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     
-    dp = None;
+    NAME = "service_bot"
     
     '''
     classdocs
@@ -65,6 +66,12 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
         self.__eventsqueue = Queue()
         self.id = str(uuid.uuid4())
         self.__bot_master = None
+        
+    
+    
+    def getname(self) ->Text:
+        return TelegramBot.NAME
+    
         
     
     

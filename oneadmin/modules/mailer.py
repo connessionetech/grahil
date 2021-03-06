@@ -29,6 +29,9 @@ class SMTPMailer(IModule, IMailer):
     '''
     classdocs
     '''
+    
+    NAME = "smtp_mailer"
+    
 
     def __init__(self, conf:dict):
         '''
@@ -41,9 +44,15 @@ class SMTPMailer(IModule, IMailer):
     
     
     
+    def getname(self) ->Text:
+        return SMTPMailer.NAME
+    
+    
+    
     def initialize(self) ->None:
         self.logger.info("Module init")
         pass
+    
     
     
     async def send_mail(self, subject:Text, body:Text) ->None:
