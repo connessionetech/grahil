@@ -107,6 +107,7 @@ class TornadoApplication(tornado.web.Application):
             listener_modules:List = []
             actionable_modules:List = []
             target_delegates:List = []
+            module_url_patterns:List = []
             
             
             for sorted_config in sorted_module_configs:
@@ -132,6 +133,11 @@ class TornadoApplication(tornado.web.Application):
                     
                     if isinstance(mod_instance, TargetProcess):
                         target_delegates.append(mod_instance)
+                        
+                    
+                    patterns:List = mod_instance.get_url_patterns()
+                    if len(patterns)>0:
+                        module_url_patterns.extend(patterns)
                     
                     
                     self.modules.registerModule(mod_instance, mod_id)
@@ -155,7 +161,6 @@ class TornadoApplication(tornado.web.Application):
             for listener_mod in  listener_modules:
                 self.__pubsubhub.addEventListener(listener_mod)
 
-            
             
             
             server_config = conf["server"]
@@ -186,8 +191,10 @@ class TornadoApplication(tornado.web.Application):
                 if endpoint_ws_config and endpoint_ws_config["enabled"] == True:
                     endpoint_ws_support = True
                 
-                
-            patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)        
+
+            patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)  
+            patterns.extend(module_url_patterns)
+                  
             tornado.web.Application.__init__(self, patterns, **settings)
         
         except Exception as e:

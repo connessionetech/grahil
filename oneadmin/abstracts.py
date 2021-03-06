@@ -69,6 +69,10 @@ class IModule(IEventDispatcher):
         raise NotImplementedError
     
     
+    def get_url_patterns(self) ->List:
+        return []
+    
+    
     pass
 
 

@@ -10,14 +10,18 @@ from oneadmin.abstracts import IModule, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import is_valid_event
 from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING
+from oneadmin.responsebuilder import formatSuccessResponse
 
 
 import logging
 import sys
 import tornado
+import json
 
 from tornado.queues import Queue
-from typing import Text
+from typing import Text,List
+from tornado.web import url
+
 
 
 class RPCGateway(IModule, IntentProvider, IClientChannel):
@@ -36,12 +40,16 @@ class RPCGateway(IModule, IntentProvider, IClientChannel):
         self.__requests = {}
         self.__mgsqueue = Queue()
         pass
-    
+
+
+    def get_url_patterns(self)->List:
+        return [ url(r"/moduleapi/", SampleHandler) ]
     
     
         
     def getname(self) ->Text:
         return RPCGateway.NAME 
+    
     
     
     def initialize(self) ->None:
@@ -137,3 +145,19 @@ class RPCGateway(IModule, IntentProvider, IClientChannel):
                     del self.__requests[requestid]
                 
                 self.__mgsqueue.task_done()
+                
+
+
+'''
+Sample  handler
+'''
+class SampleHandler(tornado.web.RequestHandler):
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)    
+        pass
+
+    def get(self):
+        self.logger.info("sample path")
+        self.write(json.dumps(formatSuccessResponse("Hello world")))
+        self.finish()
