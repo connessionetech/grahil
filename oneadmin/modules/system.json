@@ -1,5 +1,5 @@
 {
-				"enabled": false,
+				"enabled": true,
 				"klass": "SystemMonitor",
 				"conf" : {					
 					"snapshot_interval_seconds": 10,
