@@ -173,8 +173,8 @@ class LogMonitor(IModule, ILogMonitor):
             log_file = Path(str(log_file_path))
             
             if not log_file.exists():
-                self.deregisterLogFile(logname)
-                raise Exception("Log file %s does not exist at location %s ", logname,  str(log_file.absolute()))
+                self.deregister_log_file(logname)
+                raise Exception("Log file " + str(logname) + " does not exist at location " + str(log_file.absolute()))
             
             q = self.__log_store[logname];
             
@@ -211,8 +211,8 @@ class LogMonitor(IModule, ILogMonitor):
             log_mon_process = None
             
             if not log_file.exists():
-                self.deregisterLogFile(logname)
-                raise Exception("Log file %s does not exist at location %s ", logname,  str(log_file.absolute()))
+                self.deregister_log_file(logname)
+                raise Exception("Log file " + str(logname) + " does not exist at location " + str(log_file.absolute()))
             
             if platform == "linux" or platform == "linux2" :
                 log_mon_process:Subprocess = Subprocess(["tail", "-n", "1", "-f", str(log_file.absolute())], stdout=Subprocess.STREAM)
@@ -220,7 +220,7 @@ class LogMonitor(IModule, ILogMonitor):
                 log_mon_process:Subprocess = Subprocess(["Get-Content", str(log_file.absolute()), "-Tail", "1" , "-Wait", "1"], stdout=Subprocess.STREAM)
             else:
                 error = "Log monitoring is not supported on " + platform
-                self.deregisterLogFile(logname)
+                self.deregister_log_file(logname)
                 raise Exception(error)
             
             

@@ -144,7 +144,7 @@ class TornadoApplication(tornado.web.Application):
                 
                 except Exception as e:
                     
-                    self.logger.error("Error initializing module " + mod_instance + ".Cause : " + str(e))
+                    self.logger.error("Error initializing module " + str(mod_instance) + ".Cause : " + str(e))
                      
                 
             

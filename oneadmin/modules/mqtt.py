@@ -127,10 +127,6 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
         self.__conf = conf       
         self.__requests = {}
         self.__mgsqueue = Queue()
-        
-        
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         pass
     
     
@@ -142,6 +138,8 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
     
     def initialize(self) ->None:
         self.logger.info("Module init")
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         pass
     
     
@@ -255,13 +253,18 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
     async def __initialize(self):
         # Run the advanced_example indefinitely. Reconnect automatically
         # if the connection is lost.
-        while True:
-            try:
-                await self._setup()
-            except MqttError as error:
-                self.logger.info(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
-            finally:
-                await asyncio.sleep(self.__conf["reconnect_wait_time_seconds"])
+        
+        reconnect_interval = self.__conf["reconnect_wait_time_seconds"]
+        host = self.__conf["host"]
+        
+        if host != None and host != "":
+            while True:
+                try:
+                    await self._setup()
+                except MqttError as error:
+                    self.logger.info(f'Error "{error}". Reconnecting in {reconnect_interval} seconds.')
+                finally:
+                    await asyncio.sleep(self.__conf["reconnect_wait_time_seconds"])
     
     
     
