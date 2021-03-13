@@ -1,0 +1,15 @@
+{
+				"enabled": true,
+				"klass": "MQTTGateway",
+				"conf" : {
+					"host": "",
+					"reconnect_wait_time_seconds": 5,
+					"topic_filters":[
+						"floors/rooftop/",
+						"floors/+/humidity"
+					],
+					"subscriptions":[
+						{"topic": "floors/#", "qos": 0}
+					]
+				}
+}

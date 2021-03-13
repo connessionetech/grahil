@@ -52,9 +52,34 @@ class IEventDispatcher(object):
         if self.__eventHandler:
             await self.__eventHandler(event)
         pass
+    
+    
+class IModule(IEventDispatcher):
+    
+    
+    def __init__(self):
+        super().__init__()
+    
+    
+    def initialize(self) ->None:
+        raise NotImplementedError
+    
+    
+    def getname(self) ->Text:
+        raise NotImplementedError
+    
+    
+    def get_url_patterns(self) ->List:
+        return []
+    
+    
+    pass
 
 
-class TargetProcess(IEventDispatcher):
+'''
+Base class for a target delegate implementation used to manage and monitor a system process/software
+'''
+class TargetProcess(IModule):
     '''
     classdocs
     '''
@@ -68,6 +93,7 @@ class TargetProcess(IEventDispatcher):
         self.__allowed_read_extensions = ['*']
         self.__allowed_write_extensions = ['*']
         self.__procname=procname
+        self.__alias=None
         self.__pid_procname=procname
         self.__service__path = service_path 
         self.__pid=None
@@ -82,7 +108,14 @@ class TargetProcess(IEventDispatcher):
         self.__capabilities = {}
         self.__arbitrary_method_namespace=invocable_namespace
         self.logger = logging.getLogger(self.__class__.__name__)
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
         self.__initialize()
+        
+    
     
     def __initialize(self):
         '''
@@ -90,12 +123,13 @@ class TargetProcess(IEventDispatcher):
         '''
         '''if(not os.path.isdir(self.__root)):
             ("Target location {} does not exist or is not a directory".format(self.__root))'''
-    
-    
-    
+        
+        
+        
     @property
     def eventcallback(self):
         return self.__event_callback
+    
     
     
     @eventcallback.setter
@@ -110,12 +144,12 @@ class TargetProcess(IEventDispatcher):
         return self.__target_installed
     
     
-    
     '''
         Sets the installed state of target on the system or not
     '''
     def setTargetInstalled(self, installed):
-        self.__target_installed = installed    
+        self.__target_installed = installed
+            
         
     '''
         Returns root path of the target
@@ -124,8 +158,10 @@ class TargetProcess(IEventDispatcher):
         return self.__root
     
     
+    
     def getAllowedReadExtensions(self):
         return self.__allowed_read_extensions
+    
     
     
     def setAllowedReadExtensions(self, extensions):
@@ -134,8 +170,10 @@ class TargetProcess(IEventDispatcher):
         self.__allowed_read_extensions = extensions
     
     
+    
     def getAllowedWriteExtensions(self):
         return self.__allowed_write_extensions
+    
     
     
     def setAllowedWriteExtensions(self, extensions):
@@ -176,6 +214,24 @@ class TargetProcess(IEventDispatcher):
     '''
     def setPidProcName(self, procname):
         self.__pid_procname = procname
+        
+        
+    
+    '''
+        Returns target alias if available otherwise return target process name
+    '''
+    def getAlias(self):
+        return self.__alias if self.__alias != None else self.__pid_procname
+    
+    
+    '''
+        Sets target alias
+    '''
+    def setAlias(self, alias):
+        self.__alias = alias
+    
+    
+    
      
     
     '''
@@ -443,7 +499,10 @@ class TargetProcess(IEventDispatcher):
 
 
 
-class IEventHandler(object):
+
+
+
+class ServiceBot(IModule):
     '''
     classdocs
     '''
@@ -454,60 +513,16 @@ class IEventHandler(object):
         Constructor
         '''
         super().__init__()
-        self.__topics_of_interest = [TOPIC_ANY]
-        self.__events_of_interest = [EVENT_ANY]
-      
-    
-    def get_events_of_interests(self)-> List:
-        return self.__events_of_interest 
-    
-    
-    def set_events_of_interests(self, events:List)-> None:
-        self.__events_of_interest = events
-    
-    
-    def get_topics_of_interests(self)-> List:
-        return self.__topics_of_interest
-    
-    
-    def set_topics_of_interests(self, topics:List)-> None:
-        self.__topics_of_interest = topics        
-        
-        
-    async def _notifyEvent(self, event:EventType):
-        if event["topic"] in self.get_topics_of_interests() or TOPIC_ANY in self.get_topics_of_interests():
-            if event["name"] in self.get_events_of_interests() or EVENT_ANY in self.get_events_of_interests():
-                await self.handleEvent(event)
-        pass
-    
-    
-    async def handleEvent(self, event):
-        pass  
-    
-
-
-
-class ServiceBot(IEventDispatcher):
-    '''
-    classdocs
-    '''
-
-
-    def __init__(self):
-        '''
-        Constructor
-        '''
-        super().__init__()
-        self._initialize()
-        pass
-        
-        
-    def _initialize(self):
         self.__webhook = False
         self.__supports_webhook = False
         self.__webhook_handler_url_config = None
         self.__webhook_secret = None
         pass
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
     
     
     
@@ -544,6 +559,25 @@ class IntentProvider(object):
         Constructor
         '''
         super().__init__()
+        self.__intenthandler = None
+    
+    
+    @property
+    def intenthandler(self) ->Callable:
+        return self.__intenthandler
+    
+    
+    
+    @intenthandler.setter
+    def intenthandler(self, handler:Callable) ->None:
+        self.__intenthandler = handler
+
+
+    
+    async def notifyintent(self, intent:Text, args:Dict, event:EventType=None) -> None:
+        if self.__intenthandler:
+            await self.__intenthandler(self, intent, args, event)
+        pass
     
 
     def onIntentProcessResult(self, requestid:str, result:object) -> None:
@@ -602,16 +636,6 @@ class IMQTTClient(object):
     async def publish_to_topics(self, topics:List[str], message:str, callback:Callable=None)->None:
         raise NotImplementedError()
         pass
-    
-    
-    @property
-    def on_data_handler(self) ->Callable:
-        return self.__topic_data_handler
-    
-    
-    @on_data_handler.setter
-    def on_data_handler(self, handler:Callable) ->None:
-        self.__topic_data_handler = handler
         
         
 
@@ -750,16 +774,7 @@ class IReactionEngine(object):
     
     
     
-    @property
-    def action_dispatcher(self):
-        raise NotImplementedError()
-    
-    
-    
-    @action_dispatcher.setter
-    def action_dispatcher(self, _dispatcher):
-        raise NotImplementedError()
-    
+   
     
     
     def has_rule(self, id:str)->bool:
@@ -780,3 +795,46 @@ class IReactionEngine(object):
     
     def deregister_rule(self, id:str)->None:
         raise NotImplementedError()
+    
+
+
+class IEventHandler(object):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super().__init__()
+        self.__topics_of_interest = [TOPIC_ANY]
+        self.__events_of_interest = [EVENT_ANY]
+      
+    
+    def get_events_of_interests(self)-> List:
+        return self.__events_of_interest 
+    
+    
+    def set_events_of_interests(self, events:List)-> None:
+        self.__events_of_interest = events
+    
+    
+    def get_topics_of_interests(self)-> List:
+        return self.__topics_of_interest
+    
+    
+    def set_topics_of_interests(self, topics:List)-> None:
+        self.__topics_of_interest = topics        
+        
+        
+    async def _notifyEvent(self, event:EventType):
+        if event["topic"] in self.get_topics_of_interests() or TOPIC_ANY in self.get_topics_of_interests():
+            if event["name"] in self.get_events_of_interests() or EVENT_ANY in self.get_events_of_interests():
+                await self.handleEvent(event)
+        pass
+    
+    
+    async def handleEvent(self, event):
+        pass

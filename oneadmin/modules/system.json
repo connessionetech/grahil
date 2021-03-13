@@ -1,0 +1,11 @@
+{
+				"enabled": true,
+				"klass": "SystemMonitor",
+				"conf" : {					
+					"snapshot_interval_seconds": 10,
+					"log_push_interval_seconds": 0.4,
+					"nic_stats_per_nic": false,
+					"net_connection_filter": "inet",
+					"net_connection_count_only": true
+				}
+}

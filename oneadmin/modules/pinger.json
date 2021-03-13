@@ -1,0 +1,8 @@
+{
+				"enabled": true,
+				"order": -10,
+				"klass": "Pinger",
+				"conf" : {
+					"ping_interval_seconds": 15
+				}
+}

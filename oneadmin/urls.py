@@ -17,10 +17,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.handlers import base
+
 from tornado.web import url
+from typing import List
 
 
-def get_url_patterns(rest:bool, ws:bool):
+def get_url_patterns(rest:bool, ws:bool)->List:
     
     if rest and not ws:
         return [

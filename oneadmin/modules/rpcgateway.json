@@ -1,0 +1,7 @@
+{
+				"enabled": true,
+				"order": -9,
+				"klass": "RPCGateway",
+				"conf" : {
+				}
+}

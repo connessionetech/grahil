@@ -50,6 +50,8 @@ class TargetDelegate(TargetProcess):
     classdocs
     '''    
     
+    NAME = "target_delegate"
+    
     SERVICE_PATH = None
     SERVO1 = 17
     SERVO2 = 27
@@ -98,6 +100,11 @@ class TargetDelegate(TargetProcess):
         pass
     
     
+    
+    
+    def getname(self) ->Text:
+        return TargetDelegate.NAME
+        
     
     '''
     Initializes the RPI pins 

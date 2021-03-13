@@ -38,6 +38,8 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     '''
     classdocs
     '''
+    
+    NAME = "script_runner"
 
 
     def __init__(self, conf=None):
@@ -52,7 +54,17 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         self.__scripts = {}
         self.__running_scripts = {}
         pass
-        
+    
+    
+    
+    def getname(self) ->Text:
+        return ScriptRunner.NAME
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
+        pass    
         
     
     

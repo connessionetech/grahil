@@ -1,6 +1,6 @@
 # Production specific requirements go here (they should not vary from the base
 # requirements)
 -r base.txt
-opencv-python==4.4.0.46
-RPi.GPIO==0.7.0
-Adafruit-DHT==1.4.0
+opencv-python
+RPi.GPIO
+Adafruit-DHT

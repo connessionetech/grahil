@@ -60,6 +60,8 @@ EVENT_DATA_NOTIFICATION = "data_notification"
 
 EVENT_ARBITRARY_DATA = "arbitrary_data"
 
+EVENT_TELEMETRY_DATA = "telemetry_data"
+
 EVENT_KEY = "__event__"
 
 
@@ -204,6 +206,29 @@ def ScriptExecutionEvent(
         "note": note,
         "timestamp": timestamp
     }
+
+
+
+
+# noinspection PyPep8Naming
+def TelemetryDataEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,    
+    meta: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_TELEMETRY_DATA,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "meta": meta,
+        "note": note,
+        "timestamp": timestamp
+    }
+
+
 
 
 

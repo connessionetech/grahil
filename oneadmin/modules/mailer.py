@@ -15,18 +15,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from oneadmin.abstracts import IMailer
+from oneadmin.abstracts import IMailer, IModule
 
 from builtins import str
 from email.message import EmailMessage
 from typing import Text
 import aiosmtplib
+import logging
 
 
-class SMTPMailer(IMailer):
+
+class SMTPMailer(IModule, IMailer):
     '''
     classdocs
     '''
+    
+    NAME = "smtp_mailer"
+    
 
     def __init__(self, conf:dict):
         '''
@@ -34,6 +39,18 @@ class SMTPMailer(IMailer):
         '''
         super().__init__()
         self.__conf = conf
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+    
+    
+    
+    def getname(self) ->Text:
+        return SMTPMailer.NAME
+    
+    
+    
+    def initialize(self) ->None:
+        self.logger.info("Module init")
         pass
     
     

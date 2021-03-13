@@ -25,6 +25,7 @@ define("config", default=None, help="tornado config file")
 define("debug", default=False, help="debug mode")
 
 __BASE_PACKAGE__ = "oneadmin"
+__MODULES__PACKAGE__ = "modules" 
 
 settings = {}
 

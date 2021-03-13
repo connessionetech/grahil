@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, ISystemMonitor
+from oneadmin.abstracts import IModule, ISystemMonitor
 from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
 from oneadmin.core.constants import TOPIC_SYSMONITORING
 from oneadmin.version import __version__
@@ -30,16 +30,20 @@ import os
 import gc
 import json
 
-from typing import Dict
+from typing import Dict, Text
 from tornado.concurrent import asyncio
 from time import time
 from tornado.httpclient import AsyncHTTPClient
 from builtins import str
 
 
-class SystemMonitor(IEventDispatcher, ISystemMonitor):
+class SystemMonitor(IModule, ISystemMonitor):
     
-    def __init__(self, config, modules):
+    
+    NAME = "sysmon"
+    
+    
+    def __init__(self, config):
         '''
         Constructor
         '''
@@ -50,18 +54,28 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
         self.__config = config
         
         ''' To refactor'''
-        self.__delegate = modules.getModule("target_delegate")
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
-        self.__external_ip = None
-         
-        #tornado.ioloop.IOLoop.current().spawn_callback(self.__discoverHost)        
+        self.__external_ip = None      
     pass
 
 
 
 
+    def initialize(self) ->None:
+        self.logger.info("Module init")
+        self.start_monitor()
+        pass
+
+
+
+    def getname(self) ->Text:
+        return SystemMonitor.NAME
+
+
+
+    '''
     async def __discoverHost(self):
          
         http_client = AsyncHTTPClient()
@@ -73,7 +87,7 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
         except Exception as e:
             err = "An error occurred in discovering public IP " + str(e)
             self.logger.warning(err)
-        
+    '''    
 
 
     
@@ -268,32 +282,7 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
                 else:
                     stats = self.__collect_nic_stats("aggregated", net_io)
                     nic_stats.append(stats)
-                    
-                
-                ''' Target information '''
-                
-                if(self.__delegate != None):        
-                    target_name = self.__delegate.getProcName()            
-                    target_is_installed = self.__delegate.is_service_installed()
-                    
-                    if(target_is_installed):        
-                        target_version = self.__delegate.getProcVersion()
-                        target_is_running = self.__delegate.is_proc_running()
-                        target_is_starting = self.__delegate.is_proc_starting()
-                        target_is_stopping = self.__delegate.is_proc_stopping()
-                        target_stats = await self.__get_target_stats()
-                        target_meta = self.__delegate.get_target_meta()
-                        target_capabilities = self.__delegate.get_target_capabilities()
-                    else:
-                        target_version = ""
-                        target_is_running = self.__delegate.is_proc_running()
-                        target_is_starting = self.__delegate.is_proc_starting()
-                        target_is_stopping = self.__delegate.is_proc_stopping()
-                        target_stats = None
-                        target_meta = None
-                        target_capabilities = None
-                
-                
+
                     
                     
                 '' 'Service capabilities'''
@@ -351,34 +340,7 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
                 ''' Data about the target process '''
                 
                 target_stats_data = None
-                
-                if(self.__delegate != None): 
-                    target_stats_data = {
-                            "name": target_name,
-                            "version": target_version,
-                            "installed": target_is_installed,
-                            "is_running": target_is_running,
-                            "is_starting": target_is_starting,
-                            "is_stopping": target_is_stopping,
-                            "meta_info":target_meta,
-                            "stats":target_stats,
-                            "capabilities":target_capabilities
-                        }
-                else:
-                    target_stats_data = {
-                            "name": None,
-                            "version": None,
-                            "installed": False,
-                            "is_running": False,
-                            "is_starting": False,
-                            "is_stopping": False,
-                            "meta_info":{
-                            },
-                            "stats":{
-                            },
-                            "capabilities":{
-                            }
-                        }  
+  
                 
                 ''' Aggregating stats '''
                     
@@ -507,71 +469,12 @@ class SystemMonitor(IEventDispatcher, ISystemMonitor):
     def __get_capabilities(self):
         return {
                     "system_stats":True,
-                    "target_stats":True if self.__delegate != None else False,
+                    "target_stats":False,
                     "file_management" : False,
                     "log_monitoring" : False,
                     "script_execution" : False
                 }
-    
-    
-    async def __get_target_stats(self):
-        if(self.__delegate.is_proc_running()):
-            data = None
-            try:
-                pids = []
-                procname = self.__delegate.getPidProcName()
-                process = filter(lambda p: p.name() == procname, psutil.process_iter())
-                for i in process:
-                    pids.append(i.pid)  
-                    
-                if len(pids) == 0:
-                    raise ProcessLookupError("No PID found for the process name "  + procname)
-                    
-                
-                pids.sort(reverse=True)
-                pid = pids[0]
-                
-                ''' Resolve and set PID  for target '''
-                self.__delegate.setTargetPid(pid)                
-                                
-                process = psutil.Process(pid)
-                if(process.is_running()):
-                    with process.oneshot():
-                        data = {
-                                "pid": process.pid,
-                                "name": self.__delegate.getProcName(),
-                                "created": process.create_time(),
-                                "percent_cpu_used": process.cpu_percent(interval=0.0),
-                                "percent_memory_used": process.memory_percent(),
-                                "used_disk_space": self.__get_folder_size(self.__delegate.getRoot()),
-                                "open_file_handles": len(process.open_files()),
-                                "proc_data": await self.__delegate.getTargetStats()
-                                }
-                        
-                
-            except (psutil.ZombieProcess, psutil.AccessDenied, psutil.NoSuchProcess) as e:
-                self.logger.debug("Error gathering process stats." + str(e)) 
-                self.__delegate.setTargetPid(None) 
-                data = {}
-                
-            except ProcessLookupError as e:
-                self.logger.debug("Error locating process." + str(e))
-                self.__delegate.setTargetPid(None)
-                data = {}
-        else:
-            data = {     
-                "pid": 0,
-                "name": self.__delegate.getProcName(),
-                "created": 0,
-                "percent_cpu_used": 0,
-                "percent_memory_used": 0,
-                "used_disk_space": 0,
-                "open_file_handles": 0,
-                "proc_data": None
-            }  
-        
-        return data
-    
+
     
     
     def __get_folder_size(self, start_path = '.'):

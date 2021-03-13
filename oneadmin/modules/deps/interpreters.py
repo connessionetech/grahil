@@ -24,6 +24,7 @@ import logging
 import tornado
 import random
 import copy
+from typing import Dict
 
 
 
@@ -35,14 +36,13 @@ class DefaultInterpreter(object):
     https://blog.datasciencedojo.com/building-a-rule-based-chatbot-in-python/
     '''
 
-    def __init__(self, filemanager=None, conf=None):
+    def __init__(self, conf:Dict):
         '''
         Constructor
         '''
         warnings.filterwarnings('ignore')
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
-        self.__filemanager = filemanager
         self.__keywords = {}
         self.__responses = {}
         self.__actions = {}

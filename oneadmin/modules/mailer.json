@@ -1,0 +1,13 @@
+{
+				"klass": "SMTPMailer",
+				"enabled": true,
+				"conf" : {
+					"hostname": "smtp.gmail.com",
+					"port": 465,
+					"tls": true,
+					"default_from": "",
+					"default_to": "",
+					"default_username": "",
+					"default_password": ""
+				}
+}
