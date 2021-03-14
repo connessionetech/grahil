@@ -85,7 +85,7 @@ class TargetProcess(IModule):
     '''
 
 
-    def __init__(self, procname, root=None, service_path=None, invocable_namespace="do_fulfill"):
+    def __init__(self, alias, procname=None, root=None, service_path=None, invocable_namespace="do_fulfill"):
         '''
         Constructor
         '''
@@ -93,7 +93,7 @@ class TargetProcess(IModule):
         self.__allowed_read_extensions = ['*']
         self.__allowed_write_extensions = ['*']
         self.__procname=procname
-        self.__alias=None
+        self.__alias=alias
         self.__pid_procname=procname
         self.__service__path = service_path 
         self.__pid=None

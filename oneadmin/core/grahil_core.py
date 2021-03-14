@@ -44,7 +44,7 @@ class ModuleRegistry(object):
         pass
     
     
-    def hasModule(self, name):
+    def hasModule(self, name):        
         if name in self.__registry.keys():
             return True
         else:

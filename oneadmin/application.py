@@ -24,7 +24,7 @@ from oneadmin.communications import PubSubHub
 from oneadmin.core.grahil_core import ModuleRegistry
 from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub
-from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
+from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE, LOG_MANAGER_MODULE
 from oneadmin.core.event import EventType, ArbitraryDataEvent
 from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider, TargetProcess
 from oneadmin.urls import get_url_patterns
@@ -39,6 +39,7 @@ from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
 from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
 from builtins import issubclass
+from core.constants import TOPIC_LOGMONITORING
 
 
 
@@ -108,6 +109,7 @@ class TornadoApplication(tornado.web.Application):
             actionable_modules:List = []
             target_delegates:List = []
             module_url_patterns:List = []
+            logs_to_monitor:List = []
             
             
             for sorted_config in sorted_module_configs:
@@ -122,8 +124,6 @@ class TornadoApplication(tornado.web.Application):
                     mod_instance:IModule = klass(sorted_config["conf"])
                     mod_id = mod_instance.getname()
                     mod_instance.eventhandler = self.handle_event
-                    mod_instance.initialize()
-                    
                     
                     if isinstance(mod_instance, IEventHandler):
                         listener_modules.append(mod_instance)
@@ -133,19 +133,21 @@ class TornadoApplication(tornado.web.Application):
                     
                     if isinstance(mod_instance, TargetProcess):
                         target_delegates.append(mod_instance)
+                        logs:List = mod_instance.getLogFiles()
+                        logs_to_monitor.extend(logs)
                         
                     
                     patterns:List = mod_instance.get_url_patterns()
                     if len(patterns)>0:
                         module_url_patterns.extend(patterns)
                     
-                    
-                    self.modules.registerModule(mod_instance, mod_id)
+                    mod_instance.initialize()
+                    self.modules.registerModule(mod_id, mod_instance)
                 
                 except Exception as e:
                     
-                    self.logger.error("Error initializing module " + str(mod_instance) + ".Cause : " + str(e))
-                     
+                    self.logger.error("Error initializing module " + str(mod_instance) + ".Cause : " + str(e))                    
+                  
                 
             
             
@@ -160,8 +162,16 @@ class TornadoApplication(tornado.web.Application):
             
             for listener_mod in  listener_modules:
                 self.__pubsubhub.addEventListener(listener_mod)
+                
+                
+            
+            ''' Register log files for4 monitoring '''
+                
+            tornado.ioloop.IOLoop.current().spawn_callback(self.register_logs_for_monitoring, logs_to_monitor)
 
             
+            
+            ''' Proceed with server startup '''
             
             server_config = conf["server"]
 
@@ -222,7 +232,6 @@ class TornadoApplication(tornado.web.Application):
             self.logger.error(err)
             raise ConfigurationLoadError(err)
         
-        
 
         
         
@@ -242,22 +251,35 @@ class TornadoApplication(tornado.web.Application):
             
             
     
+    
+    async def register_logs_for_monitoring(self, logfiles:List) ->None:
+        
+        if self.modules.hasModule(LOG_MANAGER_MODULE):
+            for log_file in  logfiles:
+                await self.handle_log_monitoring_request(log_file)
+                
+                
+            
+            
+    
     '''
     Handles dynamic request for log monitoring
     ''' 
     async def handle_log_monitoring_request(self, logfile):
         
-        try:
-            log_key = getLogFileKey(logfile)
-            log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-            logmonitor.register_log_file({
-                "name": log_key, "topic_path": log__topic_path, "log_file_path": logfile
-            })
+        if self.modules.hasModule(LOG_MANAGER_MODULE):
+            try:
+                logmon:ILogMonitor = self.modules.getModule(LOG_MANAGER_MODULE)
+                log_key = getLogFileKey(logfile)
+                log__topic_path = buildTopicPath(TOPIC_LOGMONITORING, log_key)
+                logmon.register_log_file({
+                    "name": log_key, "topic_path": log__topic_path, "log_file_path": logfile
+                })
+                
+                self.__pubsubhub.createChannel({"name":log__topic_path, "type": "subscription", "queue_size":1, "max_users":0})
             
-            self.__pubsubhub.createChannel({"name":log__topic_path, "type": "subscription", "queue_size":1, "max_users":0})
-        
-        except Exception as e:
-            self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
+            except Exception as e:
+                self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
     
     
     
