@@ -54,6 +54,7 @@ class IEventDispatcher(object):
         pass
     
     
+    
 class IModule(IEventDispatcher):
     
     
@@ -69,8 +70,45 @@ class IModule(IEventDispatcher):
         raise NotImplementedError
     
     
+    '''
+        Returns a list of supported url patterns in modules
+    '''
     def get_url_patterns(self) ->List:
         return []
+    
+    
+    '''
+        Returns a list of supported actions
+    '''
+    def supported_actions(self) -> List[object]:
+        return []
+
+
+    '''
+        Returns a list supported of action names
+    '''
+    def supported_action_names(self) -> List[Text]:
+        return []
+    
+    
+    
+    '''
+        Returns a list supported of intents
+    '''
+    def supported_intents(self) -> List[Text]:
+        return []
+    
+    
+    
+    '''
+        Lookup an Action object instance by string name
+    '''
+    def action_from_name(self, name:Text) -> object:
+        defaults = {a.name(): a for a in self.supported_actions()}
+        if name in defaults:
+            return defaults.get(name)
+                
+        return None
     
     
     pass
@@ -473,30 +511,6 @@ class TargetProcess(IModule):
         else:
             return False
     
-    
-    # Return type should be Action but for some reason it cannot be imported into this file
-    def supported_actions(self) -> List[object]:
-        return []
-
-
-
-    def supported_action_names(self) -> List[Text]:
-        return []
-    
-    
-    def supported_intents(self) -> List[Text]:
-        return []
-    
-    
-    # Return type should be Action but for some reason it cannot be imported into this file
-    def action_from_name(self, name:Text) -> object:
-        defaults = {a.name(): a for a in self.supported_actions()}
-        if name in defaults:
-            return defaults.get(name)
-                
-        return None
-    
-
 
 
 

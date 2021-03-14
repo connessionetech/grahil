@@ -29,6 +29,9 @@ from oneadmin.core.event import EventType, ArbitraryDataEvent
 from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider, TargetProcess
 from oneadmin.urls import get_url_patterns
 from oneadmin.abstracts import IntentProvider
+from oneadmin.core.constants import TOPIC_LOGMONITORING
+from oneadmin.core.intent import INTENT_PREFIX
+from oneadmin.core.action import ACTION_PREFIX
 
 
 import logging
@@ -39,8 +42,6 @@ from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
 from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
 from builtins import issubclass
-from core.constants import TOPIC_LOGMONITORING
-
 
 
 
@@ -110,6 +111,7 @@ class TornadoApplication(tornado.web.Application):
             target_delegates:List = []
             module_url_patterns:List = []
             logs_to_monitor:List = []
+            intent_actions:Dict = {}
             
             
             for sorted_config in sorted_module_configs:
@@ -133,8 +135,29 @@ class TornadoApplication(tornado.web.Application):
                     
                     if isinstance(mod_instance, TargetProcess):
                         target_delegates.append(mod_instance)
+                        
                         logs:List = mod_instance.getLogFiles()
                         logs_to_monitor.extend(logs)
+                        
+                        
+                        ''' collecting custom intent - action maps '''
+                        
+                        custom_intents:List = mod_instance.supported_intents()
+                        for intent_name in custom_intents:
+                            try:
+                                action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
+                                action = mod_instance.action_from_name(action_name)
+                            
+                                if action:
+                                    intent_actions[intent_name] = action
+                                    self.logger.debug("Collecting intent by name" + intent_name + " for action " + action_name)
+                                else:
+                                    raise TypeError("'action' for intent " + intent_name + " was None, where object of type 'Action' was expected") 
+                       
+                            except TypeError as te:
+                                self.logger.warn(str(te))
+                                pass
+                        
                         
                     
                     patterns:List = mod_instance.get_url_patterns()
@@ -204,6 +227,17 @@ class TornadoApplication(tornado.web.Application):
 
             patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)  
             patterns.extend(module_url_patterns)
+            
+            
+            ''' Initializing action dispatcher '''
+            
+            action_config = modules[ACTION_DISPATCHER_MODULE]
+            if action_config != None and action_config["enabled"] == True:
+                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
+                for intent_name, action in intent_actions.items():
+                    self.__action__dispatcher.registerActionforIntent(intent_name, action)
+                    self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
+                
                   
             tornado.web.Application.__init__(self, patterns, **settings)
         
