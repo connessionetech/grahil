@@ -46,8 +46,6 @@ from builtins import issubclass
 
 
 
-
-
 class TornadoApplication(tornado.web.Application):
 
     def __init__(self, conf):
@@ -140,23 +138,23 @@ class TornadoApplication(tornado.web.Application):
                         logs_to_monitor.extend(logs)
                         
                         
-                        ''' collecting custom intent - action maps '''
+                    ''' Custom intent and action definitions '''
+                    
+                    custom_intents:List = mod_instance.supported_intents()
+                    for intent_name in custom_intents:
+                        try:
+                            action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
+                            action = mod_instance.action_from_name(action_name)
                         
-                        custom_intents:List = mod_instance.supported_intents()
-                        for intent_name in custom_intents:
-                            try:
-                                action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
-                                action = mod_instance.action_from_name(action_name)
-                            
-                                if action:
-                                    intent_actions[intent_name] = action
-                                    self.logger.debug("Collecting intent by name" + intent_name + " for action " + action_name)
-                                else:
-                                    raise TypeError("'action' for intent " + intent_name + " was None, where object of type 'Action' was expected") 
-                       
-                            except TypeError as te:
-                                self.logger.warn(str(te))
-                                pass
+                            if action:
+                                intent_actions[intent_name] = action
+                                self.logger.debug("Collecting intent by name" + intent_name + " for action " + action_name)
+                            else:
+                                raise TypeError("'action' for intent " + intent_name + " was None, where object of type 'Action' was expected") 
+                   
+                        except TypeError as te:
+                            self.logger.warn(str(te))
+                            pass
                         
                         
                     
@@ -237,7 +235,8 @@ class TornadoApplication(tornado.web.Application):
                 for intent_name, action in intent_actions.items():
                     self.__action__dispatcher.registerActionforIntent(intent_name, action)
                     self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
-                
+            
+            del intent_actions
                   
             tornado.web.Application.__init__(self, patterns, **settings)
         

@@ -7,7 +7,7 @@ Created on 14-Mar-2021
 
 from oneadmin.abstracts import IModule
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
-
+from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from tornado import ioloop
 from tornado.web import url
 
@@ -15,6 +15,11 @@ import tornado
 import logging
 from typing import Text, List
 import json
+from abstracts import IntentProvider
+from core import grahil_types
+from core.intent import INTENT_PREFIX
+
+
 
 
 
@@ -50,7 +55,62 @@ class ApiHostModule(IModule):
 
     def get_url_patterns(self)->List:
         return [ url(r"/moduleapi/", SampleHandler) ]
+    
+    
+    
+    '''
+        Returns a list of supported actions
+    '''
+    def supported_actions(self) -> List[object]:
+        return [ActionModuleAction()]
 
+
+    '''
+        Returns a list supported of action names
+    '''
+    def supported_action_names(self) -> List[Text]:
+        return [ACTION_CUSTOM_ACTION_NAME]
+    
+    
+    
+    '''
+        Returns a list supported of intents
+    '''
+    def supported_intents(self) -> List[Text]:
+        return [INTENT_CUSTOM_ACTION_NAME]
+
+
+
+# custom intents
+INTENT_CUSTOM_ACTION_NAME = INTENT_PREFIX + "apidemo_custom_module"
+
+
+# custom actions
+ACTION_CUSTOM_ACTION_NAME = ACTION_PREFIX + "apidemo_custom_module"
+
+
+
+
+'''
+Module action demo
+'''
+class ActionModuleAction(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_CUSTOM_ACTION_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        print("execute")
+        pass
 
 
 
