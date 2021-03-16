@@ -551,8 +551,34 @@ class SystemMonitor(IModule, ISystemMonitor):
         finally:
             if a_socket != None:
                 a_socket.close()
-               
-
+                
+                
+                
+    
+    '''
+     Returns task manager view consisting of list of all processes with necessary stats per process
+    '''
+    def get_task_manager_view(self):
+        
+        # Iterate over all running process
+        processes:list = []
+        
+        for proc in psutil.process_iter():
+            
+            try:
+                # Get process name & pid from process object.
+                pInfo:Dict = proc.as_dict(attrs=['pid', 'name', 'cpu_percent', 'create_time', 'memory_info', 'username'])
+                pInfo['vms'] = proc.memory_info().vms / (1024 * 1024)
+                processes.append(pInfo)
+            
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+                
+                self.logger.error("Error getting process info for proc." + proc + " cause %s", str(e))
+                
+            
+        return processes
+                
+    
     
     
     
