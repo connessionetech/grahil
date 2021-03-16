@@ -84,6 +84,10 @@ class JitsiDelegate(TargetProcess):
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__tmp_dir = tempfile.TemporaryDirectory()
+        
+        self.__broken_installation = False
+        
+        
         pass
     
     
@@ -116,6 +120,22 @@ class JitsiDelegate(TargetProcess):
         check to see if the software is installed correctly on the system
     '''
     async def __is_installed(self):
+        
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_path = self.root_path + "/scripts/jitsi/jitsi-check.sh"
+        
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        
+        if state == "found":
+            return True
+        elif state == "broken":
+            self.__broken_installation = False
+        
         return False    
     
     
@@ -192,19 +212,45 @@ class JitsiDelegate(TargetProcess):
         raise HTTPError("Unable to make request to url " + url)
     
     
-    
 
     
-    
     async def start_proc(self):        
-        TargetServiceError("Operation not supported")
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_path = self.root_path + "/scripts/jitsi/jitsi-start.sh"
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
         pass
 
         
         
     
     async def stop_proc(self):      
-        TargetServiceError("Operation not supported")
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_path = self.root_path + "/scripts/jitsi/jitsi-stop.sh"
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        pass
+    
+    
+    
+    
+    async def restart_proc(self):      
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        script_path = self.root_path + "/scripts/jitsi/jitsi-restart.sh"
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
         pass
     
     

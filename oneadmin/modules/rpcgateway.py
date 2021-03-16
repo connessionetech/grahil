@@ -26,7 +26,7 @@ from typing import Text,List
 
 class RPCGateway(IModule, IntentProvider, IClientChannel):
     '''
-    Class to handle RPC style communication over websockets.
+    Class to handle RPC style communication over websockets. Later thsi will be updated to support RPc communication over other protocols as well 
     '''
     
     NAME = "rpc_gateway"
