@@ -189,6 +189,19 @@ class TornadoApplication(tornado.web.Application):
             ''' Register log files for4 monitoring '''
                 
             tornado.ioloop.IOLoop.current().spawn_callback(self.register_logs_for_monitoring, logs_to_monitor)
+            
+            
+            
+            ''' Initializing action dispatcher '''
+            
+            action_config = modules[ACTION_DISPATCHER_MODULE]
+            if action_config != None and action_config["enabled"] == True:
+                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
+                for intent_name, action in intent_actions.items():
+                    self.__action__dispatcher.registerActionforIntent(intent_name, action)
+                    self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
+            
+            del intent_actions
 
             
             
@@ -225,18 +238,7 @@ class TornadoApplication(tornado.web.Application):
 
             patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)  
             patterns.extend(module_url_patterns)
-            
-            
-            ''' Initializing action dispatcher '''
-            
-            action_config = modules[ACTION_DISPATCHER_MODULE]
-            if action_config != None and action_config["enabled"] == True:
-                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
-                for intent_name, action in intent_actions.items():
-                    self.__action__dispatcher.registerActionforIntent(intent_name, action)
-                    self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
-            
-            del intent_actions
+
                   
             tornado.web.Application.__init__(self, patterns, **settings)
         

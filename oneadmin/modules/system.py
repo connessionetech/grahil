@@ -35,12 +35,19 @@ from tornado.concurrent import asyncio
 from time import time
 from tornado.httpclient import AsyncHTTPClient
 from builtins import str
+from apscheduler.executors.pool import ThreadPoolExecutor
+import socket
+
+
 
 
 class SystemMonitor(IModule, ISystemMonitor):
     
     
     NAME = "sysmon"
+    
+    
+    THREADPOOL = ThreadPoolExecutor(5)
     
     
     def __init__(self, config):
@@ -57,6 +64,7 @@ class SystemMonitor(IModule, ISystemMonitor):
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
+        self.__bw_usage_per_second = None
         self.__external_ip = None      
     pass
 
@@ -282,11 +290,6 @@ class SystemMonitor(IModule, ISystemMonitor):
                 else:
                     stats = self.__collect_nic_stats("aggregated", net_io)
                     nic_stats.append(stats)
-
-                    
-                    
-                '' 'Service capabilities'''
-                capabilities = self.__get_capabilities()
                     
                     
                 '' 'Building stats'''
@@ -306,7 +309,6 @@ class SystemMonitor(IModule, ISystemMonitor):
                         "boot_time": boot_time,
                         "uptime": uptime,
                         "system_datetime":readable_date_time,
-                        "capabilities":capabilities,
                         "time": time_now,
                         "unit": unit,
                         "meta_info":{
@@ -386,6 +388,7 @@ class SystemMonitor(IModule, ISystemMonitor):
                     
                     
                     
+    
     def __get_connection_info(self, connection_filter="all"):
         
         info = []
@@ -418,7 +421,13 @@ class SystemMonitor(IModule, ISystemMonitor):
     
         return connections
     
-
+    
+    
+    
+    
+    '''
+        Get partition info
+    '''
     def __getPartitionsInfo(self, unit="b"):
         part_disk_usage=[]
         partitions = psutil.disk_partitions()
@@ -442,6 +451,11 @@ class SystemMonitor(IModule, ISystemMonitor):
         return part_disk_usage
     
 
+
+
+    '''
+        Collects individual stats of each network interface
+    '''
     def __collect_nic_stats(self, nic_id, net_io):
     
         bytes_sent = net_io.bytes_sent
@@ -465,16 +479,82 @@ class SystemMonitor(IModule, ISystemMonitor):
             "dropout":dropout
         }
         
+        
+        
     
-    def __get_capabilities(self):
-        return {
-                    "system_stats":True,
-                    "target_stats":False,
-                    "file_management" : False,
-                    "log_monitoring" : False,
-                    "script_execution" : False
-                }
+    
+    '''
+        Checks bandwidth usage every second apart to calculate bw usage per second. This method much be called period manner internally  
+    '''
+    async def __calculate_network_usage(self):
+        
+        net_io = psutil.net_io_counters()
+        old_usage = 0
+        new_usage = 0
+        net_usage = 0
+        
+        while True:
+            new_usage = net_io.bytes_sent + net_io.bytes_recv
+            if old_usage != 0:
+                net_usage = new_usage - old_usage
+                self.__bw_usage_per_second = net_usage
+            
+            await asyncio.sleep(1)
+    
+    
+    
+    
+    '''
+        Gives the average system load in last 1, 5 and 15 minutes as a tuple. The load represents the processes which are in a runnable state, either using the CPU or waiting to use the CPU (e.g. waiting for disk I/O). 
+    '''
+    def get_avg_load(self):
+        return psutil.getloadavg()
+        
+        
 
+
+
+    
+    '''
+        Check async to see if port is open at given address
+    '''    
+    async def check_port(self, host="127.0.0.1", port):
+        return await tornado.ioloop.IOLoop.current().run_in_executor(SystemMonitor.THREADPOOL, self.__check_port, host, port)
+        pass
+    
+    
+
+
+    
+
+    '''
+        Check to see if port is open at given address
+    '''
+    def __check_port(self, host="127.0.0.1", port):
+        
+        a_socket = None
+        
+        try:
+            a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            a_socket.settimeout(2)       
+            location = (host, port)
+            result = a_socket.connect_ex(location)
+            
+            if result == 0:
+                return True
+            else:
+                return False
+        
+        except Exception as e:
+            self.logger.error("Error checking port %s. cause %s", str(port), str(e)) 
+        
+        finally:
+            if a_socket != None:
+                a_socket.close()
+               
+
+    
+    
     
     
     def __get_folder_size(self, start_path = '.'):
@@ -487,6 +567,8 @@ class SystemMonitor(IModule, ISystemMonitor):
                     total_size += os.path.getsize(fp)
     
         return total_size
+    
+    
     
     
     
