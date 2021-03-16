@@ -65,12 +65,14 @@ class SystemMonitor(IModule, ISystemMonitor):
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
         self.__bw_usage_per_second = None
+        self.__notify_snapshot_event = bool(self.__config["notify_snapshot"]) if "notify_snapshot" in self.__config else False
         self.__external_ip = None      
     pass
 
 
 
 
+    
     def initialize(self) ->None:
         self.logger.info("Module init")
         self.start_monitor()
@@ -78,11 +80,15 @@ class SystemMonitor(IModule, ISystemMonitor):
 
 
 
+    
+    
     def getname(self) ->Text:
         return SystemMonitor.NAME
 
 
 
+    
+    
     '''
     async def __discoverHost(self):
          
@@ -99,6 +105,8 @@ class SystemMonitor(IModule, ISystemMonitor):
 
 
     
+    
+    
     def start_monitor(self) -> None:
         tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
     pass
@@ -106,11 +114,16 @@ class SystemMonitor(IModule, ISystemMonitor):
     
     
 
+    
+    
+    
     async def __cpu_percent(self, interval = None, *args, **kwargs):
         if interval is not None and interval > 0.0:
             psutil.cpu_percent(*args, **kwargs)
             await asyncio.sleep(interval)
         return psutil.cpu_percent(*args, **kwargs)
+    
+    
     
     
     
@@ -130,8 +143,8 @@ class SystemMonitor(IModule, ISystemMonitor):
                 "cpu_percent" : cpu_info["cpu_percent"],
                 "timestamp" : self.__last_stats["system"]["time"]
                 }
-        
-        pass
+    
+    
     
     
     
@@ -361,8 +374,9 @@ class SystemMonitor(IModule, ISystemMonitor):
                         evt = StatsErrorEvent(TOPIC_SYSMONITORING, {"message": err})
                     else:
                         evt = StatsGeneratedEvent(TOPIC_SYSMONITORING, stats)
-                        
-                    await self.dispatchevent(evt)
+                    
+                    if self.__notify_snapshot_event:
+                        await self.dispatchevent(evt)
                         
                 except Exception as e:
                     err = "An error occurred in generating system stats " + str(e)
