@@ -75,7 +75,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     
     def initialize(self) ->None:
         self.logger.info("Module init")
-        self.start_monitor()
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
         pass
 
 
@@ -103,16 +103,6 @@ class SystemMonitor(IModule, ISystemMonitor):
             self.logger.warning(err)
     '''    
 
-
-    
-    
-    
-    def start_monitor(self) -> None:
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
-    pass
-
-    
-    
 
     
     
@@ -532,7 +522,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     '''
         Check async to see if port is open at given address
     '''    
-    async def check_port(self, host="127.0.0.1", port):
+    async def check_port(self, port, host="127.0.0.1"):
         return await tornado.ioloop.IOLoop.current().run_in_executor(SystemMonitor.THREADPOOL, self.__check_port, host, port)
         pass
     
@@ -544,7 +534,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     '''
         Check to see if port is open at given address
     '''
-    def __check_port(self, host="127.0.0.1", port):
+    def __check_port(self, host, port):
         
         a_socket = None
         
