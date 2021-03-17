@@ -44,6 +44,8 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError
 import json
 
+import re
+
 
 class JitsiDelegate(TargetProcess):
     '''
@@ -86,6 +88,10 @@ class JitsiDelegate(TargetProcess):
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
         self.__broken_installation = False
+        self.__colibri_enabled = False
+        
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.__script_dir = self.root_path + "/scripts/"
         
         
         pass
@@ -109,9 +115,22 @@ class JitsiDelegate(TargetProcess):
     
     '''
         Check out the target throughly every N seconds
-     '''
+    '''
     async def __analyse_target(self):
+        
+        installed = await self.__check_installed()
+        version = None
+        if installed:
+            self.setTargetInstalled(True)
+            self.__colibri_enabled = await self.__check_colibri_enabled()
+            if self.__colibri_enabled:
+                version = await self.__get_version()
+            else:
+                version = await self.__get_version_bash()
+                
+            self.setProcVersion(version)
         pass
+                
     
     
     
@@ -119,10 +138,9 @@ class JitsiDelegate(TargetProcess):
     '''
         check to see if the software is installed correctly on the system
     '''
-    async def __is_installed(self):
+    async def __check_installed(self):
         
-        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        script_path = self.root_path + "/scripts/jitsi/jitsi-check.sh"
+        script_path = self.__script_dir + "jitsi-check.sh"
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -137,6 +155,24 @@ class JitsiDelegate(TargetProcess):
             self.__broken_installation = False
         
         return False    
+    
+    
+    
+    '''
+        Check to see if colibri is enabled
+    '''    
+    async def __check_colibri_enabled(self):
+        return False  
+    
+    
+    
+    
+    '''
+        Macro function to enable colibri for stats
+    ''' 
+    async def __enable_colibri(self):
+        pass
+    
     
     
     
@@ -196,6 +232,7 @@ class JitsiDelegate(TargetProcess):
     '''
     async def __get_version(self):
         url = self.__info_api_endpoint + "about/version"
+        
         http_client = AsyncHTTPClient()
         response = await http_client.fetch(url, method="GET", headers=None)
         self.logger.debug("response = %s", str(response))
@@ -212,46 +249,68 @@ class JitsiDelegate(TargetProcess):
         raise HTTPError("Unable to make request to url " + url)
     
     
+    
+    
+    '''
+    Fetches version information using the internal API
+    '''
+    async def __get_version_bash(self):
+        script_path = self.__script_dir + "jitsi-version.sh"
+        
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        version = output.decode('UTF-8').strip()
+        version = self.str_replace("Version:", "", version, False).strip()
+        return version
+    
+    
 
     
+    
     async def start_proc(self):        
-        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        script_path = self.root_path + "/scripts/jitsi/jitsi-start.sh"
+        script_path = self.__script_dir + "jitsi-start.sh"
+        
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
         await proc.wait_for_exit()
         output = proc.stdout.read()
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
         pass
 
         
         
     
     async def stop_proc(self):      
-        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        script_path = self.root_path + "/scripts/jitsi/jitsi-stop.sh"
+        script_path = self.__script_dir + "jitsi-stop.sh"
+        
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
         await proc.wait_for_exit()
         output = proc.stdout.read()
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
         pass
     
     
     
     
-    async def restart_proc(self):      
-        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        script_path = self.root_path + "/scripts/jitsi/jitsi-restart.sh"
+    async def restart_proc(self):
+        script_path = self.__script_dir + "jitsi-restart.sh"
+        
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
         await proc.wait_for_exit()
         output = proc.stdout.read()
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
         pass
+    
     
     
     '''
@@ -273,6 +332,7 @@ class JitsiDelegate(TargetProcess):
             raise TargetServiceError("Unable to capture video " + str(e))   
     
     
+  
     '''
         Sample custom method
     '''
@@ -295,6 +355,14 @@ class JitsiDelegate(TargetProcess):
     
     def supported_intents(self) -> List[Text]:
         return []
+    
+    
+    
+    def str_replace(self, old, new, str, caseinsentive = False):
+        if caseinsentive:
+            return str.replace(old, new)
+        else:
+            return re.sub(re.escape(old), new, str, flags=re.IGNORECASE)
 
     
     
