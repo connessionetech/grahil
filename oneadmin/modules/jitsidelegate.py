@@ -45,6 +45,9 @@ from tornado.web import HTTPError
 import json
 
 import re
+from core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
+    NOTIFICATIONS_NOTICE
+from core.event import SimpleTextNotificationEvent
 
 
 class JitsiDelegate(TargetProcess):
@@ -102,7 +105,7 @@ class JitsiDelegate(TargetProcess):
     def initialize(self) ->None:
         self.logger.info("Module init")
         self.__info_api_endpoint = self.__conf["api_protocol"] + "://" + self.__conf["api_host"] + ":" + str(self.__conf["api_port"]) + "/"
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target())
     
     
     
@@ -279,6 +282,22 @@ class JitsiDelegate(TargetProcess):
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
         #Check and dispatch any necessary events
+        
+        errors = ""
+        if "prosody is already active" in state:
+            errors = errors + "prosody is already active" + "\n"
+        if "jicofo is already active" in state:
+            errors = errors + "jicofo is already active" + "\n"
+        if "jitsi-videobridge2 is already active" in state:
+            errors = errors + "jitsi-videobridge2 is already active" + "\n"
+        if "nginx is already active" in state:
+            errors = errors + "nginx is already active" + "\n"
+        
+        if len(errors) > 0:
+            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            self.dispatchevent(evt) 
+        
+        
         pass
 
         
@@ -294,6 +313,22 @@ class JitsiDelegate(TargetProcess):
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
         #Check and dispatch any necessary events
+        
+        errors = ""
+        if "prosody is already inactive" in state:
+            errors = errors + "prosody is already inactive" + "\n"
+        if "jicofo is already inactive" in state:
+            errors = errors + "jicofo is already inactive" + "\n"
+        if "jitsi-videobridge2 is already inactive" in state:
+            errors = errors + "jitsi-videobridge2 is already inactive" + "\n"
+        if "nginx is already inactive" in state:
+            errors = errors + "nginx is already inactive" + "\n"
+        
+        if len(errors) > 0:
+            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            self.dispatchevent(evt) 
+        
+        
         pass
     
     
@@ -308,8 +343,20 @@ class JitsiDelegate(TargetProcess):
         output = proc.stdout.read()
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
-        #Check and dispatch any necessary events
-        pass
+        
+        errors = ""
+        if "prosody is already inactive" in state:
+            errors = errors + "prosody is already inactive" + "\n"
+        if "jicofo is already inactive" in state:
+            errors = errors + "jicofo is already inactive" + "\n"
+        if "jitsi-videobridge2 is already inactive" in state:
+            errors = errors + "jitsi-videobridge2 is already inactive" + "\n"
+        if "nginx is already inactive" in state:
+            errors = errors + "nginx is already inactive" + "\n"
+        
+        if len(errors) > 0:
+            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_NOTICE)
+            self.dispatchevent(evt) 
     
     
     

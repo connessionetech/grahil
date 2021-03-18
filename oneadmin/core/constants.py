@@ -45,6 +45,17 @@ TOPIC_EVENTS = "/events"
 
 TOPIC_SCRIPTS = "/script"
 
+TOPIC_NOTIFICATIONS = "/notifications"
+
+
+''' Notification codes'''
+
+NOTIFICATIONS_NOTICE = 0
+
+NOTIFICATIONS_ERROR = 1
+
+NOTIFICATIONS_WARN = 2
+
 
 
 ''' Moduile names'''
