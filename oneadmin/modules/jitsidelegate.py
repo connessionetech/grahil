@@ -165,7 +165,20 @@ class JitsiDelegate(TargetProcess):
         Check to see if colibri is enabled
     '''    
     async def __check_colibri_enabled(self):
-        return False  
+        
+        script_path = self.__script_dir + "jitsi-check-colibri.sh"
+        
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        state = output.decode('UTF-8').strip()
+        response = json.loads(state)
+        
+        if response["api"] == 1 and response["colibri_sip_stats_enabled"] == 1:
+            return True
+        
+        return False 
     
     
     
