@@ -49,3 +49,8 @@ class ModuleRegistry(object):
             return True
         else:
             return False
+        
+        
+    def getModules(self):        
+        return self.__registry.values()
+        pass

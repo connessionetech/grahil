@@ -331,16 +331,23 @@ class TornadoApplication(tornado.web.Application):
   
     
     '''
-    Handles arbitrary events from all modules
+    Handles arbitrary events from all modules.
     ''' 
     async def handle_event(self, event:EventType):
         self.logger.debug("handle_event for " + str(event["name"]))
-        if event["name"] == EVENT_STATS_GENERATED:
-            print("StatsGeneratedEvent")
-            pass
         
+        ''' event data aggregation is a good case for data filter or data plugins '''
+        if event["name"] == EVENT_STATS_GENERATED:
+            modules:List = self.modules.getModules()
+            for mod in modules:
+                if isinstance(mod, TargetProcess):
+                        alias_name = mod.getAlias()
+                        alias_stats = await mod.getTargetStats()
+                        event["data"]["target"] = {} if event["data"]["target"] == None else event["data"]["target"] 
+                        event["data"]["target"][alias_name] = alias_stats
         
         await self.__pubsubhub.publish_event_type(event)
+    
     
     
     
