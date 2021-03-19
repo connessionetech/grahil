@@ -3,7 +3,6 @@
 				"klass": "SystemMonitor",
 				"conf" : {					
 					"snapshot_interval_seconds": 10,
-					"notify_snapshot": false,
 					"log_push_interval_seconds": 0.4,
 					"nic_stats_per_nic": false,
 					"net_connection_filter": "inet",

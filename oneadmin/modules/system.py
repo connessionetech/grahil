@@ -65,7 +65,7 @@ class SystemMonitor(IModule, ISystemMonitor):
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
         self.__bw_usage_per_second = None
-        self.__notify_snapshot_event = bool(self.__config["notify_snapshot"]) if "notify_snapshot" in self.__config else False
+        self.__notify_snapshot_event = True if self.__config["snapshot_interval_seconds"] > 0 else False
         self.__external_ip = None      
     pass
 

@@ -32,7 +32,7 @@ from oneadmin.abstracts import IntentProvider
 from oneadmin.core.constants import TOPIC_LOGMONITORING
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX
-
+from oneadmin.core.event import StatsGeneratedEvent, EVENT_STATS_GENERATED
 
 import logging
 import tornado
@@ -42,6 +42,7 @@ from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
 from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, __MODULES__CONF_PACKAGE__, settings
 from builtins import issubclass
+
 
 
 
@@ -334,6 +335,11 @@ class TornadoApplication(tornado.web.Application):
     ''' 
     async def handle_event(self, event:EventType):
         self.logger.debug("handle_event for " + str(event["name"]))
+        if event["name"] == EVENT_STATS_GENERATED:
+            print("StatsGeneratedEvent")
+            pass
+        
+        
         await self.__pubsubhub.publish_event_type(event)
     
     

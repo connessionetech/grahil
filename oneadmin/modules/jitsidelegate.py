@@ -42,6 +42,7 @@ from tornado.process import Subprocess
 from typing import Text, List, Dict 
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError
+from settings import settings
 import json
 
 import re
@@ -91,8 +92,7 @@ class JitsiDelegate(TargetProcess):
         self.__broken_installation = False
         self.__colibri_enabled = False
         
-        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        self.__script_dir = self.root_path + "/scripts/"
+        self.__script_dir = settings["scripts_folder"]
         pass
     
     
@@ -100,7 +100,7 @@ class JitsiDelegate(TargetProcess):
     
     def initialize(self) ->None:
         self.logger.info("Module init")
-        self.__info_api_endpoint = self.__conf["api_protocol"] + "://" + self.__conf["api_host"] + ":" + str(self.__conf["api_port"]) + "/"
+        self.__info_api_endpoint = self.__conf["colibri_api_protocol"] + "://" + self.__conf["colibri_api_host"] + ":" + str(self.__conf["colibri_api_port"]) + "/"
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
     
     
@@ -139,7 +139,7 @@ class JitsiDelegate(TargetProcess):
     '''
     async def __check_installed(self):
         
-        script_path = self.__script_dir + "jitsi-check.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-check.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -162,7 +162,7 @@ class JitsiDelegate(TargetProcess):
     '''    
     async def __check_colibri_enabled(self):
         
-        script_path = self.__script_dir + "jitsi-check-colibri.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-check-colibri.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -276,7 +276,7 @@ class JitsiDelegate(TargetProcess):
     Fetches version information using the internal API
     '''
     async def __get_version_bash(self):
-        script_path = self.__script_dir + "jitsi-version.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-version.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -291,7 +291,7 @@ class JitsiDelegate(TargetProcess):
     
     
     async def start_proc(self):        
-        script_path = self.__script_dir + "jitsi-start.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-start.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -322,7 +322,7 @@ class JitsiDelegate(TargetProcess):
         
     
     async def stop_proc(self):      
-        script_path = self.__script_dir + "jitsi-stop.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-stop.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
@@ -353,7 +353,7 @@ class JitsiDelegate(TargetProcess):
     
     
     async def restart_proc(self):
-        script_path = self.__script_dir + "jitsi-restart.sh"
+        script_path = os.path.join(self.__script_dir, "jitsi-restart.sh")
         
         bashCommand = "bash " + script_path
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)

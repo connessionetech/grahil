@@ -1,6 +1,6 @@
 {
 				"klass": "SMTPMailer",
-				"enabled": true,
+				"enabled": false,
 				"conf" : {
 					"hostname": "smtp.gmail.com",
 					"port": 465,

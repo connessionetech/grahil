@@ -38,7 +38,7 @@ settings["app_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_P
 settings["log_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "logging.json")
 settings["users_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "users.json")
 settings["permissions_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "permissions.json")
-settings["scripts_folder"] = os.path.join(__ROOT_PATH__, __BASE_PACKAGE__, "scripts")
+settings["scripts_folder"] = os.path.join(__ROOT_PATH__, "scripts")
 settings["rules_folder"] = os.path.join(__ROOT_PATH__, "rules")
 settings["reports_folder"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "reports")
 
