@@ -40,7 +40,7 @@ import os, json, sys
 from tornado import autoreload
 from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
-from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
+from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, __MODULES__CONF_PACKAGE__, settings
 from builtins import issubclass
 
 
@@ -81,12 +81,13 @@ class TornadoApplication(tornado.web.Application):
             root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
             package_path = os.path.join(root_path, __BASE_PACKAGE__)
             modules_path = os.path.join(package_path, __MODULES__PACKAGE__)
-            json_files:List = [pos_json for pos_json in os.listdir(modules_path) if pos_json.endswith('.json')]
+            modules_conf_path = os.path.join(modules_path, __MODULES__CONF_PACKAGE__)
+            json_files:List = [pos_json for pos_json in os.listdir(modules_conf_path) if pos_json.endswith('.json')]
             module_configs:List = []
             
             for mod_json in json_files:
                                 
-                conf_path = os.path.join(modules_path, mod_json)
+                conf_path = os.path.join(modules_conf_path, mod_json)
                 config = self.load_module_config(conf_path)
                 
                 if not "enabled" in config or config["enabled"] == False:

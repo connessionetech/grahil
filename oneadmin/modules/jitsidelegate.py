@@ -50,15 +50,13 @@ from core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
 from core.event import SimpleTextNotificationEvent
 
 
+
 class JitsiDelegate(TargetProcess):
     '''
     classdocs
     '''    
     
     NAME = "jitsi_delegate"
-    
-
-    
     
 
     def __init__(self, conf=None):
@@ -95,8 +93,6 @@ class JitsiDelegate(TargetProcess):
         
         self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.__script_dir = self.root_path + "/scripts/"
-        
-        
         pass
     
     
@@ -186,7 +182,16 @@ class JitsiDelegate(TargetProcess):
     '''
         Macro function to enable colibri for stats
     ''' 
-    async def __enable_colibri(self):
+    async def enable_colibri(self):
+        pass
+    
+    
+    
+    
+        '''
+        Macro function to disable colibri for stats
+    ''' 
+    async def disable_colibri(self):
         pass
     
     

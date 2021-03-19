@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Global settings for the project"""
 
 import os.path
+import sys
 
 from tornado.options import define
 
@@ -26,6 +27,9 @@ define("debug", default=False, help="debug mode")
 
 __BASE_PACKAGE__ = "oneadmin"
 __MODULES__PACKAGE__ = "modules" 
+__MODULES__CONF_PACKAGE__ = "conf"
+
+__ROOT_PATH__ = os.path.dirname(os.path.realpath(sys.argv[0])) 
 
 settings = {}
 
@@ -34,7 +38,8 @@ settings["app_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_P
 settings["log_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "logging.json")
 settings["users_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "users.json")
 settings["permissions_configuration"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "permissions.json")
-settings["scripts_folder"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "scripts")
+settings["scripts_folder"] = os.path.join(__ROOT_PATH__, __BASE_PACKAGE__, "scripts")
+settings["rules_folder"] = os.path.join(__ROOT_PATH__, "rules")
 settings["reports_folder"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "reports")
 
 settings["cookie_secret"] = "6Lf0itAlZvRKe24eQpCOFrJu4"
