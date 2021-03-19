@@ -105,7 +105,7 @@ class JitsiDelegate(TargetProcess):
     def initialize(self) ->None:
         self.logger.info("Module init")
         self.__info_api_endpoint = self.__conf["api_protocol"] + "://" + self.__conf["api_host"] + ":" + str(self.__conf["api_port"]) + "/"
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target())
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
     
     
     

@@ -873,64 +873,10 @@ class FileManager(IModule):
             return files_listing
         else:
             raise FileSystemOperationError("Invalid path " + path + " or file " + filename + " not found")    
+   
     
     
     
-    
-        
-        
-    
-    '''
-    Fetches a list of files of specified types from a  path cand returns the response via a deferred object
-    Note: System method, not for API usage  
-    '''
-    def list_files(self, callback:Callable, path:Text, file_types:List=["*"])->None:
-        
-        if path != None and (not self.is_path_included(path)):
-            raise FileSystemOperationError("Requested path is not within allowed path")
-        
-        for file_type in file_types:
-            if not file_type in self.__allowed_read_extensions:
-                raise FileSystemOperationError("Extension "+file_type+" is not permitted in a write operation")
-        
-        '''
-        if path == None:
-            root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        else:
-            root_path = path
-        ''' 
-        
-        directory_content_future:Future = Future()
-        directory_content_future.add_done_callback(callback)
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__list_files, directory_content_future, path, file_types)
-        pass
-    
-    
-    
-    '''
-    (internal : async) Fetches a list of files of specified types from a  path
-    '''
-    async def __list_files(self, directory_content_future:Future, path:Text, file_types:List=["*"])->None:
-        
-        files = []
-         
-        try:
-            script_folder = path    
-            contents = await self.browse_content(script_folder)
-                        
-            for content in contents:
-                if content["is_directory"] == False:
-                    filename, file_extension = os.path.splitext(content["name"])
-                    if file_extension in file_types or "*" in file_types:
-                        full_path = os.path.join(script_folder,  content["name"]) 
-                        files.append({"name": content["name"], "path": full_path})
-            
-            directory_content_future.set_result(files)
-            
-        except Exception as e:
-            directory_content_future.set_exception(e)
-        pass
-        
     
     async def get_updater_script(self):
         

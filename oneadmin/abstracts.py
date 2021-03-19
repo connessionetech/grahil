@@ -665,20 +665,14 @@ class IScriptRunner(object):
         
 
     
-    async def start_script(self, name) ->Text:
+    def start_script(self, name:Text) ->Text:
         raise NotImplementedError()
         pass
     
     
     
-    def stop_script(self, script_id)->Text:
+    def stop_script(self, script_id:Text)->Text:
         raise NotImplementedError()
-    
-    
-   
-    def script_files_from_future(self, future:Future):
-        raise NotImplementedError()
-        pass
     
 
 

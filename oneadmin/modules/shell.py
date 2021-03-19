@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, IScriptRunner
+from oneadmin.abstracts import IScriptRunner, IModule
 from oneadmin.core.event import EVENT_SCRIPT_EXECUTION_STOP,EVENT_SCRIPT_EXECUTION_START, EVENT_SCRIPT_EXECUTION_PROGRESS, ScriptExecutionEvent
 from oneadmin.core.constants import TOPIC_SCRIPTS
 from oneadmin.utilities import build_script_topic_path
@@ -32,9 +32,11 @@ from typing import Text, List, Dict, Callable
 from tornado.iostream import StreamClosedError
 from smalluuid.smalluuid import SmallUUID
 from tornado.ioloop import IOLoop
+import sys
 
 
-class ScriptRunner(IEventDispatcher, IScriptRunner):
+
+class ScriptRunner(IModule, IScriptRunner):
     '''
     classdocs
     '''
@@ -53,6 +55,7 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         self.__conf = conf
         self.__scripts = {}
         self.__running_scripts = {}
+        
         pass
     
     
@@ -62,9 +65,23 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
     
     
     
+    
     def initialize(self) ->None:
         self.logger.info("Module init")
-        pass    
+        self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        self.__script_dir = os.path.join(self.root_path, self.__conf["script_folder"])
+        self.list_script_files(self.__script_dir)
+        pass
+    
+    
+    
+    
+    def list_script_files(self, dir_path):
+        script_files:List = [pos_script for pos_script in os.listdir(dir_path) if pos_script.endswith('.sh')]
+        for script_file in script_files:
+            full_path = os.path.join(dir_path, script_file)
+            self.__scripts[script_file] = full_path
+  
         
     
     
@@ -85,33 +102,6 @@ class ScriptRunner(IEventDispatcher, IScriptRunner):
         _names = self.__scripts.keys()
         return _names
     
-        
-        
-    
-    def script_files_from_future(self, future:Future)->None:
-        '''
-        Sets executable scripts data from external provider via future object
-        
-                Parameters:
-                        future (Future): A Future object that provides executable scripts information
-        
-                Returns:
-                        None
-        '''
-        
-        try:
-            
-            self.logger.debug("Setting scripts data from `Future`")
-            
-            files = future.result()
-            
-            for file in files:
-                self.__scripts[file["name"]] = file["path"]
-                #tornado.ioloop.IOLoop.current().spawn_callback(self.start_script, file["name"])
-             
-             
-        except Exception as e:
-            self.logger.error("Failed to fetch list of executable scripts. Cause: " + str(e))
                 
         
     
