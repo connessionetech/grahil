@@ -182,7 +182,7 @@ class JitsiDelegate(TargetProcess):
     '''
         Macro function to enable colibri for stats
     ''' 
-    async def enable_colibri(self):
+    async def do_fulfill_enable_colibri(self):
         pass
     
     
@@ -191,7 +191,7 @@ class JitsiDelegate(TargetProcess):
         '''
         Macro function to disable colibri for stats
     ''' 
-    async def disable_colibri(self):
+    async def do_fulfill_disable_colibri(self):
         pass
     
     
@@ -428,7 +428,6 @@ class JitsiDelegate(TargetProcess):
             return str.replace(old, new)
         else:
             return re.sub(re.escape(old), new, str, flags=re.IGNORECASE)
-
     
     
 
