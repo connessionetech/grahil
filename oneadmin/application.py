@@ -24,12 +24,15 @@ from oneadmin.communications import PubSubHub
 from oneadmin.core.grahil_core import ModuleRegistry
 from oneadmin.core.constants import *
 from oneadmin.core.components import ActionDispatcher, CommunicationHub
-from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE
+from oneadmin.core.constants import ACTION_DISPATCHER_MODULE, PROACTIVE_CLIENT_TYPE, REACTIVE_CLIENT_TYPE, CHANNEL_CHAT_BOT, SMTP_MAILER_MODULE, CHANNEL_SMTP_MAILER, CHANNEL_MQTT, SCRIPT_RUNNER_MODULE, LOG_MANAGER_MODULE
 from oneadmin.core.event import EventType, ArbitraryDataEvent
 from oneadmin.abstracts import IModule, IMQTTClient, IScriptRunner, IMailer, ILogMonitor, ISystemMonitor, IReactionEngine, IEventHandler, IEventDispatcher, IntentProvider, TargetProcess
 from oneadmin.urls import get_url_patterns
 from oneadmin.abstracts import IntentProvider
-
+from oneadmin.core.constants import TOPIC_LOGMONITORING
+from oneadmin.core.intent import INTENT_PREFIX
+from oneadmin.core.action import ACTION_PREFIX
+from oneadmin.core.event import StatsGeneratedEvent, EVENT_STATS_GENERATED
 
 import logging
 import tornado
@@ -37,10 +40,8 @@ import os, json, sys
 from tornado import autoreload
 from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
-from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, settings
+from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, __MODULES__CONF_PACKAGE__, settings
 from builtins import issubclass
-
-
 
 
 
@@ -81,12 +82,13 @@ class TornadoApplication(tornado.web.Application):
             root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
             package_path = os.path.join(root_path, __BASE_PACKAGE__)
             modules_path = os.path.join(package_path, __MODULES__PACKAGE__)
-            json_files:List = [pos_json for pos_json in os.listdir(modules_path) if pos_json.endswith('.json')]
+            modules_conf_path = os.path.join(modules_path, __MODULES__CONF_PACKAGE__)
+            json_files:List = [pos_json for pos_json in os.listdir(modules_conf_path) if pos_json.endswith('.json')]
             module_configs:List = []
             
             for mod_json in json_files:
                                 
-                conf_path = os.path.join(modules_path, mod_json)
+                conf_path = os.path.join(modules_conf_path, mod_json)
                 config = self.load_module_config(conf_path)
                 
                 if not "enabled" in config or config["enabled"] == False:
@@ -108,6 +110,8 @@ class TornadoApplication(tornado.web.Application):
             actionable_modules:List = []
             target_delegates:List = []
             module_url_patterns:List = []
+            logs_to_monitor:List = []
+            intent_actions:Dict = {}
             
             
             for sorted_config in sorted_module_configs:
@@ -122,8 +126,6 @@ class TornadoApplication(tornado.web.Application):
                     mod_instance:IModule = klass(sorted_config["conf"])
                     mod_id = mod_instance.getname()
                     mod_instance.eventhandler = self.handle_event
-                    mod_instance.initialize()
-                    
                     
                     if isinstance(mod_instance, IEventHandler):
                         listener_modules.append(mod_instance)
@@ -134,18 +136,41 @@ class TornadoApplication(tornado.web.Application):
                     if isinstance(mod_instance, TargetProcess):
                         target_delegates.append(mod_instance)
                         
+                        logs:List = mod_instance.getLogFiles()
+                        logs_to_monitor.extend(logs)
+                        
+                        
+                    ''' Custom intent and action definitions '''
+                    
+                    custom_intents:List = mod_instance.supported_intents()
+                    for intent_name in custom_intents:
+                        try:
+                            action_name = str(intent_name).replace(INTENT_PREFIX, ACTION_PREFIX)
+                            action = mod_instance.action_from_name(action_name)
+                        
+                            if action:
+                                intent_actions[intent_name] = action
+                                self.logger.debug("Collecting intent by name" + intent_name + " for action " + action_name)
+                            else:
+                                raise TypeError("'action' for intent " + intent_name + " was None, where object of type 'Action' was expected") 
+                   
+                        except TypeError as te:
+                            self.logger.warn(str(te))
+                            pass
+                        
+                        
                     
                     patterns:List = mod_instance.get_url_patterns()
                     if len(patterns)>0:
                         module_url_patterns.extend(patterns)
                     
-                    
-                    self.modules.registerModule(mod_instance, mod_id)
+                    mod_instance.initialize()
+                    self.modules.registerModule(mod_id, mod_instance)
                 
                 except Exception as e:
                     
-                    self.logger.error("Error initializing module " + str(mod_instance) + ".Cause : " + str(e))
-                     
+                    self.logger.error("Error initializing module " + str(mod_instance) + ".Cause : " + str(e))                    
+                  
                 
             
             
@@ -160,8 +185,29 @@ class TornadoApplication(tornado.web.Application):
             
             for listener_mod in  listener_modules:
                 self.__pubsubhub.addEventListener(listener_mod)
+                
+                
+            
+            ''' Register log files for4 monitoring '''
+                
+            tornado.ioloop.IOLoop.current().spawn_callback(self.register_logs_for_monitoring, logs_to_monitor)
+            
+            
+            
+            ''' Initializing action dispatcher '''
+            
+            action_config = modules[ACTION_DISPATCHER_MODULE]
+            if action_config != None and action_config["enabled"] == True:
+                self.__action__dispatcher = ActionDispatcher(self.modules, action_config["conf"])
+                for intent_name, action in intent_actions.items():
+                    self.__action__dispatcher.registerActionforIntent(intent_name, action)
+                    self.logger.debug("Registered intent by name" + intent_name + " for action " + action_name)
+            
+            del intent_actions
 
             
+            
+            ''' Proceed with server startup '''
             
             server_config = conf["server"]
 
@@ -194,6 +240,7 @@ class TornadoApplication(tornado.web.Application):
 
             patterns = get_url_patterns(endpoint_rest_support, endpoint_ws_support)  
             patterns.extend(module_url_patterns)
+
                   
             tornado.web.Application.__init__(self, patterns, **settings)
         
@@ -222,7 +269,6 @@ class TornadoApplication(tornado.web.Application):
             self.logger.error(err)
             raise ConfigurationLoadError(err)
         
-        
 
         
         
@@ -242,22 +288,35 @@ class TornadoApplication(tornado.web.Application):
             
             
     
+    
+    async def register_logs_for_monitoring(self, logfiles:List) ->None:
+        
+        if self.modules.hasModule(LOG_MANAGER_MODULE):
+            for log_file in  logfiles:
+                await self.handle_log_monitoring_request(log_file)
+                
+                
+            
+            
+    
     '''
     Handles dynamic request for log monitoring
     ''' 
     async def handle_log_monitoring_request(self, logfile):
         
-        try:
-            log_key = getLogFileKey(logfile)
-            log__topic_path = buildTopicPath(PubSubHub.LOGMONITORING, log_key)
-            logmonitor.register_log_file({
-                "name": log_key, "topic_path": log__topic_path, "log_file_path": logfile
-            })
+        if self.modules.hasModule(LOG_MANAGER_MODULE):
+            try:
+                logmon:ILogMonitor = self.modules.getModule(LOG_MANAGER_MODULE)
+                log_key = getLogFileKey(logfile)
+                log__topic_path = buildTopicPath(TOPIC_LOGMONITORING, log_key)
+                logmon.register_log_file({
+                    "name": log_key, "topic_path": log__topic_path, "log_file_path": logfile
+                })
+                
+                self.__pubsubhub.createChannel({"name":log__topic_path, "type": "subscription", "queue_size":1, "max_users":0})
             
-            self.__pubsubhub.createChannel({"name":log__topic_path, "type": "subscription", "queue_size":1, "max_users":0})
-        
-        except Exception as e:
-            self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
+            except Exception as e:
+                self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
     
     
     
@@ -272,11 +331,23 @@ class TornadoApplication(tornado.web.Application):
   
     
     '''
-    Handles arbitrary events from all modules
+    Handles arbitrary events from all modules.
     ''' 
     async def handle_event(self, event:EventType):
         self.logger.debug("handle_event for " + str(event["name"]))
+        
+        ''' event data aggregation is a good case for data filter or data plugins '''
+        if event["name"] == EVENT_STATS_GENERATED:
+            modules:List = self.modules.getModules()
+            for mod in modules:
+                if isinstance(mod, TargetProcess):
+                        alias_name = mod.getAlias()
+                        alias_stats = await mod.getTargetStats()
+                        event["data"]["target"] = {} if event["data"]["target"] == None else event["data"]["target"] 
+                        event["data"]["target"][alias_name] = alias_stats
+        
         await self.__pubsubhub.publish_event_type(event)
+    
     
     
     

@@ -1,0 +1,15 @@
+{
+			"enabled": false,
+			"klass": "LogMonitor",
+			"conf" : {
+				"retry_time_ge_seconds": 5,
+				"max_messages_chunks": 20,
+				"chunks_collector_interval": 10000,
+				"static_targets": [{
+					"enabled": false,
+					"name": "some_log",
+					"log_file_path": "",
+					"topic_path": ""
+				}]
+			}
+}

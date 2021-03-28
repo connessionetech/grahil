@@ -1,5 +1,5 @@
 {
-				"enabled": true,
+				"enabled": false,
 				"klass": "MQTTGateway",
 				"conf" : {
 					"host": "",

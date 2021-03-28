@@ -35,12 +35,19 @@ from tornado.concurrent import asyncio
 from time import time
 from tornado.httpclient import AsyncHTTPClient
 from builtins import str
+from apscheduler.executors.pool import ThreadPoolExecutor
+import socket
+
+
 
 
 class SystemMonitor(IModule, ISystemMonitor):
     
     
     NAME = "sysmon"
+    
+    
+    THREADPOOL = ThreadPoolExecutor(5)
     
     
     def __init__(self, config):
@@ -57,24 +64,31 @@ class SystemMonitor(IModule, ISystemMonitor):
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__last_stats = None
+        self.__bw_usage_per_second = None
+        self.__notify_snapshot_event = True if self.__config["snapshot_interval_seconds"] > 0 else False
         self.__external_ip = None      
     pass
 
 
 
 
+    
     def initialize(self) ->None:
         self.logger.info("Module init")
-        self.start_monitor()
+        tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
         pass
 
 
 
+    
+    
     def getname(self) ->Text:
         return SystemMonitor.NAME
 
 
 
+    
+    
     '''
     async def __discoverHost(self):
          
@@ -91,18 +105,15 @@ class SystemMonitor(IModule, ISystemMonitor):
 
 
     
-    def start_monitor(self) -> None:
-        tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
-    pass
-
     
     
-
     async def __cpu_percent(self, interval = None, *args, **kwargs):
         if interval is not None and interval > 0.0:
             psutil.cpu_percent(*args, **kwargs)
             await asyncio.sleep(interval)
         return psutil.cpu_percent(*args, **kwargs)
+    
+    
     
     
     
@@ -122,8 +133,8 @@ class SystemMonitor(IModule, ISystemMonitor):
                 "cpu_percent" : cpu_info["cpu_percent"],
                 "timestamp" : self.__last_stats["system"]["time"]
                 }
-        
-        pass
+    
+    
     
     
     
@@ -282,11 +293,6 @@ class SystemMonitor(IModule, ISystemMonitor):
                 else:
                     stats = self.__collect_nic_stats("aggregated", net_io)
                     nic_stats.append(stats)
-
-                    
-                    
-                '' 'Service capabilities'''
-                capabilities = self.__get_capabilities()
                     
                     
                 '' 'Building stats'''
@@ -306,7 +312,6 @@ class SystemMonitor(IModule, ISystemMonitor):
                         "boot_time": boot_time,
                         "uptime": uptime,
                         "system_datetime":readable_date_time,
-                        "capabilities":capabilities,
                         "time": time_now,
                         "unit": unit,
                         "meta_info":{
@@ -359,8 +364,9 @@ class SystemMonitor(IModule, ISystemMonitor):
                         evt = StatsErrorEvent(TOPIC_SYSMONITORING, {"message": err})
                     else:
                         evt = StatsGeneratedEvent(TOPIC_SYSMONITORING, stats)
-                        
-                    await self.dispatchevent(evt)
+                    
+                    if self.__notify_snapshot_event:
+                        await self.dispatchevent(evt)
                         
                 except Exception as e:
                     err = "An error occurred in generating system stats " + str(e)
@@ -369,6 +375,8 @@ class SystemMonitor(IModule, ISystemMonitor):
                 finally:
                     wait_duration = self.__config['snapshot_interval_seconds']
                     await asyncio.sleep(wait_duration)
+    
+    
     
     
     
@@ -386,6 +394,7 @@ class SystemMonitor(IModule, ISystemMonitor):
                     
                     
                     
+    
     def __get_connection_info(self, connection_filter="all"):
         
         info = []
@@ -418,7 +427,13 @@ class SystemMonitor(IModule, ISystemMonitor):
     
         return connections
     
-
+    
+    
+    
+    
+    '''
+        Get partition info
+    '''
     def __getPartitionsInfo(self, unit="b"):
         part_disk_usage=[]
         partitions = psutil.disk_partitions()
@@ -442,6 +457,11 @@ class SystemMonitor(IModule, ISystemMonitor):
         return part_disk_usage
     
 
+
+
+    '''
+        Collects individual stats of each network interface
+    '''
     def __collect_nic_stats(self, nic_id, net_io):
     
         bytes_sent = net_io.bytes_sent
@@ -465,16 +485,108 @@ class SystemMonitor(IModule, ISystemMonitor):
             "dropout":dropout
         }
         
+        
+        
     
-    def __get_capabilities(self):
-        return {
-                    "system_stats":True,
-                    "target_stats":False,
-                    "file_management" : False,
-                    "log_monitoring" : False,
-                    "script_execution" : False
-                }
+    
+    '''
+        Checks bandwidth usage every second apart to calculate bw usage per second. This method much be called period manner internally  
+    '''
+    async def __calculate_network_usage(self):
+        
+        net_io = psutil.net_io_counters()
+        old_usage = 0
+        new_usage = 0
+        net_usage = 0
+        
+        while True:
+            new_usage = net_io.bytes_sent + net_io.bytes_recv
+            if old_usage != 0:
+                net_usage = new_usage - old_usage
+                self.__bw_usage_per_second = net_usage
+            
+            await asyncio.sleep(1)
+    
+    
+    
+    
+    '''
+        Gives the average system load in last 1, 5 and 15 minutes as a tuple. The load represents the processes which are in a runnable state, either using the CPU or waiting to use the CPU (e.g. waiting for disk I/O). 
+    '''
+    def get_avg_load(self):
+        return psutil.getloadavg()
+        
+        
 
+
+
+    
+    '''
+        Check async to see if port is open at given address
+    '''    
+    async def check_port(self, port, host="127.0.0.1"):
+        return await tornado.ioloop.IOLoop.current().run_in_executor(SystemMonitor.THREADPOOL, self.__check_port, host, port)
+        pass
+    
+    
+
+
+    
+
+    '''
+        Check to see if port is open at given address
+    '''
+    def __check_port(self, host, port):
+        
+        a_socket = None
+        
+        try:
+            a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            a_socket.settimeout(2)       
+            location = (host, port)
+            result = a_socket.connect_ex(location)
+            
+            if result == 0:
+                return True
+            else:
+                return False
+        
+        except Exception as e:
+            self.logger.error("Error checking port %s. cause %s", str(port), str(e)) 
+        
+        finally:
+            if a_socket != None:
+                a_socket.close()
+                
+                
+                
+    
+    '''
+     Returns task manager view consisting of list of all processes with necessary stats per process
+    '''
+    def get_task_manager_view(self):
+        
+        # Iterate over all running process
+        processes:list = []
+        
+        for proc in psutil.process_iter():
+            
+            try:
+                # Get process name & pid from process object.
+                pInfo:Dict = proc.as_dict(attrs=['pid', 'name', 'cpu_percent', 'create_time', 'memory_info', 'username'])
+                pInfo['vms'] = proc.memory_info().vms / (1024 * 1024)
+                processes.append(pInfo)
+            
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess) as e:
+                
+                self.logger.error("Error getting process info for proc." + proc + " cause %s", str(e))
+                
+            
+        return processes
+                
+    
+    
+    
     
     
     def __get_folder_size(self, start_path = '.'):
@@ -487,6 +599,8 @@ class SystemMonitor(IModule, ISystemMonitor):
                     total_size += os.path.getsize(fp)
     
         return total_size
+    
+    
     
     
     

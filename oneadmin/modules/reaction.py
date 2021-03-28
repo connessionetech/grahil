@@ -41,6 +41,7 @@ from apscheduler.triggers.cron import CronTrigger
 from builtins import str
 from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
 from typing import Text
+from settings import settings
 
 
 
@@ -210,7 +211,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
         self.logger.debug("Loading rules")
         
         try:
-            path = os.path.join(os.path.dirname(__file__), "rules")
+            path = settings["rules_folder"]
 
             self.logger.debug("listing rules directory %s", path)
             if os.path.exists(path):

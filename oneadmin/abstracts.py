@@ -54,6 +54,7 @@ class IEventDispatcher(object):
         pass
     
     
+    
 class IModule(IEventDispatcher):
     
     
@@ -69,8 +70,45 @@ class IModule(IEventDispatcher):
         raise NotImplementedError
     
     
+    '''
+        Returns a list of supported url patterns in modules
+    '''
     def get_url_patterns(self) ->List:
         return []
+    
+    
+    '''
+        Returns a list of supported actions
+    '''
+    def supported_actions(self) -> List[object]:
+        return []
+
+
+    '''
+        Returns a list supported of action names
+    '''
+    def supported_action_names(self) -> List[Text]:
+        return []
+    
+    
+    
+    '''
+        Returns a list supported of intents
+    '''
+    def supported_intents(self) -> List[Text]:
+        return []
+    
+    
+    
+    '''
+        Lookup an Action object instance by string name
+    '''
+    def action_from_name(self, name:Text) -> object:
+        defaults = {a.name(): a for a in self.supported_actions()}
+        if name in defaults:
+            return defaults.get(name)
+                
+        return None
     
     
     pass
@@ -85,7 +123,7 @@ class TargetProcess(IModule):
     '''
 
 
-    def __init__(self, procname, root=None, service_path=None, invocable_namespace="do_fulfill"):
+    def __init__(self, alias, procname=None, root=None, service_path=None, invocable_namespace="do_fulfill"):
         '''
         Constructor
         '''
@@ -93,7 +131,7 @@ class TargetProcess(IModule):
         self.__allowed_read_extensions = ['*']
         self.__allowed_write_extensions = ['*']
         self.__procname=procname
-        self.__alias=None
+        self.__alias=alias
         self.__pid_procname=procname
         self.__service__path = service_path 
         self.__pid=None
@@ -473,30 +511,6 @@ class TargetProcess(IModule):
         else:
             return False
     
-    
-    # Return type should be Action but for some reason it cannot be imported into this file
-    def supported_actions(self) -> List[object]:
-        return []
-
-
-
-    def supported_action_names(self) -> List[Text]:
-        return []
-    
-    
-    def supported_intents(self) -> List[Text]:
-        return []
-    
-    
-    # Return type should be Action but for some reason it cannot be imported into this file
-    def action_from_name(self, name:Text) -> object:
-        defaults = {a.name(): a for a in self.supported_actions()}
-        if name in defaults:
-            return defaults.get(name)
-                
-        return None
-    
-
 
 
 
@@ -651,20 +665,14 @@ class IScriptRunner(object):
         
 
     
-    async def start_script(self, name) ->Text:
+    def start_script(self, name:Text) ->Text:
         raise NotImplementedError()
         pass
     
     
     
-    def stop_script(self, script_id)->Text:
+    def stop_script(self, script_id:Text)->Text:
         raise NotImplementedError()
-    
-    
-   
-    def script_files_from_future(self, future:Future):
-        raise NotImplementedError()
-        pass
     
 
 
