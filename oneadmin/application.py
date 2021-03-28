@@ -356,7 +356,7 @@ class TornadoApplication(tornado.web.Application):
     ''' 
     async def handle_intent_request(self, source:IntentProvider, intent:Text, args:Dict, event:EventType=None):
         self.logger.debug("handle_actionable intent for " + str(source))
-        await self.action_dispatcher.handle_request(source, intent, args, event)
+        return await self.action_dispatcher.handle_request(source, intent, args, event)
     
    
     

@@ -590,7 +590,7 @@ class IntentProvider(object):
     
     async def notifyintent(self, intent:Text, args:Dict, event:EventType=None) -> None:
         if self.__intenthandler:
-            await self.__intenthandler(self, intent, args, event)
+            return await self.__intenthandler(self, intent, args, event)
         pass
     
 
