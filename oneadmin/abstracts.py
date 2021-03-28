@@ -594,11 +594,11 @@ class IntentProvider(object):
         pass
     
 
-    def onIntentProcessResult(self, requestid:str, result:object) -> None:
+    async def onIntentProcessResult(self, requestid:str, result:object) -> None:
         pass
 
 
-    def onIntentProcessError(self, e:object, message:str = None) -> None:
+    async def onIntentProcessError(self, e:object, message:str = None) -> None:
         pass
     
     
