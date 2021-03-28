@@ -564,6 +564,14 @@ class ServiceBot(IModule):
     def set_webhook_url_config(self, urlconfig):
         self.__webhook_handler_url_config = urlconfig
         
+    
+    async def sendEventAsMessage(self, event)-> None:
+        raise NotImplementedError()
+    
+    
+    async def send_notification(self, message:Text)-> None:
+        raise NotImplementedError()
+        
 
 
 class IntentProvider(object):
