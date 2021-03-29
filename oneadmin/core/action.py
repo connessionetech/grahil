@@ -109,6 +109,8 @@ ACTION_SEND_MAIL_NAME = ACTION_PREFIX + "send_mail"
 
 ACTION_WRITE_LOG_CHUNKS_NAME = ACTION_PREFIX + "write_log_chunks"
 
+ACTION_BOT_NOTIFY_NAME = ACTION_PREFIX + "bot_notify"
+
 
 
 
@@ -170,7 +172,7 @@ def builtin_actions() -> List[Action]:
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
             ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution(),
-            ActionTest(), ActionWriteLogChunks()]
+            ActionTest(), ActionWriteLogChunks(), ActionBotNotify()]
 
 
 
@@ -1270,6 +1272,47 @@ class ActionStopScriptExecution(Action):
             return ActionResponse(data = None, events=[])
         else:
             raise ModuleNotFoundError("`"+SCRIPT_RUNNER_MODULE+"` module does not exist")
+        pass
+    
+
+
+
+class ActionBotNotify(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_BOT_NOTIFY_NAME
+    
+    
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        service_bot = None
+        
+        if modules.hasModule("service_bot"):
+            service_bot = modules.getModule("service_bot")
+            
+            message:Text = None
+            if "message" in params:
+                message = params["message"]
+            elif "__event__" in params and "message" in params["__event__"]["data"]:
+                message = params["__event__"]["data"]["message"]
+            
+            if message != None:            
+                await service_bot.send_notification(message)
+            else:
+                logger.warn("nothing to send")
+                
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`service_bot` module does not exist")
         pass
 
 

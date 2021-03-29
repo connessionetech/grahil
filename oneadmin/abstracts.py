@@ -564,6 +564,14 @@ class ServiceBot(IModule):
     def set_webhook_url_config(self, urlconfig):
         self.__webhook_handler_url_config = urlconfig
         
+    
+    async def sendEventAsMessage(self, event)-> None:
+        raise NotImplementedError()
+    
+    
+    async def send_notification(self, message:Text)-> None:
+        raise NotImplementedError()
+        
 
 
 class IntentProvider(object):
@@ -590,15 +598,15 @@ class IntentProvider(object):
     
     async def notifyintent(self, intent:Text, args:Dict, event:EventType=None) -> None:
         if self.__intenthandler:
-            await self.__intenthandler(self, intent, args, event)
+            return await self.__intenthandler(self, intent, args, event)
         pass
     
 
-    def onIntentProcessResult(self, requestid:str, result:object) -> None:
+    async def onIntentProcessResult(self, requestid:str, result:object) -> None:
         pass
 
 
-    def onIntentProcessError(self, e:object, message:str = None) -> None:
+    async def onIntentProcessError(self, e:object, message:str = None) -> None:
         pass
     
     

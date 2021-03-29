@@ -453,4 +453,23 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     async def __respondToTimedEvent(self, rule:ReactionRule):
         await self.__respondToEvent(rule, None, timed=True)
         pass   
+    
+    
+    
+    
+    '''
+    Overriden method from intent provider, handles intent execution result
+    '''
+    async def onIntentProcessResult(self, requestid:str, result:object) -> None:
+        self.logger.debug("onIntentProcessResult")
+        pass
+    
+
+    
+    '''
+    Overriden method from intent provider, handles intent execution error
+    '''
+    async def onIntentProcessError(self, requestid:str, e:object, message:str = None) -> None:
+        self.logger.debug("onIntentProcessError")
+        pass
         
