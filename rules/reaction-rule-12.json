@@ -1,7 +1,7 @@
 {
-	"id": "reaction-rule-11",
-	"description": "Rule for door bell notification",
-	"listen-to": "/smarthome/doorbell",
+	"id": "reaction-rule-12",
+	"description": "Rule for plant watering pump notification",
+	"listen-to": "/smarthome/plantpump",
 	"enabled": true,
 	"trigger":{
 		"on-payload-object": {
