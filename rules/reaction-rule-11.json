@@ -1,0 +1,20 @@
+{
+	"id": "reaction-rule-11",
+	"description": "Rule for door bell notification",
+	"listen-to": "/smarthome/doorbell",
+	"enabled": true,
+	"trigger":{
+		"on-payload-object": {
+			"key":"data",
+			"on-content": "*",
+			"on-condition": "equals"
+		},		
+		"evaluator": null
+	},
+	"response":{
+		"nonce" : false,
+		"intent": "smarthome_notify",
+		"parameters": {
+		}
+	}	
+}

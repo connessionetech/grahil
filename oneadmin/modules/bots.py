@@ -184,6 +184,8 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     
     
     
+    
+    
     async def send_message(self, user_id: int, response_text: str, response_data:object = None, disable_notification: bool = False) -> bool:
         """
         Safe messages sender
@@ -246,6 +248,9 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
             return True
         return False 
     
+
+    
+    
     
     
     async def respond_to_message(self, message: types.Message, response_text: str, response_data:object) -> bool:
@@ -270,13 +275,20 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
     
     
     
-    async def sendEventAsMessage(self, event):
+    
+    async def sendEventAsMessage(self, event)-> None:
         if self.__bot_master:
             response_text = event["message"] if "message" in event else event["type"]
             response_data = event["data"]
             await self.send_message(self.__bot_master, response_text, response_data)
         pass
     
+    
+        
+    
+    async def send_notification(self, message:Text)-> None:
+        if self.__bot_master:
+            await self.send_message(self.__bot_master, message)
     
     
     
