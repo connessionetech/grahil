@@ -33,7 +33,6 @@ import logging
 import sys
 import signal
 import subprocess
-import numpy as np
 
 from builtins import int, str
 from tornado.ioloop import IOLoop
@@ -73,18 +72,21 @@ class JitsiDelegate(TargetProcess):
         ''' logs to monitor'''
         
         log_paths = []        
-        log_root = "/var/log/"
-        log_paths.append(os.path.join(log_root, "jitsi/jvb.log"))
-        log_paths.append(os.path.join(log_root, "jitsi/jicofo.log"))
-        log_paths.append(os.path.join(log_root, "prosody/prosody.log"))
-        log_paths.append(os.path.join(log_root, "nginx/error.log"))
+        log_root = self.__conf["log_root"]
+        log_targets = self.__conf["log_targets"]
+        for log_target in log_targets:
+            log_paths.append(os.path.join(log_root, str(log_target)))
+            
         self.setLogFiles(log_paths)
         
         
         ''' Allowed file extensions access'''
         
-        self.setAllowedReadExtensions(['.xml', '.txt', '.ini'])
-        self.setAllowedWriteExtensions(['.xml', '.ini'])
+        allowed_read_extensions = self.__conf["allowed_read_extensions"]
+        self.setAllowedReadExtensions(allowed_read_extensions)
+        
+        allowed_write_extensions = self.__conf["allowed_write_extensions"]
+        self.setAllowedWriteExtensions(allowed_write_extensions)
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__tmp_dir = tempfile.TemporaryDirectory()
@@ -108,6 +110,18 @@ class JitsiDelegate(TargetProcess):
     
     def getname(self) ->Text:
         return JitsiDelegate.NAME
+    
+    
+    
+    
+    async def install(self):
+        pass
+    
+    
+    
+    
+    async def uninstall(self):
+        pass
         
         
     

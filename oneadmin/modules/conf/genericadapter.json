@@ -1,0 +1,11 @@
+{
+				"enabled": true,
+				"klass": "GenericDelegate",
+				"conf": {
+					"target_alias": "generic",
+					"log_root": "/usr/local/<program_folder>",
+					"log_targets": [],
+					"allowed_read_extensions": [".xml", ".properties", ".txt", ".ini"],
+					"allowed_write_extensions": [".xml", ".properties", ".txt", ".ini"]
+				}
+}

@@ -510,6 +510,18 @@ class TargetProcess(IModule):
             return True
         else:
             return False
+        
+        
+        
+    async def install(self):
+        raise NotImplementedError()
+        pass
+    
+    
+    
+    async def uninstall(self):
+        raise NotImplementedError()
+        pass
     
 
 

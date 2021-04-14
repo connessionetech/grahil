@@ -1,0 +1,14 @@
+{
+				"enabled": true,
+				"klass": "JitsiDelegate",
+				"conf": {
+					"target_alias": "jitsi",
+					"log_root": "/var/log/",
+					"log_targets": ["jitsi/jvb.log", "jitsi/jicofo.log", "prosody/prosody.log", "nginx/error.log"],
+					"allowed_read_extensions": [".xml", ".properties", ".txt", ".ini"],
+					"allowed_write_extensions": [".xml", ".properties", ".txt", ".ini"],
+					"colibri_api_protocol": "http",
+					"colibri_api_host": "localhost",
+					"colibri_api_port": 8080
+				}
+}
