@@ -82,7 +82,19 @@ class LogMonitor(IModule, ILogMonitor):
                     
                     self.register_log_file(log_target)
                     
-                    
+     
+     
+    
+    '''
+    Returns list of available log targets with their subscription paths
+    '''
+    def get_log_targets(self):
+        targets = []
+        
+        for name, log_info in self.__log_files.items():
+            targets.append({"name": name, "topic": log_info["topic_path"]})
+        
+        return targets              
     
     
     

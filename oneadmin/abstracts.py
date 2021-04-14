@@ -706,6 +706,10 @@ class ILogMonitor(object):
         super().__init__()
     
     
+    def get_log_targets(self):
+        raise NotImplementedError()
+        pass
+    
     
     def register_log_file(self, log_info:Dict):
         raise NotImplementedError()

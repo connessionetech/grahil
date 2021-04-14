@@ -1,5 +1,5 @@
 {
-			"enabled": false,
+			"enabled": true,
 			"klass": "LogMonitor",
 			"conf" : {
 				"retry_time_ge_seconds": 5,

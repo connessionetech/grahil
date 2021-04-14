@@ -19,11 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from oneadmin.core import grahil_types
 from oneadmin.core.constants import *
 from oneadmin.core.event import EventType, StartLogRecordingEvent, StopLogRecordingEvent
-from oneadmin.core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS, FILE_MANAGER_MODULE
+from oneadmin.core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS, FILE_MANAGER_MODULE, LOG_MANAGER_MODULE
 from oneadmin.abstracts import IntentProvider
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
-from oneadmin.abstracts import IMailer, IScriptRunner
+from oneadmin.abstracts import IMailer, IScriptRunner, ILogMonitor
+
 from oneadmin.version import __version__
 
 import urllib
@@ -33,6 +34,7 @@ from tornado.concurrent import asyncio
 from typing import Text, Dict, List,NamedTuple
 from tornado.httpclient import AsyncHTTPClient
 from tornado.web import HTTPError
+
 
 
 
@@ -109,6 +111,8 @@ ACTION_SEND_MAIL_NAME = ACTION_PREFIX + "send_mail"
 
 ACTION_WRITE_LOG_CHUNKS_NAME = ACTION_PREFIX + "write_log_chunks"
 
+ACTION_LIST_LOGS_NAME = ACTION_PREFIX + "list_logs"
+
 ACTION_BOT_NOTIFY_NAME = ACTION_PREFIX + "bot_notify"
 
 
@@ -172,7 +176,7 @@ def builtin_actions() -> List[Action]:
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
             ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution(),
-            ActionTest(), ActionWriteLogChunks(), ActionBotNotify()]
+            ActionTest(), ActionWriteLogChunks(), ActionBotNotify(), ActionListLogs()]
 
 
 
@@ -1314,6 +1318,37 @@ class ActionBotNotify(Action):
         else:
             raise ModuleNotFoundError("`service_bot` module does not exist")
         pass
+
+
+
+
+
+class ActionListLogs(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_LIST_LOGS_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __logmon = None
+        
+        if modules.hasModule(LOG_MANAGER_MODULE):
+            __logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
+            result = __logmon.get_log_targets()
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+LOG_MANAGER_MODULE+"` module does not exist")
+        pass 
+
 
 
 
