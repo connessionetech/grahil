@@ -730,6 +730,10 @@ class ILogMonitor(object):
         raise NotImplementedError()
         pass
     
+    def get_log_path(self, name:str) ->Text:
+        raise NotImplementedError()
+        pass
+    
     
     def enable_chunk_generation(self, logname:str) ->None:
         raise NotImplementedError()
@@ -870,3 +874,10 @@ class IEventHandler(object):
     
     async def handleEvent(self, event):
         pass
+    
+
+
+# Create a base class
+class LoggingHandler:
+    def __init__(self, *args, **kwargs):
+        self.logger = logging.getLogger(self.__class__.__name__)

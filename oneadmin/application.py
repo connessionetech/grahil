@@ -42,6 +42,7 @@ from typing import Text, List, Dict
 from oneadmin.exceptions import ConfigurationLoadError
 from settings import __BASE_PACKAGE__, __MODULES__PACKAGE__, __MODULES__CONF_PACKAGE__, settings
 from builtins import issubclass
+from core.constants import FILE_MANAGER_MODULE
 
 
 
@@ -290,6 +291,13 @@ class TornadoApplication(tornado.web.Application):
     
     
     async def register_logs_for_monitoring(self, logfiles:List) ->None:
+        
+        
+        if self.modules.hasModule(FILE_MANAGER_MODULE):
+            filemanager = self.modules.getModule(FILE_MANAGER_MODULE)
+            filemanager.append_allowed_downlod_paths(logfiles)
+                
+        
         
         if self.modules.hasModule(LOG_MANAGER_MODULE):
             for log_file in  logfiles:

@@ -19,16 +19,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from oneadmin.abstracts import IModule, ILogMonitor
 from oneadmin.core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
 from oneadmin.utilities import buildTopicPath
-from oneadmin.core.constants import TOPIC_LOGMONITORING
+from oneadmin.core.constants import TOPIC_LOGMONITORING, LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
+from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
+from oneadmin.abstracts import LoggingHandler
+from oneadmin.core.constants import LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
 
 import logging
 import tornado
 import collections
+import json
+
 from tornado.process import Subprocess
 from tornado.concurrent import asyncio
 from sys import platform
 from pathlib import Path
 from typing import Dict, Text
+from typing import List, Text
+from tornado.web import url
+
+
 
 
 class LogMonitor(IModule, ILogMonitor):
@@ -58,11 +67,16 @@ class LogMonitor(IModule, ILogMonitor):
     
     
     
+    
     def initialize(self)->None:
         self.logger.info("Module init")
         self.register_static_log_targets()
         pass 
     
+    
+    
+    def get_url_patterns(self)->List:
+        return [ url(r"/log/download", LogDownloadHandler) ]
     
     
     
@@ -167,6 +181,15 @@ class LogMonitor(IModule, ILogMonitor):
             return self.__log_files[name]
         else:
             raise LookupError('Log info not found for log by name ' + name)
+        
+        
+        
+    def get_log_path(self, name:str) ->Text:
+        if name in self.__log_files:
+            log_info = self.__log_files[name]
+            return log_info["log_file_path"]
+        else:
+            raise LookupError('Log info not found for log by name ' + name)       
         
     
     
@@ -281,5 +304,75 @@ class LogMonitor(IModule, ILogMonitor):
         self.logger.debug("Trying after %s seconds..", wait_time)
         await asyncio.sleep(wait_time)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, logname)
+        pass
+    
+    
+
+class LogDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    CHUNK_SIZE = 256 * 1024
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+            
+
+    async def post(self, slug=None):
+        
+        modules = self.application.modules
+        
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            filemanager = modules.getModule(FILE_MANAGER_MODULE)
+            
+            if slug == "static":
+                try:
+                    logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
+                    logname = self.get_argument("logname", None, True)
+                    path = logmon.get_log_info(logname)                    
+                    download_path = await self.__makeFileDownloadable(path)
+                    self.write(json.dumps(formatSuccessResponse(download_path)))
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:
+                    self.finish()
+            elif slug == "chunked"  or slug == None:
+                try:
+                    logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
+                    logname = self.get_argument("logname", None, True)
+                    path = logmon.get_log_info(logname)
+                    file_name = filemanager.path_leaf(path)
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
+                    await self.flush()
+                    await self.__makeChunkedDownload(path)
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:  
+                    self.finish()
+                    pass
+            else:
+                self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
+            pass
+    
+    
+    async def __makeFileDownloadable(self,file_path):
+        modules = self.application.modules
+        filemanager = modules.getModule(FILE_MANAGER_MODULE)
+        static_path = settings["static_path"]
+        download_path = await filemanager.make_downloadable_static(static_path, file_path)
+        return download_path
+    
+    
+    async def __makeChunkedDownload(self, path):
+        modules = self.application.modules
+        filemanager = modules.getModule(FILE_MANAGER_MODULE)
+        await filemanager.download_file_async(path, LogDownloadHandler.CHUNK_SIZE, self.handle_data)
+        pass
+    
+    
+    async def handle_data(self, chunk):
+        self.logger.debug("Writing chunk data")
+        self.write(chunk)
+        await self.flush()
         pass
     

@@ -22,6 +22,7 @@ from oneadmin.communications import PubSubHub
 from oneadmin import responsebuilder
 from oneadmin.exceptions import RPCError, AccessPermissionsError
 from oneadmin.core.constants import TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
+from oneadmin.abstracts import LoggingHandler
 
 import base64
 import uuid
@@ -34,13 +35,8 @@ from settings import settings
 from tornado.escape import utf8
 from tornado.httputil import parse_multipart_form_data
 from tornado.queues import Queue
-from tornado.websocket import WebSocketClosedError  
+from tornado.websocket import WebSocketClosedError
 
-
-# Create a base class
-class LoggingHandler:
-    def __init__(self, *args, **kwargs):
-        self.logger = logging.getLogger(self.__class__.__name__)
         
       
         
@@ -56,202 +52,6 @@ class MainHandler(tornado.web.RequestHandler, LoggingHandler):
     # @tornado.web.authenticated
     def get(self):
         self.logger.info("index path")        
-    
-
-
-'''
-File ops handler - to be used for file read write
-'''
-class FileReadHandler(tornado.web.RequestHandler, LoggingHandler):
-    
-    def initialize(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        pass
-    
-    
-    
-    def set_default_headers(self):
-        self.set_header("Content-Type", 'application/json')   
-
-    
-    # read file
-    async def post(self):
-        
-        filepath = self.get_argument("path", None, True)
-        self.logger.info("Read file request for file %s", filepath)
-        
-        if(filepath != None):   
-            try:
-                content = await self.__getFile(filepath)
-                self.write(json.dumps(formatSuccessResponse(content)))
-            except Exception as e:
-                self.write(json.dumps(formatErrorResponse(str(e), 404)))
-        else:
-            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-            pass
-            
-            
-        self.finish()
-    
-    
-    
-    async def __getFile(self, path):
-        dispatcher = self.application.action_dispatcher
-        content = await dispatcher.handle_request_direct(self, INTENT_READ_FILE_NAME, {"source":path})
-        encoded = base64.b64encode(bytes(content, 'utf-8'))  
-        encoded_str = encoded.decode('utf-8')
-        return encoded_str
-    
-    
-    
-    
-class FileWriteHandler(tornado.web.RequestHandler, LoggingHandler):
-    
-    def initialize(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        pass
-    
-    
-    
-    def set_default_headers(self):
-        self.set_header("Content-Type", 'application/json')   
-
-    
-    
-    # write file
-    async def post(self):
-        
-        filepath = self.get_argument("path", None, True)
-        content = self.get_argument("content", None, True)
-        self.logger.debug("Read file request for file %s", filepath)
-        
-        # Try catch and then send back response as json formatted message
-        if(filepath != None):
-            try:   
-                content = await self.__putFile(filepath, content)
-                self.write(json.dumps(formatSuccessResponse(content)))
-            except Exception as e:
-                self.write(json.dumps(formatErrorResponse(str(e), 404)))
-        else:
-            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-            pass
-        
-        
-        self.finish()
-
-
-
-    async def __putFile(self, path, encoded):
-        dispatcher = self.application.action_dispatcher
-        decoded = responsebuilder.base64ToString(encoded)
-        content = await dispatcher.handle_request_direct(self, INTENT_WRITE_FILE_NAME, {"destination":path, "content": decoded})
-        pass
-
-
-
-
-class FileDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
-    
-    CHUNK_SIZE = 256 * 1024
-    
-    def initialize(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        pass
-            
-
-    async def post(self, slug=None):
-        
-        modules = self.application.modules
-        
-        if modules.hasModule("file_manager"):
-            filemanager = modules.getModule("file_manager")
-            
-            if slug == "static":
-                try:
-                    path = self.get_argument("path", None, True)
-                    download_path = await self.__makeFileDownloadable(path)
-                    self.write(json.dumps(formatSuccessResponse(download_path)))
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-                finally:
-                    self.finish()
-            elif slug == "chunked"  or slug == None:
-                try:
-                    path = self.get_argument("path", None, True)
-                    file_name = filemanager.path_leaf(path)
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
-                    await self.flush()
-                    await self.__makeChunkedDownload(path)
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-                finally:  
-                    self.finish()
-                    pass
-            else:
-                self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
-            pass
-    
-    
-    async def __makeFileDownloadable(self,file_path):
-        modules = self.application.modules
-        filemanager = modules.getModule("file_manager")
-        configuration = self.application.configuration
-        static_path = settings["static_path"]
-        download_path = await filemanager.make_downloadable_static(configuration, static_path, file_path)
-        return download_path
-    
-    
-    async def __makeChunkedDownload(self, path):
-        modules = self.application.modules
-        filemanager = modules.getModule("file_manager")
-        await filemanager.download_file_async(path, FileDownloadHandler.CHUNK_SIZE, self.handle_data)
-        pass
-    
-    
-    async def handle_data(self, chunk):
-        self.logger.info("Writing chunk data")
-        self.write(chunk)
-        await self.flush()
-        pass
-    
-
-
-class FileDeleteeHandler(tornado.web.RequestHandler, LoggingHandler):
-    
-    def initialize(self):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        pass
-
-    
-    # write file
-    async def delete(self):
-        
-        filepath = self.get_argument("path", None, True)
-        self.logger.debug("Read file request for file %s", filepath)
-        
-        # Try catch and then send back response as json formatted message
-        if(filepath != None):
-            try:   
-                content = await self.__delete(filepath)
-                self.write(json.dumps(formatSuccessResponse(content)))
-            except Exception as e:
-                self.write(json.dumps(formatErrorResponse(str(e), 404)))
-        else:
-            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
-            pass
-            
-        
-        self.finish()
-
-
-
-
-    async def __delete(self, path):
-        dispatcher = self.application.action_dispatcher
-        content = await dispatcher.handle_request_direct(self, INTENT_DELETE_FILE_NAME, {"source":path})
-        pass
-
 
 
 

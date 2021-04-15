@@ -6,9 +6,8 @@
 					"auto_clean_tmp_directories": false,
 					"tmp_download_dir_prefix": "oneadmin_",
 					"report_name_prefix": "report_",
-					"accessible_paths": [
-						"/home/rajdeeprath/"
-					],
+					"accessible_paths": [],
+					"downloadable_paths": [],
 					"allowed_read_extensions": [
 						".properties",
 						".xml",

@@ -26,11 +26,7 @@ def get_url_patterns(rest:bool, ws:bool)->List:
     
     if rest and not ws:
         return [
-            url(r"/", base.MainHandler),
-            url(r"/file/read", base.FileReadHandler),
-            url(r"/file/write", base.FileWriteHandler),
-            url(r"/file/download", base.FileDownloadHandler),
-            url(r"/file/delete", base.FileDeleteeHandler)
+            url(r"/", base.MainHandler)
             ]
     elif ws and not rest:
         return [
@@ -39,9 +35,5 @@ def get_url_patterns(rest:bool, ws:bool)->List:
     elif ws and rest:
         return [
             url(r"/", base.MainHandler),
-            url(r"/file/read", base.FileReadHandler),
-            url(r"/file/write", base.FileWriteHandler),
-            url(r"/file/download", base.FileDownloadHandler),
-            url(r"/file/delete", base.FileDeleteeHandler),
-            url(r"/ws", base.WebSocketHandler),
+            url(r"/ws", base.WebSocketHandler)
             ]

@@ -16,11 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+
+from oneadmin import responsebuilder
+from oneadmin.responsebuilder import formatSuccessResponse,formatErrorResponse ,formatProgressResponse, formatErrorRPCResponse
+from oneadmin.core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME, INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
 from oneadmin.exceptions import *
 from oneadmin.core.constants import FILE_MANAGER_MODULE
 from oneadmin.abstracts import IEventDispatcher
 from oneadmin.abstracts import IModule
+from oneadmin.abstracts import LoggingHandler
 
+import base64
+import tornado.web
+import json
 import sys
 import logging
 import os
@@ -30,7 +38,9 @@ import datetime as dt
 import shutil
 import asyncio
 import os.path
+import pathlib
 
+from settings import settings
 from pathlib import Path
 from aiofile.aio import AIOFile
 from shutil import copyfile, copytree
@@ -43,9 +53,9 @@ from tornado.ioloop import IOLoop
 from os import path
 from _collections import deque
 from builtins import str
-from typing import List, Text, Callable
-from tornado.concurrent import Future
-import pathlib
+from typing import List, Text
+from tornado.web import url
+
 
 
 
@@ -70,6 +80,8 @@ class FileManager(IModule):
         self.__config = config
         
         
+        ''' Paths allowed for access through filemanager '''
+        
         accessible_paths = []
         accessible_paths.append(settings["reports_folder"])
         accessible_static_paths = config["accessible_paths"]
@@ -77,6 +89,16 @@ class FileManager(IModule):
             accessible_paths.append(accessible_static_path)
         
         self.__accessible_paths = accessible_paths
+        
+        
+        ''' Paths allowed for download through filemanager '''
+        
+        downloadable_paths = []
+        downloadable_static_paths = config["downloadable_paths"]
+        for downloadable_static_path in downloadable_static_paths:
+            downloadable_paths.append(downloadable_static_path)
+        
+        self.__downloadable_paths = accessible_paths
                 
         
         self.__uploaddir = config["upload_dir"]
@@ -114,16 +136,51 @@ class FileManager(IModule):
     
     def name(self) -> Text:
         return FILE_MANAGER_MODULE
+    
+    
+    
+    
+    def get_url_patterns(self)->List:
+        return [
+            url(r"/file/read", FileReadHandler),
+            url(r"/file/write", FileWriteHandler),
+            url(r"/file/download", FileDownloadHandler),
+            url(r"/file/delete", FileDeleteeHandler) 
+            ]
+    
+    
+    
+    '''
+        Append allowed paths for download
+    '''
+    def append_allowed_downlod_paths(self, paths:List):
+        if isinstance(paths, list):
+            for path in paths:
+                if path not in self.__downloadable_paths:
+                    self.__downloadable_paths.append(path)
+        pass
+    
+    
+    
+    
+    '''
+    Returns list of allowed download paths. Paths can be directory or file
+    '''
+    
+    @property
+    def allowed_downlod_paths(self):
+        return self.__downloadable_paths
+    
             
     
     
     '''
         Append allowed read extensions
     '''
-    def append_allowed_read_extensions(self, extensions):
+    def append_allowed_read_extensions(self, extensions:List):
         if isinstance(extensions, list):
             for extension in extensions:
-                if extension not in extensions:
+                if extension not in self.__allowed_read_extensions:
                     self.__allowed_read_extensions.append(extension)
         pass
     
@@ -146,7 +203,7 @@ class FileManager(IModule):
     def append_allowed_write_extensions(self, extensions):
         if isinstance(extensions, list):
             for extension in extensions:
-                if extension not in extensions:
+                if extension not in self.__allowed_write_extensions:
                     self.__allowed_write_extensions.append(extension)
         pass
     
@@ -325,6 +382,26 @@ class FileManager(IModule):
     
     
     
+    def is_path_downloadable(self, path):
+        
+        for downloadable_path in self.__downloadable_paths:
+            
+            if os.path.isfile(downloadable_path):
+                if path == downloadable_path:
+                    return True
+                
+            elif os.path.isdir(downloadable_path):
+                if path.startswith(os.path.abspath(downloadable_path) + os.sep):
+                    return True
+                
+        
+        return False
+    
+    
+    
+    
+    
+    
     '''
         Handles file upload. Can write only within base directory defined
     '''
@@ -365,9 +442,13 @@ class FileManager(IModule):
     '''
         Handles file download. Can write only within base directory defined
     '''
-    async def make_downloadable_static(self, configuration, static_path, file_path):
-        if(not self.is_path_included(file_path)):
+    async def make_downloadable_static(self, static_path, file_path):
+        if not self.is_path_included(file_path):
             raise FileSystemOperationError("Requested path is not within allowed path")
+        
+        if not self.is_path_downloadable(file_path):
+            raise FileSystemOperationError("Requested path is not permitted for download")
+        
         
         static_path = Path(str(static_path))
         if static_path.exists():
@@ -392,6 +473,9 @@ class FileManager(IModule):
         
         if(not self.is_path_included(file_path)):
             raise FileSystemOperationError("Requested path is not within allowed path")
+        
+        if not self.is_path_downloadable(file_path):
+            raise FileSystemOperationError("Requested path is not permitted for download")
         
         file = Path(str(file_path))
         if file.exists():    
@@ -912,3 +996,198 @@ class FileManager(IModule):
                     )
             
         return updater_script_executable
+
+    ''' ------------------------------------------------------------'''
+    
+    '''
+File ops handler - to be used for file read write
+'''
+class FileReadHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+    
+    
+    
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')   
+
+    
+    # read file
+    async def post(self):
+        
+        filepath = self.get_argument("path", None, True)
+        self.logger.info("Read file request for file %s", filepath)
+        
+        if(filepath != None):   
+            try:
+                content = await self.__getFile(filepath)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
+            
+            
+        self.finish()
+    
+    
+    
+    async def __getFile(self, path):
+        dispatcher = self.application.action_dispatcher
+        content = await dispatcher.handle_request_direct(self, INTENT_READ_FILE_NAME, {"source":path})
+        encoded = base64.b64encode(bytes(content, 'utf-8'))  
+        encoded_str = encoded.decode('utf-8')
+        return encoded_str
+    
+    
+    
+    
+class FileWriteHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+    
+    
+    
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')   
+
+    
+    
+    # write file
+    async def post(self):
+        
+        filepath = self.get_argument("path", None, True)
+        content = self.get_argument("content", None, True)
+        self.logger.debug("Read file request for file %s", filepath)
+        
+        # Try catch and then send back response as json formatted message
+        if(filepath != None):
+            try:   
+                content = await self.__putFile(filepath, content)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
+        
+        
+        self.finish()
+
+
+
+    async def __putFile(self, path, encoded):
+        dispatcher = self.application.action_dispatcher
+        decoded = responsebuilder.base64ToString(encoded)
+        content = await dispatcher.handle_request_direct(self, INTENT_WRITE_FILE_NAME, {"destination":path, "content": decoded})
+        pass
+
+
+
+
+class FileDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    CHUNK_SIZE = 256 * 1024
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+            
+
+    async def post(self, slug=None):
+        
+        modules = self.application.modules
+        
+        if modules.hasModule("file_manager"):
+            filemanager = modules.getModule("file_manager")
+            
+            if slug == "static":
+                try:
+                    path = self.get_argument("path", None, True)
+                    download_path = await self.__makeFileDownloadable(path)
+                    self.write(json.dumps(formatSuccessResponse(download_path)))
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:
+                    self.finish()
+            elif slug == "chunked"  or slug == None:
+                try:
+                    path = self.get_argument("path", None, True)
+                    file_name = filemanager.path_leaf(path)
+                    self.set_header('Content-Type', 'application/octet-stream')
+                    self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
+                    await self.flush()
+                    await self.__makeChunkedDownload(path)
+                except Exception as e:
+                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
+                finally:  
+                    self.finish()
+                    pass
+            else:
+                self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
+            pass
+    
+    
+    async def __makeFileDownloadable(self,file_path):
+        modules = self.application.modules
+        filemanager = modules.getModule("file_manager")
+        static_path = settings["static_path"]
+        download_path = await filemanager.make_downloadable_static(static_path, file_path)
+        return download_path
+    
+    
+    async def __makeChunkedDownload(self, path):
+        modules = self.application.modules
+        filemanager = modules.getModule("file_manager")
+        await filemanager.download_file_async(path, FileDownloadHandler.CHUNK_SIZE, self.handle_data)
+        pass
+    
+    
+    async def handle_data(self, chunk):
+        self.logger.debug("Writing chunk data")
+        self.write(chunk)
+        await self.flush()
+        pass
+    
+
+
+class FileDeleteeHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    def initialize(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        pass
+
+    
+    # write file
+    async def delete(self):
+        
+        filepath = self.get_argument("path", None, True)
+        self.logger.debug("Read file request for file %s", filepath)
+        
+        # Try catch and then send back response as json formatted message
+        if(filepath != None):
+            try:   
+                content = await self.__delete(filepath)
+                self.write(json.dumps(formatSuccessResponse(content)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+        else:
+            self.write(json.dumps(formatErrorResponse("Invalid parameters", 400)))
+            pass
+            
+        
+        self.finish()
+
+
+
+
+    async def __delete(self, path):
+        dispatcher = self.application.action_dispatcher
+        content = await dispatcher.handle_request_direct(self, INTENT_DELETE_FILE_NAME, {"source":path})
+        pass
+
