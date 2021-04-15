@@ -1,0 +1,21 @@
+{
+	"id": "reaction-rule-log-backup",
+	"description": "Rule for log file backup on filesystem",
+	"listen-to": "{time}",
+	"enabled": false,
+	"trigger":{
+		"on-time-object": {
+			"recurring": false,
+			"using-expression": "0 6 * * *"
+		},
+		"evaluator-func": null
+	},
+	"response":{
+		"nonce" : false,
+		"intent": "logmon_log_backup",
+		"parameters": {
+			"source": "/var/log/nginx/error.log",
+			"destination": "/home/usr/nginx-error-{datetime}.log"
+		}
+	}	
+}

@@ -6,7 +6,7 @@
 	"trigger": {
 		"on-time-object": {
 			"recurring": false,
-			"expression": "2020-10-15 16:23:00"
+			"using-expression": "0 6 * * mon,wed,fri"
 		},
 		"evaluator-func": null
 	},

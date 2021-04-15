@@ -23,18 +23,25 @@ from oneadmin.core.constants import TOPIC_LOGMONITORING, LOG_MANAGER_MODULE, FIL
 from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
 from oneadmin.abstracts import LoggingHandler
 from oneadmin.core.constants import LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
+from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
+from oneadmin.core.intent import INTENT_PREFIX
 
-import logging
+
 import tornado
+import logging
 import collections
 import json
+
+
+from datetime import datetime
+from abstracts import IntentProvider
+from core import grahil_types
 
 from tornado.process import Subprocess
 from tornado.concurrent import asyncio
 from sys import platform
 from pathlib import Path
-from typing import Dict, Text
-from typing import List, Text
+from typing import Dict, List, Text
 from tornado.web import url
 
 
@@ -307,6 +314,32 @@ class LogMonitor(IModule, ILogMonitor):
         pass
     
     
+    
+        
+    '''
+        Returns a list of supported actions
+    '''
+    def supported_actions(self) -> List[object]:
+        return [ActionLogBackUp()]
+
+
+    '''
+        Returns a list supported of action names
+    '''
+    def supported_action_names(self) -> List[Text]:
+        return [ACTION_LOG_BACKUP_NAME]
+    
+    
+    
+    '''
+        Returns a list supported of intents
+    '''
+    def supported_intents(self) -> List[Text]:
+        return [INTENT_LOG_BACKUP_NAME]
+    
+    
+    
+    
 
 class LogDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
     
@@ -375,4 +408,50 @@ class LogDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
         self.write(chunk)
         await self.flush()
         pass
+
+
+
+
+
+# custom intents
+INTENT_LOG_BACKUP_NAME = INTENT_PREFIX + "logmon_log_backup"
+
+
+# custom actions
+ACTION_LOG_BACKUP_NAME = ACTION_PREFIX + "logmon_log_backup"
+
+
+'''
+Module action demo
+'''
+class ActionLogBackUp(Action):
     
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_LOG_BACKUP_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
+        __filemanager = None
+        
+        if modules.hasModule(FILE_MANAGER_MODULE):
+            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
+            src = params["source"]
+            dest = params["destination"]
+            
+            now = datetime.now().strftime("%m_%d_%Y__%H_%M_%S")
+            dest = dest.replace("{datetime}", now) # token replacement
+            
+            result = await __filemanager.copyFile(src, dest)
+            return ActionResponse(data = result, events=[])
+        else:
+            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
+        pass
