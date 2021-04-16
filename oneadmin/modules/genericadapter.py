@@ -91,6 +91,12 @@ class GenericDelegate(TargetProcess):
         self.__current_milli_time = lambda: int(round(time() * 1000))
         self.__tmp_dir = tempfile.TemporaryDirectory()
         
+        self.__MIN_OP_DELAY = 5000
+        
+        self.__last_start = self.__current_milli_time
+        self.__last_stop = self.__current_milli_time
+        self.__last_restart = self.__current_milli_time
+        
         self.__script_dir = settings["scripts_folder"]
         pass
     
@@ -165,6 +171,12 @@ class GenericDelegate(TargetProcess):
     
     async def start_proc(self):   
         
+        
+        if self.__current_milli_time - self.__last_start < self.__MIN_OP_DELAY:
+            raise TargetServiceError("This operation was executed very recently. Please wait some time and try again.")
+            
+        
+        
         script_path = os.path.join(self.__script_dir, "generic-start.sh")
         
         bashCommand = "bash " + script_path + " " + self.getProcName()
@@ -182,12 +194,16 @@ class GenericDelegate(TargetProcess):
         if len(errors) > 0:
             evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt)
-        pass
+        else:
+            self.__last_start = self.__current_milli_time
 
         
         
     
-    async def stop_proc(self):      
+    async def stop_proc(self):    
+        
+        if self.__current_milli_time - self.__last_stop < self.__MIN_OP_DELAY:
+            raise TargetServiceError("This operation was executed very recently. Please wait some time and try again.")  
         
         script_path = os.path.join(self.__script_dir, "generic-stop.sh")
         
@@ -206,12 +222,17 @@ class GenericDelegate(TargetProcess):
         if len(errors) > 0:
             evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt)
-        pass
+        else:
+            self.__last_stop = self.__current_milli_time
     
     
     
     
     async def restart_proc(self):
+        
+        if self.__current_milli_time - self.__last_restart < self.__MIN_OP_DELAY:
+            raise TargetServiceError("This operation was executed very recently. Please wait some time and try again.")
+        
         script_path = os.path.join(self.__script_dir, "generic-restart.sh")
         
         bashCommand = "bash " + script_path + " " + self.getProcName()
@@ -221,6 +242,9 @@ class GenericDelegate(TargetProcess):
         retcode = proc.returncode
         state = output.decode('UTF-8').strip()
         #Check and dispatch any necessary events
+        
+        self.__last_restart = self.__current_milli_time
+        
         pass
     
     
