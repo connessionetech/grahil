@@ -249,6 +249,25 @@ class GenericDelegate(TargetProcess):
     
     
     
+    async def is_proc_running(self):
+        
+        script_path = os.path.join(self.__script_dir, "generic-status.sh")
+        
+        bashCommand = "bash " + script_path + " " + self.getProcName()
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        
+        if "true" in state:
+            return True
+        else:
+            return False
+        
+    
+    
+    
     '''
         Run diagnostics on target
     '''
