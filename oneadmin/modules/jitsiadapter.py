@@ -374,21 +374,7 @@ class JitsiDelegate(TargetProcess):
         await proc.wait_for_exit()
         output = proc.stdout.read()
         retcode = proc.returncode
-        state = output.decode('UTF-8').strip()
-        
-        errors = ""
-        if "prosody is already inactive" in state:
-            errors = errors + "prosody is already inactive" + "\n"
-        if "jicofo is already inactive" in state:
-            errors = errors + "jicofo is already inactive" + "\n"
-        if "jitsi-videobridge2 is already inactive" in state:
-            errors = errors + "jitsi-videobridge2 is already inactive" + "\n"
-        if "nginx is already inactive" in state:
-            errors = errors + "nginx is already inactive" + "\n"
-        
-        if len(errors) > 0:
-            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_NOTICE)
-            self.dispatchevent(evt) 
+        state = output.decode('UTF-8').strip() 
     
     
     

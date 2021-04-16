@@ -63,7 +63,7 @@ class GenericDelegate(TargetProcess):
         '''
         Constructor
         '''
-        super().__init__("red5")
+        super().__init__(conf["target_alias"], conf["target_process"])
         
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__conf = conf
@@ -163,8 +163,25 @@ class GenericDelegate(TargetProcess):
 
     
     
-    async def start_proc(self):        
+    async def start_proc(self):   
         
+        script_path = os.path.join(self.__script_dir, "generic-start.sh")
+        
+        bashCommand = "bash " + script_path + " " + self.getProcName()
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
+        
+        errors = ""
+        if "is already active" in state:
+            errors = errors + "Process is already active" + "\n"
+                    
+        if len(errors) > 0:
+            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            self.dispatchevent(evt)
         pass
 
         
@@ -172,12 +189,38 @@ class GenericDelegate(TargetProcess):
     
     async def stop_proc(self):      
         
+        script_path = os.path.join(self.__script_dir, "generic-stop.sh")
+        
+        bashCommand = "bash " + script_path + " " + self.getProcName()
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
+        
+        errors = ""
+        if "is already inactive" in state:
+            errors = errors + "Process is already inactive" + "\n"
+                    
+        if len(errors) > 0:
+            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            self.dispatchevent(evt)
         pass
     
     
     
     
     async def restart_proc(self):
+        script_path = os.path.join(self.__script_dir, "generic-restart.sh")
+        
+        bashCommand = "bash " + script_path + " " + self.getProcName()
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        retcode = proc.returncode
+        state = output.decode('UTF-8').strip()
+        #Check and dispatch any necessary events
         pass
     
     

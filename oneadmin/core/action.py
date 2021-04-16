@@ -23,8 +23,7 @@ from oneadmin.core.constants import SMTP_MAILER_MODULE, TOPIC_LOG_ACTIONS, FILE_
 from oneadmin.abstracts import IntentProvider
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
-from oneadmin.abstracts import IMailer, IScriptRunner, ILogMonitor
-
+from oneadmin.abstracts import IMailer, IScriptRunner, ILogMonitor, TargetProcess
 from oneadmin.version import __version__
 
 import urllib
@@ -33,7 +32,8 @@ import json
 from tornado.concurrent import asyncio
 from typing import Text, Dict, List,NamedTuple
 from tornado.httpclient import AsyncHTTPClient
-from tornado.web import HTTPError
+from tornado.web import HTTPError, MissingArgumentError
+
 
 
 
@@ -843,7 +843,7 @@ class ActionStartLogRecording(Action):
                 topic_path = log_info["topic_path"]
                 topic_path = topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in topic_path else topic_path
                 filepath = log_info["log_file_path"]
-                rule = buildLogWriterRule(rule_id, topic_path, filepath)
+                rule = buildLogWriterRule(rule_id, topic_path, filepath) #Dynamic rule generation
                 
                 # tell logmon to enable chunk generation
                 __logmon.enable_chunk_generation(log_name)
@@ -957,12 +957,23 @@ class ActionStartTarget(Action):
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
-        if modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
-            await __delegate.start_proc()
-            return ActionResponse(data = None, events=[])
+        
+        if "module" not in  params:
+            raise MissingArgumentError("Module name not provided")
+        
+        mod = params["module"]
+        
+        if modules.hasModule(mod):
+            module_instance = modules.getModule(mod)
+            
+            if module_instance != None and isinstance(module_instance, TargetProcess):
+                await module_instance.start_proc()
+                return ActionResponse(data = None, events=[])
+            else:
+                raise TypeError("`"+mod+"` module is not a target process handler")
+            
         else:
-            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+            raise ModuleNotFoundError("`"+mod+"` module does not exist")
         
     
 
@@ -985,12 +996,22 @@ class ActionStopTarget(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        if modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
-            await __delegate.stop_proc()
-            return ActionResponse(data = None, events=[])
+        if "module" not in  params:
+            raise MissingArgumentError("Module name not provided")
+        
+        mod = params["module"]
+        
+        if modules.hasModule(mod):
+            module_instance = modules.getModule(mod)
+            
+            if module_instance != None and isinstance(module_instance, TargetProcess):
+                await module_instance.stop_proc()
+                return ActionResponse(data = None, events=[])
+            else:
+                raise TypeError("`"+mod+"` module is not a target process handler")
+            
         else:
-            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+            raise ModuleNotFoundError("`"+mod+"` module does not exist")
 
 
 
@@ -1011,13 +1032,23 @@ class ActionRestartTarget(Action):
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         
-        __delegate = None
-        if modules.hasModule(TARGET_DELEGATE_MODULE):
-            __delegate = modules.getModule(TARGET_DELEGATE_MODULE)
-            await __delegate.restart_proc()
-            return ActionResponse(data = None, events=[])
+        if "module" not in  params:
+            raise MissingArgumentError("Module name not provided")
+        
+        mod = params["module"]
+        
+        if modules.hasModule(mod):
+            module_instance = modules.getModule(mod)
+            
+            if module_instance != None and isinstance(module_instance, TargetProcess):
+                await module_instance.restart_proc()
+                return ActionResponse(data = None, events=[])
+            else:
+                raise TypeError("`"+mod+"` module is not a target process handler")
+            
         else:
-            raise ModuleNotFoundError("`"+TARGET_DELEGATE_MODULE+"` module does not exist")
+            raise ModuleNotFoundError("`"+mod+"` module does not exist")
+        
         
     
     

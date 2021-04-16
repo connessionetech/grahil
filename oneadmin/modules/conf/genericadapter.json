@@ -3,7 +3,8 @@
 				"klass": "GenericDelegate",
 				"conf": {
 					"target_alias": "generic",
-					"log_root": "/usr/local/<program_folder>",
+					"target_process": "generic",
+					"log_root": "/var/log",
 					"log_targets": [],
 					"allowed_read_extensions": [".xml", ".properties", ".txt", ".ini"],
 					"allowed_write_extensions": [".xml", ".properties", ".txt", ".ini"]
