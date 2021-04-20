@@ -88,6 +88,8 @@ REACTION_ENGINE_MODULE = "reaction_engine"
 
 ACTION_DISPATCHER_MODULE = "action_dispatcher"
 
+SECURITY_PROVIDER_MODULE = "security_provider"
+
 
 
 ''' client channel names'''
