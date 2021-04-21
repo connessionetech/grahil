@@ -5,17 +5,21 @@ Created on 20-Apr-2021
 '''
 from oneadmin.abstracts import IModule
 from oneadmin.exceptions import AccessPermissionsError
+from oneadmin.abstracts import LoggingHandler
+from oneadmin.core.constants import SECURITY_PROVIDER_MODULE
+from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
+from oneadmin.application import TornadoApplication
 
 import logging
-from typing import Text
+from typing import Text, List
 import datetime
 import jwt
 import json
 import asyncio
 import tornado
+from tornado.web import url
 
 
-logger = logging.getLogger(__name__)
 
 
 class SecurityProvider(IModule):
@@ -37,13 +41,16 @@ class SecurityProvider(IModule):
         self.__config = config
         
         
+        self.jwt_info = self.__config["jwt"]
         self.users = self.__config["users"]
         self.userlevels = self.__config["userlevels"]
         self.permissions = self.__config["permissions"]
+        self.access_keys = self.__config["access_keys"]
         
-        self.__jwt_algorithm = self.__config["jwt_algorithm"]
-        self.__jwt_secret = self.__config["jwt_secret"]
-        self.__jwt_token_expiry_hours = self.__config["jwt_token_expiry_hours"]
+        self.__jwt_algorithm = self.jwt_info["algorithm"]
+        self.__jwt_secret = self.jwt_info["secret"]
+        self.__jwt_token_expiry_hours = self.jwt_info["token_expiry_hours"]
+        
         self.__token_keep = {}
     
     
@@ -52,6 +59,10 @@ class SecurityProvider(IModule):
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__token_validator)
         pass
+    
+    
+    def get_url_patterns(self)->List:
+        return [ url(r"/authorize/", AuthorizationHandler) ]
 
 
 
@@ -62,12 +73,22 @@ class SecurityProvider(IModule):
     
     
     '''Shallow authentication'''
-    def authenticate(self, username, mhash):
+    def authenticate_user(self, username, mhash):
         self.logger.info("Authenticating %s for hash %s", username, mhash)
         for user in self.users:
             if(user['username'] == username and user['hash'].lower() == mhash.lower()):
                 return True
         return False
+    
+    
+    
+    
+    '''Shallow authentication 2'''
+    def authenticate_api_key(self, api_key:Text, timestamp:int, signature:Text):
+        self.logger.info("Authenticating api key %s for signature %s", api_key, signature)
+        return False
+    
+    
     
     
     
@@ -229,3 +250,51 @@ class SecurityProvider(IModule):
         return None
         pass
         
+    
+    
+    
+    '''
+Authentication  handler - to be used to issue JWT token
+'''
+class AuthorizationHandler(tornado.web.RequestHandler, LoggingHandler):
+    
+    def initialize(self):
+        pass
+
+    def set_default_headers(self):
+        self.set_header("Content-Type", 'application/json')            
+            
+            
+    def post(self):
+        application:TornadoApplication = self.application.application
+        
+        if not application.modules.hasModule(SECURITY_PROVIDER_MODULE):
+            raise ModuleNotFoundError("Security module not found")
+        
+        accesscontroller = application.modules.getModule(SECURITY_PROVIDER_MODULE)
+            
+        user = self.get_argument("username", None)
+        password_hash = self.get_argument("password", None)
+    
+        self.logger.info("Authenticating username %s for password hash %s", user, password_hash)
+        
+        if(user != None and hash != None):
+            if(accesscontroller.authenticate_user(user, password_hash)):
+                self.logger.info("success")                
+                data = accesscontroller.issueTokenForAuthenticatedUser(self.request, user)                
+                self.write(json.dumps(formatSuccessResponse(data)))
+            else:
+                error = "Could not authenticate"
+                code = 403
+                self.logger.info(error)
+                self.set_status(403)
+                self.write(json.dumps(formatErrorResponse(error, code)))
+        else:
+            error = "Invalid parameters"
+            self.logger.info(error)
+            self.set_status(500)
+            self.write(json.dumps(formatErrorResponse(error, 500)))
+            pass
+    
+        
+        self.finish()

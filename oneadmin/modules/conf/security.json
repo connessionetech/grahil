@@ -1,10 +1,13 @@
 {
 	"enabled": true,
 	"klass": "SecurityProvider",
+	"order": -8,
 	"conf": {
-		"jwt_algorithm": "HS256",
-		"jwt_secret": "gs5f4hd6dg4h",
-		"jwt_token_expiry_hours": 6,
+		"jwt":{
+			"algorithm": "HS256",
+			"secret": "gs5f4hd6dg4h",
+			"token_expiry_hours": 6
+		},
 		"userlevels": [{
 				"role": "superadmin",
 				"level": 0
@@ -58,10 +61,18 @@
 			}
 		],
 		"users": [{
+			"cid": 1,
 			"username": "administrator",
 			"password": "xyz123",
 			"hash": "f0a72890897acefdb2c6c8c06134339a73cc6205833ca38dba6f9fdc94b60596",
 			"role": "superadmin"
-		}]
+			}
+		],
+		"access_keys": [{
+			"cid": 1,
+			"api_key": "9c6f3e71-895c-4740-8b0d-760750ab2f7f",
+			"api_secret": "TytotXqUq1"
+			}
+		]
 	}
 }

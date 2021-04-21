@@ -6,11 +6,12 @@ Created on 21-Apr-2021
 
 
 from oneadmin.exceptions import AccessPermissionsError
+from oneadmin.application import TornadoApplication
+from oneadmin.core.constants import SECURITY_PROVIDER_MODULE
 
 import tornado
 import logging
-from application import TornadoApplication
-from application.core.constants import SECURITY_PROVIDER_MODULE
+
 
 
 logger = logging.getLogger(__name__)

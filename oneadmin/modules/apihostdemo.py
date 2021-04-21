@@ -8,17 +8,18 @@ Created on 14-Mar-2021
 from oneadmin.abstracts import IModule
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
+from oneadmin.abstracts import IntentProvider, LoggingHandler
+
 from tornado import ioloop
 from tornado.web import url
 
 import tornado
 import logging
-from typing import Text, List
 import json
-from abstracts import IntentProvider
+
+from typing import Text, List
 from core import grahil_types
 from core.intent import INTENT_PREFIX
-
 
 
 
@@ -115,11 +116,10 @@ class ActionModuleAction(Action):
 
 
 
-
 '''
 Sample  handler
 '''
-class SampleHandler(tornado.web.RequestHandler):
+class SampleHandler(tornado.web.RequestHandler, LoggingHandler):
     
     def initialize(self):
         self.logger = logging.getLogger(self.__class__.__name__)    

@@ -1,6 +1,6 @@
 {
 				"enabled": true,
-				"order": -9,
+				"order": -7,
 				"klass": "RPCGateway",
 				"conf" : {
 				}

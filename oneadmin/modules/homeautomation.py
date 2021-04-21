@@ -10,7 +10,7 @@ from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResp
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.responsebuilder import formatErrorResponse
 from oneadmin.core.event import ArbitraryDataEvent
-from oneadmin.abstracts import IntentProvider
+from oneadmin.abstracts import IntentProvider, LoggingHandler
 from oneadmin.core import grahil_types
 from oneadmin.core.intent import INTENT_PREFIX
 
@@ -22,6 +22,7 @@ from tornado import ioloop
 from tornado.web import url
 from typing import Text, List
 from datetime import datetime
+
 
 
 
@@ -127,11 +128,10 @@ class ActionSmartHomeNotify(Action):
 
 
 
-
 '''
 Door bell callback handler
 '''
-class DoorBellHandler(tornado.web.RequestHandler):
+class DoorBellHandler(tornado.web.RequestHandler, LoggingHandler):
     
     def initialize(self):
         self.logger = logging.getLogger(self.__class__.__name__)    
@@ -164,7 +164,7 @@ class DoorBellHandler(tornado.web.RequestHandler):
 '''
 Plant waterpump callback handler
 '''
-class PlantWaterPumpHandler(tornado.web.RequestHandler):
+class PlantWaterPumpHandler(tornado.web.RequestHandler, LoggingHandler):
     
     def initialize(self):
         self.logger = logging.getLogger(self.__class__.__name__)    
