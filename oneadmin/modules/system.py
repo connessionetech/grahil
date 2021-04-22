@@ -21,6 +21,7 @@ from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
 from oneadmin.core.constants import TOPIC_SYSMONITORING
 from oneadmin.version import __version__
 
+
 import psutil
 import logging
 import tornado
@@ -37,6 +38,10 @@ from tornado.httpclient import AsyncHTTPClient
 from builtins import str
 from apscheduler.executors.pool import ThreadPoolExecutor
 import socket
+from tornado.process import Subprocess
+from settings import settings
+import signal
+import subprocess
 
 
 
@@ -60,6 +65,8 @@ class SystemMonitor(IModule, ISystemMonitor):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__config = config
         
+        self.__script_dir = settings["scripts_folder"]
+        
         ''' To refactor'''
         
         self.__current_milli_time = lambda: int(round(time() * 1000))
@@ -76,6 +83,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     def initialize(self) ->None:
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats2)
         pass
 
 
@@ -113,6 +121,22 @@ class SystemMonitor(IModule, ISystemMonitor):
             await asyncio.sleep(interval)
         return psutil.cpu_percent(*args, **kwargs)
     
+    
+    
+    
+    
+    async def get_system_stats_via_shell(self):
+        
+        script_path = os.path.join(self.__script_dir, "sys.sh")
+        
+        bashCommand = "bash " + script_path
+        proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+        await proc.wait_for_exit()
+        output = proc.stdout.read()
+        print(output)
+        #state = output.decode('UTF-8').strip()
+        #response = json.loads(state)
+        pass
     
     
     
@@ -226,10 +250,18 @@ class SystemMonitor(IModule, ISystemMonitor):
     
     
     
+    
+    async def __generateSystemStats2(self):
+        
+        pass
+    
+    
+    
+    
     '''
     Generates stats snapshot
     '''
-    async def __generateSystemStats(self):
+    async def __generateSystemStats(self, unit = "b"):
         
         err = None
         stats = {
@@ -242,7 +274,6 @@ class SystemMonitor(IModule, ISystemMonitor):
             try:
                 readable_date_time = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
                 time_now= self.__current_milli_time()
-                unit = "b"
                 
                 ''' System information '''
                 machine_type = platform.machine()
@@ -354,7 +385,9 @@ class SystemMonitor(IModule, ISystemMonitor):
                     "target":target_stats_data
                 }
                 
+                
                 self.__last_stats = stats
+                
             except Exception as e:
                 err = "An error occurred in generating system stats " + str(e)
                 self.logger.warning(err)
