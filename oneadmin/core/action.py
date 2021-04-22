@@ -24,6 +24,7 @@ from oneadmin.abstracts import IntentProvider
 from oneadmin.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
 from oneadmin.abstracts import IMailer, IScriptRunner, ILogMonitor, TargetProcess
+from oneadmin.security.decorators import authorize__action
 from oneadmin.version import __version__
 
 import urllib
