@@ -14,3 +14,4 @@ filetype==1.0.7
 croniter==1.0.6
 asyncio-mqtt==0.8.0
 aiosmtplib==1.1.4
+py-cpuinfo==8.0.0

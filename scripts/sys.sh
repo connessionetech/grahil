@@ -45,24 +45,34 @@ fi
 output=""
 
 output="$output{"
-output="$output\"system_info\": {" 
-output="$output\"os_name\": "\"$OS_NAME\"
-output="$output, \"os_type\": "\"$OS_TYPE\"
-output="$output, \"os_version\": "\"$OS_VERSION\"
-output="$output, \"timedate\": "\"$(date | awk '{print $1,$2,$3,$4,$6}')\"
+output="$output\"os\": {" 
+output="$output\"arch\": \"$(arch)\""
+output="$output, \"name\": "\"$OS_NAME\"
+output="$output, \"type\": \"Linux\""
+output="$output, \"flavor\": "\"$OS_TYPE\"
+
+boot_time=$(last reboot -F | head -1 | awk '{print $5,$6,$7,$8,$9}')
+output="$output, \"boot_time\": "\"$boot_time\"
+
+uptime=$(awk '{print $1}' /proc/uptime)
+output="$output, \"uptime\": "\"$uptime\"
+
+output="$output, \"version\": "\"$OS_VERSION\"
+output="$output, \"datetime\": "\"$(date | awk '{print $1,$2,$3,$4,$6}')\"
 output="$output, \"timezone\": "\"$(date | awk '{print $5}')\"
-output="$output, \"uptime\": "\"$(uptime | awk '{print $1,$2,$3}')\"
 output="$output, \"average_load\": "\"$(uptime | awk '{print $8,$9,$10}')\"}
 
-cpu_info=$(lscpu | awk '/^Architecture:/ {arch=$NF} /^Vendor ID:/ {vendor=$NF} /^Model name:/ {modelname=$3$4$5$6$7$8$9} /^CPU.s.:/ {cpus=$NF} /^Core.s. per socket:/ {cpus_per_socket=$NF} /^CPU MHz:/ {cpu_frequency=$NF} END {printf "{\"cpu_frequency\": %s, \"cpu_count\": %s, \"cpus_per_socket\": %s, \"arch\": \"%s\", \"vendor\": \"%s\", \"model\": \"%s\"}", cpu_frequency, cpus, cpus_per_socket, arch, vendor, modelname}')
-output="$output, \"cpu_info\": $cpu_info"
+cpu_info=$(lscpu | awk '/^Architecture:/ {arch=$NF} /^Vendor ID:/ {vendor=$NF} /^Model name:/ {modelname=$3$4$5$6$7$8$9} /^CPU.s.:/ {cpus=$NF} /^Core.s. per socket:/ {cpus_per_socket=$NF} /^CPU MHz:/ {cpu_frequency=$NF} END {printf "{\"frequency\": %s, \"count\": %s, \"vendor\": \"%s\", \"model\": \"%s\"", cpu_frequency, cpus, cpus_per_socket, arch, vendor, modelname}')
+cpu_percent=", \"percent\": \"0%\"}"
+cpu_info="$cpu_info$cpu_percent"
+output="$output, \"cpu\": $cpu_info"
 
-mem_info=$(free | awk 'NR==2{printf "{\"mem_total\":%s, \"mem_used\":%s,\"mem_free\":%s, \"mem_shared\":%s, \"mem_buff_cache\":%s, \"mem_available\":%s, ", $2,$3,$4,$5,$6,$7} NR==3{printf "\"swap_total\":%s, \"swap_used\":%s,\"swap_free\":%s}", $2,$3,$4}')
-output="$output, \"memory_info\": $mem_info"
+mem_info=$(free | awk 'NR==2{printf "{\"total\":%s, \"used\":%s,\"free\":%s, \"shared\":%s, \"buff_cache\":%s, \"available\":%s, \"percent\":%s, ", $2,$3,$4,$5,$6,$7,$3/$2 * 100.0} NR==3{printf "\"swap_total\":%s, \"swap_used\":%s,\"swap_free\":%s}", $2,$3,$4}')
+output="$output, \"memory\": $mem_info"
 
-disk_info=$(df  --output=source,fstype,size,used,avail,pcent,target -x tmpfs -x devtmpfs |sed '1d' | awk '{printf "{\"mountpoint\":\"%s\", \"fstype\":\"%s\", \"size\":%s,\"used\":%s, \"free\":%s, \"percent\":\"%s\"},", $7,$2,$3,$4,$5,$6}')
+disk_info=$(df  --output=source,fstype,size,used,avail,pcent,target -x tmpfs -x devtmpfs |sed '1d' | awk '{printf "{\"mountpoint\":\"%s\", \"fstype\":\"%s\", \"total\":%s,\"used\":%s, \"free\":%s, \"percent\":\"%s\"},", $7,$2,$3,$4,$5,$6}')
 disk_info=${disk_info::-1}
-output="$output, \"disk_info\": [$disk_info],"
+output="$output, \"disk\": [$disk_info],"
 
 net_info=""
 for inter in $(ls /sys/class/net/); do   
@@ -72,6 +82,6 @@ for inter in $(ls /sys/class/net/); do
 done
 
 net_info=${net_info::-1}
-output="$output\"network_info\": {$net_info}"
+output="$output\"network\": {$net_info}"
 output="$output}"
 echo $output

@@ -42,12 +42,13 @@ from tornado.process import Subprocess
 from settings import settings
 import signal
 import subprocess
+from cpuinfo.cpuinfo import get_cpu_info
+
 
 
 
 
 class SystemMonitor(IModule, ISystemMonitor):
-    
     
     NAME = "sysmon"
     
@@ -83,7 +84,6 @@ class SystemMonitor(IModule, ISystemMonitor):
     def initialize(self) ->None:
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
-        #tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats2)
         pass
 
 
@@ -92,24 +92,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     
     def getname(self) ->Text:
         return SystemMonitor.NAME
-
-
-
-    
-    
-    '''
-    async def __discoverHost(self):
-         
-        http_client = AsyncHTTPClient()
-        try:
-            response = await http_client.fetch("http://ip.jsontest.com/")
-            data = json.loads(response.body)
-            self.__external_ip = data["ip"]
-            self.logger.info("IP = %s", self.__external_ip)
-        except Exception as e:
-            err = "An error occurred in discovering public IP " + str(e)
-            self.logger.warning(err)
-    '''    
+  
 
 
     
@@ -133,71 +116,121 @@ class SystemMonitor(IModule, ISystemMonitor):
         proc = Subprocess(bashCommand.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
         await proc.wait_for_exit()
         output = proc.stdout.read()
-        print(output)
-        #state = output.decode('UTF-8').strip()
-        #response = json.loads(state)
-        pass
+        stats = output.decode('UTF-8').strip()
+        response = json.loads(stats)
+        return response
     
+    
+    
+    async def get_system_stats_via_extlib(self, unit = "b"):
+        
+        now = datetime.datetime.now()
+        local_now = now.astimezone()
+        local_tz = local_now.tzinfo
+        local_tzname = local_tz.tzname(local_now)
+        readable_date_time = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        time_now= self.__current_milli_time()
+        
+        ''' System information '''
+        machine_type = platform.machine()
+        machine_processor = platform.processor()
+        
+        os_type = platform.system()
+        os_name = platform.linux_distribution()[0]
+        os_version = platform.linux_distribution()[1]
+        os_release = platform.release();
+        boot_time = psutil.boot_time()
+        uptime = time() - psutil.boot_time()
+        
+        os_flavor = platform.release()
+        
+        avgload=psutil.getloadavg()
+        
+        
+        cpu_count = psutil.cpu_count()
+        cpu_frequency = psutil.cpu_freq().current
+        cpu_vendor = "NA"
+        cpu_model = "NA"
+        cpu_percent = await self.__cpu_percent() #await self.__cpu_percent(1)
+        
+        virtual_memory = psutil.virtual_memory()
+        total_virtual_mem = virtual_memory.total
+        used_virtual_mem = virtual_memory.used
+        free_virtual_mem = virtual_memory.free
+        percent_virtual_mem = virtual_memory.percent  
+        
+        swap_memory = psutil.swap_memory()
+        total_swap_mem = swap_memory.total 
+        used_swap_mem = swap_memory.used
+        free_swap_mem = swap_memory.free
+        
+        
+        return {
+            "os":{
+                "arch":machine_type,
+                "name": os_name,
+                "type": os_type,
+                "flavor": os_flavor,
+                "version": os_version,
+                "boot_time": boot_time,
+                "uptime": uptime,
+                "datetime":readable_date_time,
+                "timezone": local_tzname,
+                "average_load": avgload
+            },
+            "cpu": {
+                "frequency": cpu_frequency,
+                "count": cpu_count,
+                "vendor": cpu_vendor,
+                "model": cpu_model,
+                "percent":cpu_percent
+            },
+            "memory":{
+                "total": total_virtual_mem,
+                "used": used_virtual_mem,
+                "free": free_virtual_mem,
+                "percent":percent_virtual_mem,
+                "swap_total": total_swap_mem,
+                "swap_used": used_swap_mem,
+                "swap_free": free_swap_mem
+            },
+            "disk": self.__getPartitionsInfo(),
+            "network": self.__get_nic_info(),
+            "timestamp": self.__current_milli_time()
+        }
     
     
     
     
     def get_cpu_stats(self, cached=False) ->Dict:
         
-        if cached == False:
-            return{
-                "cpu_count" : psutil.cpu_count(),
-                "cpu_percent" : psutil.cpu_percent(),
-                "timestamp" : self.__current_milli_time()
-                }
-        else:
-            cpu_info = self.__last_stats["system"]["stats"]["cpu_info"]
-            return{
-                "cpu_count" : cpu_info["cpu_count"],
-                "cpu_percent" : cpu_info["cpu_percent"],
-                "timestamp" : self.__last_stats["system"]["time"]
-                }
+        cpu_info = self.__last_stats["system"]["stats"]["cpu"]
+        return{
+            "count" : cpu_info["count"],
+            "percent" : cpu_info["percent"],
+            "timestamp" : self.__last_stats["system"]["timestamp"]
+        }
     
     
     
     
-    
-    
-    def get_memory_stats(self, unit = "b", cached=False) ->Dict:
+    def get_memory_stats(self, unit = "b") ->Dict:
         
-        if cached == False:
-            
-            virtual_memory = psutil.virtual_memory()
-            total_virtual_mem = virtual_memory.total
-            used_virtual_mem = virtual_memory.used
-            free_virtual_mem = virtual_memory.free
-            percent_virtual_mem = virtual_memory.percent 
-            
-            return{
-                "total_virtual_mem": self.__valueAsPerUnit(total_virtual_mem, unit),
-                "used_virtual_mem": self.__valueAsPerUnit(used_virtual_mem, unit),
-                "free_virtual_mem":self.__valueAsPerUnit(free_virtual_mem, unit),
-                "percent_virtual_mem":percent_virtual_mem,
-                "timestamp" : self.__current_milli_time()
-                }
-        else:
-            mem_info = self.__last_stats["system"]["stats"]["memory_info"]
-            return{
-                "total_virtual_mem": mem_info["total_virtual_mem"],
-                "used_virtual_mem": mem_info["used_virtual_mem"],
-                "free_virtual_mem":mem_info["free_virtual_mem"],
-                "percent_virtual_mem":mem_info["percent_virtual_mem"],
-                "timestamp" : self.__last_stats["system"]["time"]
-                }
+        mem_info = self.__last_stats["system"]["stats"]["memory"]
+        return{
+            "total": mem_info["total"],
+            "used": mem_info["used"],
+            "free":mem_info["free"],
+            "percent":mem_info["percent"],
+            "timestamp" : self.__last_stats["system"]["timestamp"]
+            }
         
         pass
     
     
     
     
-    
-        
-    
+
     '''
     Force GC
     '''
@@ -234,7 +267,7 @@ class SystemMonitor(IModule, ISystemMonitor):
     Last generated system stats
     '''
     def get_system_time(self) ->str:
-        return self.__last_stats['system_datetime'] if 'system_datetime' in self.__last_stats else datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+        return self.__last_stats["system"]["os"]["datetime"] if 'datetime' in self.__last_stats["system"]["os"] else datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
         pass
     
     
@@ -246,16 +279,7 @@ class SystemMonitor(IModule, ISystemMonitor):
         #os.system("shutdown /r /t 1") 
         os.popen("shutdown -r -t 05")
         pass
-    
-    
-    
-    
-    
-    async def __generateSystemStats2(self):
         
-        pass
-    
-    
     
     
     '''
@@ -272,58 +296,45 @@ class SystemMonitor(IModule, ISystemMonitor):
         while True:
             
             try:
-                readable_date_time = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
-                time_now= self.__current_milli_time()
+                data = None
+                
+                if "stats_via_shell" in self.__config and self.__config["stats_via_shell"] == True:
+                    data = await self.get_system_stats_via_shell()
+                else:
+                    data = await self.get_system_stats_via_extlib()
+                                    
+                
+                system_datetime = datetime.datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
                 
                 ''' System information '''
-                machine_type = platform.machine()
-                machine_processor = platform.processor()
-                
-                os_type = platform.system()
-                os_name = platform.linux_distribution()[0]
-                os_version = platform.linux_distribution()[1]
-                os_release = platform.release();
-                boot_time = psutil.boot_time()
-                uptime = time() - psutil.boot_time()
+                os_arch = data["os"]["arch"]
+                os_flavor = data["os"]["flavor"]
+                os_type = data["os"]["type"]
+                os_name = data["os"]["name"]
+                os_version = data["os"]["version"]
+                boot_time = data["os"]["boot_time"]
+                uptime = data["os"]["uptime"]
+                system_datetime = data["os"]["datetime"]
+                timezone = data["os"]["timezone"]
+                average_load = data["os"]["average_load"]
                         
-                cpu_count = psutil.cpu_count()
-                cpu_percent = await self.__cpu_percent() #await self.__cpu_percent(1)
+                cpu_count = data["cpu"]["count"]                
+                cpu_frequency = data["cpu"]["frequency"]
+                cpu_vendor = data["cpu"]["vendor"]
+                cpu_model = data["cpu"]["model"]
+                cpu_percent = data["cpu"]["percent"]
                 
-                virtual_memory = psutil.virtual_memory()
-                total_virtual_mem = virtual_memory.total
-                used_virtual_mem = virtual_memory.used
-                free_virtual_mem = virtual_memory.free
-                percent_virtual_mem = virtual_memory.percent      
+                total_mem = data["memory"]["total"]
+                used_mem = data["memory"]["used"]
+                free_mem = data["memory"]["free"]
+                percent_mem = data["memory"]["percent"]
                 
-                root_disk_usage = psutil.disk_usage('/')
-                total_disk_space = root_disk_usage.total
-                used_disk_space = root_disk_usage.used
-                free_disk_space = root_disk_usage.free
-                percent_disk_space = root_disk_usage.percent
+                total_swap_mem = data["memory"]["swap_total"]
+                used_swap_mem = data["memory"]["swap_used"]
+                free_swap_mem = data["memory"]["swap_free"]
                 
-                
-                part_disk_usage = self.__getPartitionsInfo(unit)
-                    
-                # connection info    
-                net_connection_info =  self.__get_connection_info(self.__config["net_connection_filter"])
-                total_net_connections = len(net_connection_info)
-                # part_net_connections = None if self.__config["net_connection_count_only"] == True else net_connection_info
-                
-                if self.__config["nic_stats_per_nic"] == True:
-                    net_io = psutil.net_io_counters(pernic=True)
-                else:
-                    net_io = psutil.net_io_counters()
-                 
-                nic_stats = []
-                if isinstance(net_io, dict):
-                                        
-                    for key,val in net_io.items():
-                        stats = self.__collect_nic_stats(key, val)
-                        nic_stats.append(stats)
-                    pass
-                else:
-                    stats = self.__collect_nic_stats("aggregated", net_io)
-                    nic_stats.append(stats)
+                disk_usage = data["disk"]
+                nic_stats = data["network"]
                     
                     
                 '' 'Building stats'''
@@ -334,44 +345,43 @@ class SystemMonitor(IModule, ISystemMonitor):
                 
                 system_stats = None
                 system_stats =  {
-                        "arch":machine_type,
-                        "processor":machine_processor,
-                        "os_name": os_name,
-                        "os_type": os_type,
-                        "os_version": os_version,
-                        "os_release": os_release,
-                        "boot_time": boot_time,
-                        "uptime": uptime,
-                        "system_datetime":readable_date_time,
-                        "time": time_now,
-                        "unit": unit,
+                        "os":{
+                            "arch":os_arch,
+                            "os_name": os_name,
+                            "os_type": os_type,
+                            "os_flavor": os_flavor,
+                            "os_version": os_version,
+                            "boot_time": boot_time,
+                            "uptime": uptime,
+                            "system_datetime":system_datetime,
+                            "timezone": timezone,
+                            "average_load": average_load
+                        },
                         "meta_info":{
                         },
-                        "stats":{
-                            "cpu_info":{
+                        "cpu":{
+                                "cpu_frequency": cpu_frequency,
                                 "cpu_count": cpu_count,
+                                "cpu_vendor": cpu_vendor,
+                                "cpu_model": cpu_model,
                                 "cpu_percent":cpu_percent
-                            },
-                            "memory_info":{
-                                "total_virtual_mem": self.__valueAsPerUnit(total_virtual_mem, unit),
-                                "used_virtual_mem": self.__valueAsPerUnit(used_virtual_mem, unit),
-                                "free_virtual_mem":self.__valueAsPerUnit(free_virtual_mem, unit),
-                                "percent_virtual_mem":percent_virtual_mem
-                            },
-                            "disk_info":{
-                                "mount_point": "/",
-                                "total_disk_space": self.__valueAsPerUnit(total_disk_space, unit),
-                                "used_disk_space":self.__valueAsPerUnit(used_disk_space, unit),
-                                "free_disk_space":self.__valueAsPerUnit(free_disk_space, unit),
-                                "percent_disk_space":percent_disk_space,
-                                "part_disk_info":part_disk_usage
-                            },
-                            "net_info":{
-                                "total_connections": total_net_connections,
-                                "nic_stats": nic_stats
-                            }
-                    }   
-                }        
+
+                        },
+                        "memory":{
+                                "total": total_mem,
+                                "used": used_mem,
+                                "free": free_mem,
+                                "percent":percent_mem,
+                                "swap":{
+                                    "total": total_swap_mem,
+                                    "used": used_swap_mem,
+                                    "free": free_swap_mem
+                                }
+                        },
+                        "disk":disk_usage,
+                        "network":nic_stats
+                    }        
+                
                 
                 ''' Data about the target process '''
                 
@@ -391,6 +401,7 @@ class SystemMonitor(IModule, ISystemMonitor):
             except Exception as e:
                 err = "An error occurred in generating system stats " + str(e)
                 self.logger.warning(err)
+                
             finally:
                 try:
                     if err:
@@ -425,40 +436,6 @@ class SystemMonitor(IModule, ISystemMonitor):
         elif unit == "tb":
             return (((value/1024)/1024)/1024)/1024
                     
-                    
-                    
-    
-    def __get_connection_info(self, connection_filter="all"):
-        
-        info = []
-        connections = psutil.net_connections(connection_filter)
-        
-        '''
-        for conn in connections:
-            
-            l_addr = conn.laddr.ip
-            l_port = conn.laddr.port
-            
-            r_addr = None
-            r_port = None
-            
-            if len(conn.raddr) > 0:
-                r_addr = conn.raddr.ip
-                r_port = conn.raddr.port
-            
-            status = conn.status
-            
-            info.append({
-                "l_addr":l_addr,
-                "l_port":l_port,
-                "r_addr":r_addr,
-                "r_port":r_port,
-                "status":status
-            })
-            
-            '''
-    
-        return connections
     
     
     
@@ -488,6 +465,32 @@ class SystemMonitor(IModule, ISystemMonitor):
             part_disk_usage.append(data)
             
         return part_disk_usage
+    
+    
+    
+    
+    
+    
+    def __get_nic_info(self, unit="b"):
+        
+        nic_stats = []
+        if self.__config["nic_stats_per_nic"] == True:
+            net_io = psutil.net_io_counters(pernic=True)
+        else:
+            net_io = psutil.net_io_counters()
+         
+        
+        if isinstance(net_io, dict):
+                                
+            for key,val in net_io.items():
+                stats = self.__collect_nic_stats(key, val)
+                nic_stats.append(stats)
+            pass
+        else:
+            stats = self.__collect_nic_stats("aggregated", net_io)
+            nic_stats.append(stats)
+        
+        return nic_stats
     
 
 
