@@ -1399,5 +1399,6 @@ class ActionTest(Action):
     '''
     async method that executes the actual logic
     '''
+    @authorize__action(requiredrole="admin")
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         return ActionResponse(data = None, events=[])     

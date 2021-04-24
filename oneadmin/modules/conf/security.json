@@ -65,7 +65,7 @@
 			"username": "administrator",
 			"password": "xyz123",
 			"hash": "f0a72890897acefdb2c6c8c06134339a73cc6205833ca38dba6f9fdc94b60596",
-			"role": "superadmin"
+			"role": "admin"
 			}
 		],
 		"access_keys": [{

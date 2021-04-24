@@ -62,7 +62,7 @@ class SecurityProvider(IModule):
     
     
     def get_url_patterns(self)->List:
-        return [ url(r"/authorize/", AuthorizationHandler) ]
+        return [ url(r"/authorize", AuthorizationHandler) ]
 
 
 
@@ -266,7 +266,7 @@ class AuthorizationHandler(tornado.web.RequestHandler, LoggingHandler):
             
             
     def post(self):
-        application:TornadoApplication = self.application.application
+        application:TornadoApplication = self.application
         
         if not application.modules.hasModule(SECURITY_PROVIDER_MODULE):
             raise ModuleNotFoundError("Security module not found")

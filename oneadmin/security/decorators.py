@@ -131,7 +131,8 @@ def authorize_method(requiredrole='observer'):
 def authorize__action(requiredrole='observer'):                            
     def decorator(fn):                                            
         def decorated(*args,**kwargs):
-            handler = args[0]
+            action = args[0]
+            handler = args[3]["handler"]
             application = handler.application
             
             if not application.modules.hasModule(SECURITY_PROVIDER_MODULE):
@@ -140,16 +141,21 @@ def authorize__action(requiredrole='observer'):
             accesscontroller = application.modules.getModule(SECURITY_PROVIDER_MODULE)
             
             if not isinstance(handler, tornado.websocket.WebSocketHandler) and not isinstance(handler, tornado.web.RequestHandler):
+                return
+                '''
                 handler = args[1]
                 if not isinstance(handler, tornado.websocket.WebSocketHandler) and not isinstance(handler, tornado.web.RequestHandler):
                     raise Exception("Could not identify request handler")
+                '''
                  
             token = None
         
             if isinstance(handler, tornado.websocket.WebSocketHandler):
                 token = handler.get_argument("token", None, True)
-            else:
+            elif(tornado.web.RequestHandler):
                 token = handler.request.headers.get("token", None)
+            else:
+                return
             
             error = None
             
