@@ -16,12 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IntentProvider
+from oneadmin.core.abstracts import IntentProvider
 from oneadmin.core.constants import TARGET_DELEGATE_MODULE
 from oneadmin.core.grahil_types import *
 from oneadmin.exceptions import TargetServiceError
 from oneadmin.responsebuilder import buildDataNotificationEvent  
-from oneadmin.abstracts import TargetProcess
+from oneadmin.core.abstracts import TargetProcess
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import Action, ACTION_PREFIX, ActionResponse
 

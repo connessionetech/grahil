@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-from oneadmin.abstracts import IMailer, IModule
+from oneadmin.core.abstracts import IMailer, IModule
 
 from builtins import str
 from email.message import EmailMessage

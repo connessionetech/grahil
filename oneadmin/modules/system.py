@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IModule, ISystemMonitor
+from oneadmin.core.abstracts import IModule, ISystemMonitor
 from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
 from oneadmin.core.constants import TOPIC_SYSMONITORING
 from oneadmin.version import __version__

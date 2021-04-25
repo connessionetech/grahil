@@ -16,12 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IEventDispatcher, IReactionEngine
+from oneadmin.core.abstracts import IEventDispatcher, IReactionEngine, IEventHandler,IModule, IntentProvider
 from oneadmin.core.event import EventType, EVENT_STATS_GENERATED, EVENT_ANY, EVENT_LOG_RECORDING_START, EVENT_LOG_RECORDING_STOP
 from oneadmin.core.constants import TOPIC_ANY
 from oneadmin.core.rules import ReactionRule, TimeTrigger, PayloadTrigger, RuleExecutionEvaluator, get_evaluator_by_name, RuleResponse, RuleState
 from oneadmin.exceptions import FileSystemOperationError, RulesError
-from oneadmin.abstracts import IEventHandler,IModule, IntentProvider
 
 
 import json

@@ -16,12 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IModule, ILogMonitor
+from oneadmin.core.abstracts import IModule, ILogMonitor, LoggingHandler, IntentProvider
 from oneadmin.core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
-from oneadmin.utilities import buildTopicPath
+from oneadmin.core.utilities import buildTopicPath
 from oneadmin.core.constants import TOPIC_LOGMONITORING, LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
 from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
-from oneadmin.abstracts import LoggingHandler
 from oneadmin.core.constants import LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.core.intent import INTENT_PREFIX
@@ -32,9 +31,7 @@ import logging
 import collections
 import json
 
-
 from datetime import datetime
-from abstracts import IntentProvider
 from core import grahil_types
 
 from tornado.process import Subprocess

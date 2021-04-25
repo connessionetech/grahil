@@ -6,7 +6,7 @@ Created on 05-Mar-2021
 
 
 from oneadmin.responsebuilder import formatSuccessRPCResponse, formatErrorRPCResponse
-from oneadmin.abstracts import IModule, IClientChannel, IntentProvider
+from oneadmin.core.abstracts import IModule, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import is_valid_event
 from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING

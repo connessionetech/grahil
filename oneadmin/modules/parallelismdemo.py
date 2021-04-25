@@ -3,7 +3,7 @@ Created on 05-Mar-2021
 
 @author: root
 '''
-from oneadmin.abstracts import IModule
+from oneadmin.core.abstracts import IModule
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 
 from concurrent.futures.thread import ThreadPoolExecutor

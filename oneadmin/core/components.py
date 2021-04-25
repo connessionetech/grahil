@@ -18,14 +18,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from oneadmin.core.constants import *
 from oneadmin.core.event import EventType
-from oneadmin.abstracts import IntentProvider
+from oneadmin.core.abstracts import IntentProvider, TargetProcess, IClientChannel, IEventHandler, IEventDispatcher, IModule, IntentProvider
 from oneadmin.exceptions import ActionError
 from oneadmin.core.intent import built_in_intents, INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX, ActionResponse, Action, builtin_action_names, action_from_name
 from oneadmin.core.grahil_types import Modules
 from oneadmin.core.event import EVENT_KEY
 from oneadmin.core.constants import built_in_client_types
-from oneadmin.abstracts import TargetProcess, IClientChannel, IEventHandler, IEventDispatcher
 
 from typing import Dict,Any
 from typing_extensions import TypedDict
@@ -41,6 +40,10 @@ from builtins import str
 import copy
 from tornado.ioloop import IOLoop
 from concurrent.futures.thread import ThreadPoolExecutor
+from tornado.websocket import websocket_connect
+
+
+
 
 
 class VirtualHandler(object):
@@ -420,3 +423,94 @@ class CommunicationHub(IEventHandler, IEventDispatcher):
         self.logger.info(event["name"] + " received")
         await self.__events.put(event)
         pass
+
+
+
+class WebSocketClient(IModule):
+    '''
+    classdocs
+    '''
+
+
+    def __init__(self, conf):
+        '''
+        Constructor
+        '''
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.__connection = None
+        self.__connected = False
+        self.__url = None
+        
+        
+    
+    
+    '''
+        creates connection to remote endpoint
+    '''
+    async def connect(self, url, reconnect = False):
+        if(self.__connected == False):
+            
+            try:
+                self.__connection = await websocket_connect(url, connect_timeout=6000,
+                      ping_interval=15000, ping_timeout=3000)
+            except Exception as e:
+                self.logger.error("connection error. could not connect to remote endpoint " + url)
+            else:
+                self.logger.info("connected to remote endpoint " + url)
+                self.__connected = True
+                
+                '''
+                if reconnect == True:
+                    tornado.ioloop.IOLoop.current().spawn_callback(self.__tail, name)
+                '''
+                
+                self.__read_message()
+                
+    
+    
+    
+    '''
+        Special method to enforce reconnection to remote endpoint
+    '''
+    async def __reconnect(self):
+        if self.__connected is None and self.__url is not None:
+            await self.connect(self.__url)
+        
+    
+    
+    
+    '''
+        Read message from open websocket channel
+    '''
+    async def __read_message(self):
+        while True:
+            msg = await self.__connection.read_message()
+            if msg is None:
+                self.logger.info("connection to remote endpoint " + self.__url +"closed");
+                self.__connection = None
+                self.__connected = False
+                break
+    
+    
+    
+    
+    '''
+        Write message in open websocket channel
+    '''
+    async def write_message(self, message, binary = False):
+        if(self.__connected == True):
+            self.__connection.write_message(message, binary);
+                
+    
+    
+    
+    '''
+        Closes connection
+    '''
+    async def closeConnection(self, code = None, reason = None):
+        if(self.__connected == True):
+            self.__connection.close(code, reason)
+            self.__connection = None
+            self.__connected = False
+        
+  

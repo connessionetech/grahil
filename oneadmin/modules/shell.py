@@ -16,10 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IScriptRunner, IModule
+from oneadmin.core.abstracts import IScriptRunner, IModule
 from oneadmin.core.event import EVENT_SCRIPT_EXECUTION_STOP,EVENT_SCRIPT_EXECUTION_START, EVENT_SCRIPT_EXECUTION_PROGRESS, ScriptExecutionEvent
 from oneadmin.core.constants import TOPIC_SCRIPTS
-from oneadmin.utilities import build_script_topic_path
+from oneadmin.core.utilities import build_script_topic_path
 from oneadmin.exceptions import RunnableScriptError
 
 import tornado

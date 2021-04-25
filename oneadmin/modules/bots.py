@@ -17,14 +17,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
-from oneadmin.abstracts import ServiceBot
-from oneadmin.abstracts import IEventHandler
-from oneadmin.utilities import is_notification_event, is_data_notification_event
-from oneadmin.abstracts import IntentProvider, IClientChannel
+from oneadmin.core.abstracts import ServiceBot, IEventHandler, ntentProvider, IClientChannel
+from oneadmin.core.utilities import is_notification_event, is_data_notification_event, isVideo, isImage
 from oneadmin.exceptions import RPCError
 from oneadmin.core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
 from oneadmin.exceptions import *
-from oneadmin.utilities import isVideo, isImage
 from oneadmin.version import __version__
 
 import logging

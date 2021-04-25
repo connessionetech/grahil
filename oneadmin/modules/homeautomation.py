@@ -5,12 +5,12 @@ Created on 14-Mar-2021
 '''
 
 
-from oneadmin.abstracts import IModule
+from oneadmin.core.abstracts import IModule
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.responsebuilder import formatErrorResponse
 from oneadmin.core.event import ArbitraryDataEvent
-from oneadmin.abstracts import IntentProvider, LoggingHandler
+from oneadmin.core.abstracts import IntentProvider, LoggingHandler
 from oneadmin.core import grahil_types
 from oneadmin.core.intent import INTENT_PREFIX
 

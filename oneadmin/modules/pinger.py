@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IModule
+from oneadmin.core.abstracts import IModule
 from oneadmin.core.event import EventType, PingEvent, is_valid_event
 from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING
 

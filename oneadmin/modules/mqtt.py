@@ -16,9 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.abstracts import IntentProvider, IClientChannel, IMQTTClient, IModule
+from oneadmin.core.abstracts import IntentProvider, IClientChannel, IMQTTClient, IModule
 from oneadmin.exceptions import RPCError
-from oneadmin.utilities import is_data_message, is_command_message, has_sender_id_message,has_uuid_message, requires_ack_message
+from oneadmin.core.utilities import is_data_message, is_command_message, has_sender_id_message,has_uuid_message, requires_ack_message
 from oneadmin.responsebuilder import formatSuccessMQTTResponse, formatErrorMQTTResponse,formatAckMQTTResponse
 from oneadmin.core.event import TelemetryDataEvent
 

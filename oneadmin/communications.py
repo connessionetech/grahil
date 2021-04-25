@@ -17,9 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.responsebuilder import formatSuccessRPCResponse, formatErrorRPCResponse
-from oneadmin.utilities import buildLogWriterRule
+from oneadmin.core.utilities import buildLogWriterRule
 from oneadmin.exceptions import RulesError
-from oneadmin.abstracts import IEventDispatcher, IClientChannel, IntentProvider
+from oneadmin.core.abstracts import IEventDispatcher, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import EventType, PingEvent, is_valid_event
 from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING

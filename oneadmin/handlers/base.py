@@ -22,7 +22,7 @@ from oneadmin.communications import PubSubHub
 from oneadmin import responsebuilder
 from oneadmin.exceptions import RPCError, AccessPermissionsError
 from oneadmin.core.constants import TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
-from oneadmin.abstracts import LoggingHandler
+from oneadmin.core.abstracts import LoggingHandler
 
 import base64
 import uuid

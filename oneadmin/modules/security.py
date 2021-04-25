@@ -3,9 +3,9 @@ Created on 20-Apr-2021
 
 @author: root
 '''
-from oneadmin.abstracts import IModule
+from oneadmin.core.abstracts import IModule
 from oneadmin.exceptions import AccessPermissionsError
-from oneadmin.abstracts import LoggingHandler
+from oneadmin.core.abstracts import LoggingHandler
 from oneadmin.core.constants import SECURITY_PROVIDER_MODULE
 from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
 from oneadmin.application import TornadoApplication

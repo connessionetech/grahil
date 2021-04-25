@@ -5,10 +5,9 @@ Created on 14-Mar-2021
 '''
 
 
-from oneadmin.abstracts import IModule
+from oneadmin.core.abstracts import IModule, IntentProvider, LoggingHandler
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
-from oneadmin.abstracts import IntentProvider, LoggingHandler
 
 from tornado import ioloop
 from tornado.web import url
