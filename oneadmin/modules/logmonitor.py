@@ -24,6 +24,7 @@ from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
 from oneadmin.core.constants import LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.core.intent import INTENT_PREFIX
+from oneadmin.core import grahil_types
 
 
 import tornado
@@ -32,7 +33,7 @@ import collections
 import json
 
 from datetime import datetime
-from core import grahil_types
+
 
 from tornado.process import Subprocess
 from tornado.concurrent import asyncio

@@ -42,7 +42,6 @@ from tornado.process import Subprocess
 from settings import settings
 import signal
 import subprocess
-from cpuinfo.cpuinfo import get_cpu_info
 
 
 
