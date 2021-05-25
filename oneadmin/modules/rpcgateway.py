@@ -65,6 +65,8 @@ class RPCGateway(IModule, IntentProvider, IClientChannel):
     
     async def handleRPC(self, wshandler, message):
         
+        requestid = None
+        
         if(not self.isRPC(message)):
             raise RPCError("Invalid message type. Not a RPC'")
         if(message["intent"] == None):
