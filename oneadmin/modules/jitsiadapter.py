@@ -44,9 +44,9 @@ from settings import settings
 import json
 
 import re
-from core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
+from oneadmin.core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
     NOTIFICATIONS_NOTICE
-from core.event import SimpleTextNotificationEvent
+from oneadmin.core.event import SimpleTextNotificationEvent
 
 
 

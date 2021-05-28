@@ -8,6 +8,8 @@ Created on 14-Mar-2021
 from oneadmin.core.abstracts import IModule, IntentProvider, LoggingHandler
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
+from oneadmin.core import grahil_types
+from oneadmin.core.intent import INTENT_PREFIX
 
 from tornado import ioloop
 from tornado.web import url
@@ -17,8 +19,7 @@ import logging
 import json
 
 from typing import Text, List
-from core import grahil_types
-from core.intent import INTENT_PREFIX
+
 
 
 

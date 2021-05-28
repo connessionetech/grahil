@@ -19,10 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from oneadmin import responsebuilder
 from oneadmin.responsebuilder import formatSuccessResponse,formatErrorResponse, formatProgressResponse, formatErrorRPCResponse
-from oneadmin.core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME, INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
+from oneadmin.core.intent import INTENT_PREFIX, INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
 from oneadmin.exceptions import *
 from oneadmin.core.constants import FILE_MANAGER_MODULE
 from oneadmin.core.abstracts import IEventDispatcher, IModule, LoggingHandler
+from oneadmin.core.action import Action, ACTION_PREFIX, ActionResponse
+from oneadmin.core.abstracts import IntentProvider
+from oneadmin.core.grahil_types import *
+from oneadmin.core import grahil_types
 
 import base64
 import tornado.web
@@ -49,11 +53,10 @@ from smalluuid.smalluuid import SmallUUID
 from datetime import datetime
 from tornado.ioloop import IOLoop
 from os import path
-from _collections import deque
+from collections import deque
 from builtins import str
 from typing import List, Text
 from tornado.web import url
-
 
 
 
@@ -145,6 +148,28 @@ class FileManager(IModule):
             url(r"/file/download", FileDownloadHandler),
             url(r"/file/delete", FileDeleteeHandler) 
             ]
+    
+
+    '''
+        Returns a list of supported actions
+    '''
+    def supported_actions(self) -> List[object]:
+        return [ActionReadFile(), ActionWriteFile()]
+
+
+    '''
+        Returns a list supported of action names
+    '''
+    def supported_action_names(self) -> List[Text]:
+        return [ACTION_READ_FILE_NAME, ACTION_WRITE_FILE_NAME]
+    
+    
+    
+    '''
+        Returns a list supported of intents
+    '''
+    def supported_intents(self) -> List[Text]:
+        return [INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME]
     
     
     
@@ -724,7 +749,7 @@ class FileManager(IModule):
             else:
                 raise FileSystemOperationError("Not a file " + filename)
         else:
-            raise FileNotFoundError("Invalid path " + path + " or file " + filename + " not found")
+            raise FileNotFoundError("Invalid path " + str(path) + " or file " + filename + " not found")
     
     
     
@@ -1189,3 +1214,66 @@ class FileDeleteeHandler(tornado.web.RequestHandler, LoggingHandler):
         content = await dispatcher.handle_request_direct(self, INTENT_DELETE_FILE_NAME, {"source":path})
         pass
 
+
+
+
+# custom intents
+INTENT_READ_FILE_NAME = INTENT_PREFIX + "read_file"
+INTENT_WRITE_FILE_NAME = INTENT_PREFIX + "write_file"
+
+
+# custom actions
+ACTION_READ_FILE_NAME = ACTION_PREFIX + "read_file"
+ACTION_WRITE_FILE_NAME = ACTION_PREFIX + "write_file"
+
+
+
+'''
+Reads a file
+'''
+class ActionReadFile(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_READ_FILE_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = modules.getModule(FILE_MANAGER_MODULE)
+        src = params["source"]
+        result = await __filemanager.readFile(src)
+        return ActionResponse(data = result, events=[])
+
+
+
+
+'''
+Writes a file
+'''
+class ActionWriteFile(Action):
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_WRITE_FILE_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        __filemanager = modules.getModule(FILE_MANAGER_MODULE)
+        path = params["destination"]
+        content = params["content"]
+        result = await __filemanager.writeFile(path, content)
+        return ActionResponse(data = result, events=[])

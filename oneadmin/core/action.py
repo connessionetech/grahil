@@ -79,8 +79,6 @@ ACTION_DELETE_FILE_NAME = ACTION_PREFIX + "delete_file"
 
 ACTION_COPY_FILE_NAME = ACTION_PREFIX + "copy_file"
 
-ACTION_READ_FILE_NAME = ACTION_PREFIX + "read_file"
-
 ACTION_MOVE_FILE_NAME = ACTION_PREFIX + "move_file"
 
 ACTION_DOWNLOAD_FILE_NAME = ACTION_PREFIX + "download_file"
@@ -515,33 +513,7 @@ class ActionCopyFile(Action):
         
 
 
-'''
-Copies a file
-'''
-class ActionReadFile(Action):
-    
-    
-    '''
-    Abstract method, must be defined in concrete implementation. action names must be unique
-    '''
-    def name(self) -> Text:
-        return ACTION_READ_FILE_NAME
-    
-    
-    
-    '''
-    async method that executes the actual logic
-    '''
-    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
-        __filemanager = None
-        
-        if modules.hasModule(FILE_MANAGER_MODULE):
-            __filemanager = modules.getModule(FILE_MANAGER_MODULE)
-            src = params["source"]
-            result = await __filemanager.readFile(src)
-            return ActionResponse(data = result, events=[])
-        else:
-            raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
+
 
 
 
@@ -961,7 +933,7 @@ class ActionListTargets(Action):
 
         allmodules = modules.getModules()    
         service_modules = []    
-        for mod in modules:
+        for mod in allmodules:
             if isinstance(mod, TargetProcess):
                 service_modules.append(mod.getAlias())
 

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.responsebuilder import formatSuccessResponse,formatErrorResponse ,formatProgressResponse, formatErrorRPCResponse
-from oneadmin.core.intent import INTENT_READ_FILE_NAME, INTENT_WRITE_FILE_NAME, INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
+from oneadmin.core.intent import INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORDING_NAME
 from oneadmin.communications import PubSubHub
 from oneadmin import responsebuilder
 from oneadmin.exceptions import RPCError, AccessPermissionsError
