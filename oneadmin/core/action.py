@@ -95,6 +95,8 @@ ACTION_STOP_TARGET_NAME = ACTION_PREFIX + "stop_target"
 
 ACTION_START_TARGET_NAME = ACTION_PREFIX + "start_target"
 
+ACTION_LIST_TARGETS_NAME = ACTION_PREFIX + "list_targets"
+
 ACTION_SUBSCRIBE_CHANNEL_NAME = ACTION_PREFIX + "subscribe_channel"
 
 ACTION_UNSUBSCRIBE_CHANNEL_NAME = ACTION_PREFIX + "unsubscribe_channel"
@@ -172,7 +174,7 @@ def builtin_actions() -> List[Action]:
             ActionGetCPUStats(), ActionStartLogRecording(), ActionStopLogRecording(),
             ActionCreateFolder(), ActionDeleteFolder(), ActionDeleteFile(), ActionCopyFile(), 
             ActionMoveFile(), ActionDownloadFile(), ActionBrowseFileSystem(), ActionFulfillTargetRequest(), 
-            ActionStartTarget(), ActionStopTarget(), ActionRestartTarget(), 
+            ActionStartTarget(), ActionListTargets(), ActionStopTarget(), ActionRestartTarget(), 
             ActionSubcribeChannel(), ActionUnSubcribeChannel(), ActionCreateChannel(), 
             ActionRemoveChannel(), ActionPublishChannel(), ActionRunDiagonitics(), ActionUnUpdateSoftwre(), 
             ActionHttpGet(), ActionSendMail(), ActionStartScriptExecution(), ActionStopScriptExecution(),
@@ -937,6 +939,34 @@ class ActionWriteLogChunks(Action):
         else:
             raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
             
+
+
+
+class ActionListTargets(Action):
+
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_LIST_TARGETS_NAME
+    
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+
+        allmodules = modules.getModules()    
+        service_modules = []    
+        for mod in modules:
+            if isinstance(mod, TargetProcess):
+                service_modules.append(mod.getAlias())
+
+        return ActionResponse(data = service_modules, events=[])
+
 
 
 
