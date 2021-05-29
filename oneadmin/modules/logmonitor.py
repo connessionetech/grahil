@@ -270,7 +270,7 @@ class LogMonitor(IModule, ILogMonitor):
                     break;
                 
                 line = await log_mon_process.stdout.read_until(b"\n")
-                print(line)
+                
                 if not line:
                     await asyncio.sleep(.2)
                 else:
