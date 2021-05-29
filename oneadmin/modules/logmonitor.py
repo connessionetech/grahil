@@ -96,7 +96,7 @@ class LogMonitor(IModule, ILogMonitor):
             for log_target in static_log_targets: 
                 if log_target["enabled"] == True:
                     
-                    if not log_target["topic_path"]:
+                    if "topic_path" not in log_target:
                         log_target["topic_path"] = buildTopicPath(TOPIC_LOGMONITORING, log_target["name"])
                     
                     self.register_log_file(log_target)
@@ -220,8 +220,8 @@ class LogMonitor(IModule, ILogMonitor):
             
             
             if len(q)>0: 
-                log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                await self.dispatchevent(LogChunkEvent(log_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
+                log_chunk_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
+                await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
                 self.__log_store[logname].clear()
                 self.__log_store[logname] = None
                 self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"])                    
@@ -231,8 +231,8 @@ class LogMonitor(IModule, ILogMonitor):
             err = "An error occurred in processing log chunks " + str(e)
             self.logger.warning(err)
             
-            log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
-            await self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
+            log_chunk_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path 
+            await self.dispatchevent(LogErrorEvent(log_chunk_topic_path, message=err, meta={"log_name": logname}))
             
         pass
         
@@ -270,8 +270,8 @@ class LogMonitor(IModule, ILogMonitor):
                     break;
                 
                 line = await log_mon_process.stdout.read_until(b"\n")
+                print(line)
                 if not line:
-                    self.logger.debug("nothing to show")
                     await asyncio.sleep(.2)
                 else:
                     await self.dispatchevent(LogLineEvent(log_topic_path, data={"output": str(line, 'utf-8')}, meta={"log_name": logname}))
@@ -282,8 +282,8 @@ class LogMonitor(IModule, ILogMonitor):
                     
                     ''' max_messages_chunks < 100 causes bug while writing log '''
                     if len(q)>=self.__conf["max_messages_chunks"] :
-                        log_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                        await self.dispatchevent(LogChunkEvent(log_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
+                        log_chunk_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
+                        await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
                         self.__log_store[logname].clear()
                         self.__log_store[logname] = None
                         self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"]) 

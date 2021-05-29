@@ -139,8 +139,10 @@ class PubSubHub(object):
             clients.discard(client);
             self.logger.info("Total clients in %s = %d", topicname, len(clients))
             
+            '''
             if len(clients) == 0 and self.is_dynamic_channel(topicname):
                 self.removeChannel(topicname)
+            '''
         pass
     
     
