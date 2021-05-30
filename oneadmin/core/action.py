@@ -963,19 +963,17 @@ class ActionStartTarget(Action):
         if "module" not in  params:
             raise MissingArgumentError("Module name not provided")
         
-        mod = params["module"]
+        module_alias = params["module"]
+
+        allmodules = modules.getModules()
+        for module_instance in allmodules:
+            if isinstance(module_instance, TargetProcess):
+                if module_instance.getAlias() == module_alias:
+                    await module_instance.start_proc()
+                    return ActionResponse(data = None, events=[])
         
-        if modules.hasModule(mod):
-            module_instance = modules.getModule(mod)
-            
-            if module_instance != None and isinstance(module_instance, TargetProcess):
-                await module_instance.start_proc()
-                return ActionResponse(data = None, events=[])
-            else:
-                raise TypeError("`"+mod+"` module is not a target process handler")
-            
-        else:
-            raise ModuleNotFoundError("`"+mod+"` module does not exist")
+        
+        raise ModuleNotFoundError("No module by alias`"+module_alias+"` was found in the system")
         
     
 
@@ -998,22 +996,23 @@ class ActionStopTarget(Action):
     async method that executes the actual logic
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        
         if "module" not in  params:
             raise MissingArgumentError("Module name not provided")
         
-        mod = params["module"]
+        module_alias = params["module"]
+
+        allmodules = modules.getModules()
+        for module_instance in allmodules:
+            if isinstance(module_instance, TargetProcess):
+                if module_instance.getAlias() == module_alias:
+                    await module_instance.stop_proc()
+                    return ActionResponse(data = None, events=[])
         
-        if modules.hasModule(mod):
-            module_instance = modules.getModule(mod)
-            
-            if module_instance != None and isinstance(module_instance, TargetProcess):
-                await module_instance.stop_proc()
-                return ActionResponse(data = None, events=[])
-            else:
-                raise TypeError("`"+mod+"` module is not a target process handler")
-            
-        else:
-            raise ModuleNotFoundError("`"+mod+"` module does not exist")
+        
+        raise ModuleNotFoundError("No module by alias`"+module_alias+"` was found in the system")
+
+
 
 
 
@@ -1037,19 +1036,17 @@ class ActionRestartTarget(Action):
         if "module" not in  params:
             raise MissingArgumentError("Module name not provided")
         
-        mod = params["module"]
+        module_alias = params["module"]
+
+        allmodules = modules.getModules()
+        for module_instance in allmodules:
+            if isinstance(module_instance, TargetProcess):
+                if module_instance.getAlias() == module_alias:
+                    await module_instance.restart_proc()
+                    return ActionResponse(data = None, events=[])
         
-        if modules.hasModule(mod):
-            module_instance = modules.getModule(mod)
-            
-            if module_instance != None and isinstance(module_instance, TargetProcess):
-                await module_instance.restart_proc()
-                return ActionResponse(data = None, events=[])
-            else:
-                raise TypeError("`"+mod+"` module is not a target process handler")
-            
-        else:
-            raise ModuleNotFoundError("`"+mod+"` module does not exist")
+        
+        raise ModuleNotFoundError("No module by alias`"+module_alias+"` was found in the system")
         
         
     
