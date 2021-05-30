@@ -44,6 +44,7 @@ settings["reports_folder"] = os.path.join(os.path.dirname(__file__), __BASE_PACK
 
 settings["cookie_secret"] = "6Lf0itAlZvRKe24eQpCOFrJu4"
 settings["login_url"] = "/login"
-settings["static_path"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "static")
+settings["static_folder"] = "static"
+settings["static_path"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, settings["static_folder"])
 settings["template_path"] = os.path.join(os.path.dirname(__file__), __BASE_PACKAGE__, "templates")
 settings["xsrf_cookies"] = False

@@ -26,6 +26,8 @@ from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core import grahil_types
 
+from settings import settings
+
 
 import tornado
 import logging
@@ -81,7 +83,7 @@ class LogMonitor(IModule, ILogMonitor):
     
     
     def get_url_patterns(self)->List:
-        return [ url(r"/log/download", LogDownloadHandler) ]
+        return [ url(r"/log/download/([^/]+)", LogDownloadHandler) ]
     
     
     
@@ -352,38 +354,39 @@ class LogDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
         
         modules = self.application.modules
         
-        if modules.hasModule(FILE_MANAGER_MODULE):
-            filemanager = modules.getModule(FILE_MANAGER_MODULE)
-            
-            if slug == "static":
-                try:
-                    logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
-                    logname = self.get_argument("logname", None, True)
-                    path = logmon.get_log_info(logname)                    
-                    download_path = await self.__makeFileDownloadable(path)
-                    self.write(json.dumps(formatSuccessResponse(download_path)))
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-                finally:
-                    self.finish()
-            elif slug == "chunked"  or slug == None:
-                try:
-                    logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
-                    logname = self.get_argument("logname", None, True)
-                    path = logmon.get_log_info(logname)
-                    file_name = filemanager.path_leaf(path)
-                    self.set_header('Content-Type', 'application/octet-stream')
-                    self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
-                    await self.flush()
-                    await self.__makeChunkedDownload(path)
-                except Exception as e:
-                    self.write(json.dumps(formatErrorResponse(str(e), 404)))
-                finally:  
-                    self.finish()
-                    pass
-            else:
-                self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
-            pass
+       
+        if slug == "static":
+            try:
+                logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
+                logname = self.get_argument("logname", None, True)
+                log_info = logmon.get_log_info(logname)
+                log_path = log_info["log_file_path"]
+                download_path = await self.__makeFileDownloadable(log_path)
+                self.write(json.dumps(formatSuccessResponse(download_path)))
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+            finally:
+                self.finish()
+        elif slug == "chunked"  or slug == None:
+            try:
+                logmon:ILogMonitor = modules.getModule(LOG_MANAGER_MODULE)
+                logname = self.get_argument("logname", None, True)
+                log_info = logmon.get_log_info(logname)
+                log_path = log_info["log_file_path"]
+                filemanager = modules.getModule(FILE_MANAGER_MODULE)
+                file_name = filemanager.path_leaf(log_path)
+                self.set_header('Content-Type', 'application/octet-stream')
+                self.set_header('Content-Disposition', 'attachment; filename=' + file_name)
+                await self.flush()
+                await self.__makeChunkedDownload(log_path)
+            except Exception as e:
+                self.write(json.dumps(formatErrorResponse(str(e), 404)))
+            finally:  
+                self.finish()
+                pass
+        else:
+            self.finish(json.dumps(formatErrorResponse("Invalid action request", 403)))
+        pass
     
     
     async def __makeFileDownloadable(self,file_path):
@@ -391,7 +394,7 @@ class LogDownloadHandler(tornado.web.RequestHandler, LoggingHandler):
         filemanager = modules.getModule(FILE_MANAGER_MODULE)
         static_path = settings["static_path"]
         download_path = await filemanager.make_downloadable_static(static_path, file_path)
-        return download_path
+        return settings["static_folder"] + "/" + download_path
     
     
     async def __makeChunkedDownload(self, path):

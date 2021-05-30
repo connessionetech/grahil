@@ -475,7 +475,7 @@ class FileManager(IModule):
         
         static_path = Path(str(static_path))
         if static_path.exists():
-            prefix = configuration["tmp_download_dir_prefix"]
+            prefix = self.__config["tmp_download_dir_prefix"]
             foldername = prefix + SmallUUID().hex
             target_folder = Path(os.path.join(str(static_path.absolute()), foldername))
             target_folder.mkdir(0o755, True)
