@@ -53,9 +53,7 @@ EVENT_TEXT_NOTIFICATION = "text_notification"
 
 EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 
-EVENT_DATA_NOTIFICATION = "data_notification"
-
-EVENT_ARBITRARY_DATA = "arbitrary_data"
+EVENT_ARBITRARY_DATA = "data_generated"
 
 EVENT_TELEMETRY_DATA = "telemetry_data"
 
@@ -265,10 +263,6 @@ def StopLogRecordingEvent(
 
 
 
-
-    
-
-
 # noinspection PyPep8Naming
 def PingEvent(
     topic: Text,
@@ -287,22 +281,30 @@ def PingEvent(
     }    
 
     
-    
+
 # noinspection PyPep8Naming
 def SimpleTextNotificationEvent(
     topic: Text,
     message: Text,
     code: int,
-    category: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
+    '''
+    Code denotes priority. It can be from 1 to 4 with 1 being high priority and 4 being low.
+    Priority is used to match coloring of notification on client side
+    
+    1 -> Red
+    2 -> Orange
+    3 -> Yellow
+    4 -> Green 
+    '''
     return {
         "name": EVENT_TEXT_NOTIFICATION,
         "type": "event",
+        "state": "data",
         "topic": topic,
         "message": message,
         "code": code,
-        "category": category,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
@@ -314,50 +316,42 @@ def DataNotificationEvent(
     code: int,
     message: Optional[Text],    
     data: Optional[Dict[Text, Any]] = None,
-    category: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
+    '''
+    Code denotes priority. It can be from 1 to 4 with 1 being high priority and 4 being low.
+    Priority is used to match coloring of notification on client side
+    
+    1 -> Red
+    2 -> Orange
+    3 -> Yellow
+    4 -> Green 
+    '''
     return {
         "name": EVENT_TEXT_DATA_NOTIFICATION,
         "type": "event",
+        "state": "data",
         "topic": topic,
-        "message": message,
         "data": data,
+        "message": message,        
         "code": code,
-        "category": category,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
     
+
+
 # noinspection PyPep8Naming
 def DataEvent(
-    topic: Optional[Text],
+    topic: Text,
     data: Optional[Dict[Text, Any]] = None,
-    category: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_DATA_NOTIFICATION,
-        "type": "event",
-        "topic": topic,
-        "data": data,
-        "category": category,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-
-# noinspection PyPep8Naming
-def ArbitraryDataEvent(
-    topic: Optional[Text],
-    data: Optional[Dict[Text, Any]] = None,
-    category: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
         "name": EVENT_ARBITRARY_DATA,
         "type": "event",
+        "state": "data",
         "topic": topic,
         "data": data,
-        "category": category,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }

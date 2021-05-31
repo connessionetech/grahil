@@ -9,7 +9,7 @@ from oneadmin.core.abstracts import IModule
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from oneadmin.core.action import Action, ActionResponse, ACTION_PREFIX
 from oneadmin.responsebuilder import formatErrorResponse
-from oneadmin.core.event import ArbitraryDataEvent
+from oneadmin.core.event import DataEvent
 from oneadmin.core.abstracts import IntentProvider, LoggingHandler
 from oneadmin.core import grahil_types
 from oneadmin.core.intent import INTENT_PREFIX
@@ -153,7 +153,7 @@ class DoorBellHandler(tornado.web.RequestHandler, LoggingHandler):
     async def handle_doorbell_event(self):
         today = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
         subject = "Bell Ring! @ " + today;
-        event = ArbitraryDataEvent("/smarthome/doorbell", {"message": subject})
+        event = DataEvent("/smarthome/doorbell", {"message": subject})
         await self.application.handle_event(event)
         pass
     
@@ -199,6 +199,6 @@ class PlantWaterPumpHandler(tornado.web.RequestHandler, LoggingHandler):
         if queue_time>0 and send_time>0:
             subject = "\r\n Message delay : "  +  str(send_time - queue_time) + " ms";
             
-        event = ArbitraryDataEvent("/smarthome/plantpump", {"message": subject})
+        event = DataEvent("/smarthome/plantpump", {"message": subject})
         await self.application.handle_event(event)
         pass

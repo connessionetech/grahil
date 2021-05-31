@@ -102,16 +102,6 @@ def is_notification_event(evt):
 
 
 
-def is_data_event(evt):
-    
-    if "type" in evt:
-        if evt["type"] == "DataEvent":
-                return True
-    
-    return False
-
-
-
 def isVideo(obj):
     
     if 'data' in  obj:
