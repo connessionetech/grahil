@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import datetime
 from typing import Dict, Text, Any, List, Optional, Union
 from builtins import int
 
@@ -30,7 +31,7 @@ EVENT CONSTANTS
 
 EVENT_ANY = "*"
 
-EVENT_STATS_GENERATED = "stats_generated"
+EVENT_STATS_DATA = "stats_generated"
 
 EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
 
@@ -38,17 +39,13 @@ EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
 
 EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
 
-EVENT_STATS_ERROR = "stats_error"
+EVENT_LOG_LINE_READ = "log_line_generated"
 
-EVENT_LOG_LINE_READ = "log_line"
-
-EVENT_LOG_CHUNK_READ = "log_chunk"
+EVENT_LOG_CHUNK_READ = "log_chunk_generated"
 
 EVENT_LOG_RECORDING_START = "log_record_start"
 
 EVENT_LOG_RECORDING_STOP = "log_record_stop"
-
-EVENT_LOG_ERROR = "log_error"
 
 EVENT_PING_GENERATED = "ping_generated"
 
@@ -85,24 +82,27 @@ def is_valid_event(evt):
     return False
 
 
+def utc_timestamp():
+    return int(datetime.datetime.utcnow().timestamp() * 1000)
+
+
 
 
 # noinspection PyPep8Naming
-def StatsGeneratedEvent(
+def StatsDataEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    data: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
-        "name": EVENT_STATS_GENERATED,
+        "name": EVENT_STATS_DATA,
         "type": "event",
+        "state": "data",
         "topic": topic,
         "data": data,
-        "meta": meta,
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
     
@@ -110,37 +110,57 @@ def StatsGeneratedEvent(
 # noinspection PyPep8Naming
 def StatsErrorEvent(
     topic: Text,
-    message: Optional[Text] = None,
-    data: Optional[Dict[Text, Any]] = None,
+    error: Text,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
-        "name": EVENT_STATS_ERROR,
-        "type": "error",
+        "name": EVENT_STATS_DATA,
+        "type": "event",
+        "state": "error",
         "topic": topic,
-        "data": data,
-        "message": message,
-        "timestamp": timestamp
+        "data": {"message": str(error, 'utf-8')},
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
-    
-    
+
+
 
 # noinspection PyPep8Naming
-def LogLineEvent(
+def LogErrorEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    meta: Optional[Dict[Text, Any]] = None,
+    logkey: Text,
+    error: Text,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
         "name": EVENT_LOG_LINE_READ,
         "type": "event",
-        "topic": topic,        
-        "data": data,
-        "meta": meta,
+        "state": "error", 
+        "topic": topic,
+        "data": {"name":logkey, "message": str(error, 'utf-8')},
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+    
+    
+    
+
+# noinspection PyPep8Naming
+def LogEvent(
+    topic: Text,    
+    logkey: Text,
+    logdata: Text,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_LOG_LINE_READ,
+        "type": "event",
+        "state": "data", 
+        "topic": topic,        
+        "data": {"name":logkey, "log": str(logdata, 'utf-8')},
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
     
@@ -149,19 +169,19 @@ def LogLineEvent(
 # noinspection PyPep8Naming
 def LogChunkEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    logkey: Text,
+    chunk: Text,    
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
         "name": EVENT_LOG_CHUNK_READ,
         "type": "event",
+        "state": "data",
         "topic": topic,
-        "data": data,
-        "meta": meta,
+        "data": {"name":logkey, "chunk": chunk},
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
     
@@ -170,8 +190,7 @@ def LogChunkEvent(
 # noinspection PyPep8Naming
 def StartLogRecordingEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    data: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
@@ -180,9 +199,8 @@ def StartLogRecordingEvent(
         "type": "event",
         "topic": topic,
         "data": data,
-        "meta": meta,
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
     
@@ -192,8 +210,7 @@ def StartLogRecordingEvent(
 def ScriptExecutionEvent(
     name: Text,    
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    output: Text = None,    
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
@@ -201,10 +218,9 @@ def ScriptExecutionEvent(
         "name": name,
         "type": "event",
         "topic": topic,
-        "data": data,
-        "meta": meta,
+        "data": {"output": str(output, 'utf-8')},
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
 
@@ -213,8 +229,7 @@ def ScriptExecutionEvent(
 # noinspection PyPep8Naming
 def TelemetryDataEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    data: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
@@ -223,9 +238,8 @@ def TelemetryDataEvent(
         "type": "event",
         "topic": topic,
         "data": data,
-        "meta": meta,
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
 
@@ -235,8 +249,7 @@ def TelemetryDataEvent(
 # noinspection PyPep8Naming
 def StopLogRecordingEvent(
     topic: Text,
-    data: Optional[Dict[Text, Any]] = None,    
-    meta: Optional[Dict[Text, Any]] = None,
+    data: Optional[Dict[Text, Any]] = None,
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
@@ -245,32 +258,14 @@ def StopLogRecordingEvent(
         "type": "event",
         "topic": topic,
         "data": data,
-        "meta": meta,
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
 
 
 
-# noinspection PyPep8Naming
-def LogErrorEvent(
-    topic: Text,
-    message: Optional[Text] = None,
-    data: Optional[Dict[Text, Any]] = None,
-    meta: Optional[Dict[Text, Any]] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_ERROR,
-        "type": "error",
-        "topic": topic,
-        "data": data,
-        "meta": meta,
-        "message": message,
-        "timestamp": timestamp
-    }
-    
+
     
 
 
@@ -284,10 +279,11 @@ def PingEvent(
     return {
         "name": EVENT_PING_GENERATED,
         "type": "event",
+        "state": "data",
         "topic": topic,
         "data": data,
         "note": note,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }    
 
     
@@ -307,7 +303,7 @@ def SimpleTextNotificationEvent(
         "message": message,
         "code": code,
         "category": category,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
 
@@ -329,7 +325,7 @@ def DataNotificationEvent(
         "data": data,
         "code": code,
         "category": category,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
     
     
@@ -346,7 +342,7 @@ def DataEvent(
         "topic": topic,
         "data": data,
         "category": category,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
 
 
@@ -363,5 +359,5 @@ def ArbitraryDataEvent(
         "topic": topic,
         "data": data,
         "category": category,
-        "timestamp": timestamp
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
     }

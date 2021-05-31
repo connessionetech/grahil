@@ -55,8 +55,7 @@ class Pinger(IModule):
     
     async def __generatePing(self):
         while True:
-            ping = datetime.datetime.utcnow().timestamp()
-            await self.dispatchevent(PingEvent(topic=TOPIC_PING, data={"timestamp": ping}))
+            await self.dispatchevent(PingEvent(topic=TOPIC_PING))
                         
             if self.__conf["ping_interval_seconds"] is not None:
                 await asyncio.sleep(self.__conf["ping_interval_seconds"])

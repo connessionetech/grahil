@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.core.abstracts import IModule, ISystemMonitor
-from oneadmin.core.event import StatsGeneratedEvent, StatsErrorEvent
+from oneadmin.core.event import StatsDataEvent, StatsErrorEvent
 from oneadmin.core.constants import TOPIC_SYSMONITORING
 from oneadmin.version import __version__
 
@@ -404,9 +404,9 @@ class SystemMonitor(IModule, ISystemMonitor):
             finally:
                 try:
                     if err:
-                        evt = StatsErrorEvent(TOPIC_SYSMONITORING, {"message": err})
+                        evt = StatsErrorEvent(TOPIC_SYSMONITORING, error=err)
                     else:
-                        evt = StatsGeneratedEvent(TOPIC_SYSMONITORING, stats)
+                        evt = StatsDataEvent(TOPIC_SYSMONITORING, stats)
                     
                     if self.__notify_snapshot_event:
                         await self.dispatchevent(evt)

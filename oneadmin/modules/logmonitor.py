@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.core.abstracts import IModule, ILogMonitor, LoggingHandler, IntentProvider
-from oneadmin.core.event import LogLineEvent, LogErrorEvent, LogChunkEvent
+from oneadmin.core.event import LogEvent, LogErrorEvent, LogChunkEvent
 from oneadmin.core.utilities import buildTopicPath
 from oneadmin.core.constants import TOPIC_LOGMONITORING, LOG_MANAGER_MODULE, FILE_MANAGER_MODULE
 from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
@@ -223,7 +223,7 @@ class LogMonitor(IModule, ILogMonitor):
             
             if len(q)>0: 
                 log_chunk_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
+                await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, logkey=logname, chunk=q.copy()))
                 self.__log_store[logname].clear()
                 self.__log_store[logname] = None
                 self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"])                    
@@ -276,7 +276,7 @@ class LogMonitor(IModule, ILogMonitor):
                 if not line:
                     await asyncio.sleep(.2)
                 else:
-                    await self.dispatchevent(LogLineEvent(log_topic_path, data={"output": str(line, 'utf-8')}, meta={"log_name": logname}))
+                    await self.dispatchevent(LogEvent(log_topic_path, logkey=logname, logdata=line))
                         
                     ''' Collect log lines in a queue till  it reaches queue size limit'''    
                     q = self.__log_store[logname];
@@ -285,7 +285,7 @@ class LogMonitor(IModule, ILogMonitor):
                     ''' max_messages_chunks < 100 causes bug while writing log '''
                     if len(q)>=self.__conf["max_messages_chunks"] :
                         log_chunk_topic_path = log_topic_path.replace("logging", "logging/chunked") if 'logging/chunked' not in log_topic_path else log_topic_path
-                        await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, data={"content": q.copy()}, meta={"log_name": logname}))
+                        await self.dispatchevent(LogChunkEvent(log_chunk_topic_path, logkey=logname, chunk=q.copy()))
                         self.__log_store[logname].clear()
                         self.__log_store[logname] = None
                         self.__log_store[logname] = collections.deque([], self.__conf["max_messages_chunks"]) 
@@ -295,7 +295,7 @@ class LogMonitor(IModule, ILogMonitor):
             err = "An error occurred in monitoring log." + str(e)
             self.logger.warning(err)
             
-            await self.dispatchevent(LogErrorEvent(log_topic_path, message=err, meta={"log_name": logname}))
+            await self.dispatchevent(LogErrorEvent(log_topic_path, logkey=logname,error=err))
             
             if logname in self.__log_files:
                 await self._retry(logname)

@@ -30,8 +30,8 @@ import os
 import json
 import logging.config
 from oneadmin.configurations import Configuration
-from tornado.httpserver import HTTPServer
 from oneadmin.application import TornadoApplication
+from tornado.httpserver import HTTPServer
 
 # import cv2
 

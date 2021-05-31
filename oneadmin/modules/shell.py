@@ -234,7 +234,7 @@ class ScriptRunner(IModule, IScriptRunner):
         
         try:
             topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
-            await self.dispatchevent(ScriptExecutionEvent(eventname, topic, data={"output": data}))
+            await self.dispatchevent(ScriptExecutionEvent(eventname, topic, output=data))
         
         except Exception as e:
             err = e

@@ -903,10 +903,9 @@ class ActionWriteLogChunks(Action):
         
         if modules.hasModule(FILE_MANAGER_MODULE):
             __filenamanger = modules.getModule(FILE_MANAGER_MODULE)
-            chunks = params["__event__"]["data"]["content"]
+            chunks = params["__event__"]["data"]["chunk"]
             path = params["destination"]
             await __filenamanger.write_file_stream(path, chunks)
-            #event = StartLogRecordingEvent(topic=TOPIC_LOG_ACTIONS, data=rule)
             return ActionResponse(data = None, events=[])
         else:
             raise ModuleNotFoundError("`"+FILE_MANAGER_MODULE+"` module does not exist")
