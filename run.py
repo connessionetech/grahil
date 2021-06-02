@@ -108,18 +108,21 @@ def start_tornado():
     
     app = TornadoApplication(config)
     port = None
+    server = None
+
+    if(config['server']['enabled']):
         
-    if(not config['ssl']['enabled']):
-        server = HTTPServer(app)
-        port = config['server']['http_port']
-    else:
-        server = tornado.httpserver.HTTPServer(app, ssl_options = {
-            "certfile": config['ssl']['cert_file'],
-            "keyfile": config['ssl']['private_key']
-        })        
-        port = config['server']['https_port']
-    
-    server.listen(port)
+        if(not config['ssl']['enabled']):
+            server = HTTPServer(app)
+            port = config['server']['http_port']
+        else:
+            server = tornado.httpserver.HTTPServer(app, ssl_options = {
+                "certfile": config['ssl']['cert_file'],
+                "keyfile": config['ssl']['private_key']
+            })        
+            port = config['server']['https_port']
+        
+        server.listen(port)
     
     tornado.__dict__["server"] = server
     tornado.__dict__["app"] = app

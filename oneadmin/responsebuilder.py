@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
 import base64
+from oneadmin.core.event import DataEvent, DataNotificationEvent, SimpleTextNotificationEvent
 
 
 class EventType(object):
@@ -123,59 +124,19 @@ def formatErrorResponse(message, code):
             }
 
 
-'''
-   Code denotes priority. It can be from 1 to 4 with 1 being high priority and 4 being low.
-   Priority is used to match coloring of notification on client side.
-   
-   1 -> Red
-   2 -> Orange
-   3 -> Yellow
-   4 -> Green 
-'''
-def buildSimpleNotificationEvent(msg, code=4, category=None):
-    return {
-            "type": "NotificationEvent",
-            "message": msg,
-            "code": code,
-            "category": category,
-            "timestamp": int(datetime.datetime.utcnow().timestamp())
-        }
-    pass
+
+def buildSimpleNotificationEvent(topic, msg, code=4, category=None):
+    return SimpleTextNotificationEvent(topic,msg,code)
 
 
 
-'''
-   Code denotes priority. It can be from 1 to 4 with 1 being high priority and 4 being low.
-   Priority is used to match coloring of notification on client side
-   
-   1 -> Red
-   2 -> Orange
-   3 -> Yellow
-   4 -> Green 
-'''
-def buildDataNotificationEvent(data, topic, msg, code=4, category=None):
-    return {
-            "type": "DataNotificationEvent",
-            "message": msg,
-            "code": code,
-            "data": data,
-            "topic": topic,
-            "category": category,
-            "timestamp": int(datetime.datetime.utcnow().timestamp())
-        }
-    pass
+def buildDataNotificationEvent(data, topic, msg, code=4, category=None):    
+    return DataNotificationEvent(topic,code,msg,data)
 
 
 
 def buildDataEvent(data, topic, category=None):
-    return {
-            "type": "DataEvent",
-            "data": data,
-            "topic": topic,
-            "category": category,
-            "timestamp": int(datetime.datetime.utcnow().timestamp())
-        }
-    pass
+    return DataEvent(topic,data)
 
 
 
