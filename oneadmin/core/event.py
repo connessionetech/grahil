@@ -31,17 +31,11 @@ EVENT CONSTANTS
 
 EVENT_ANY = "*"
 
-EVENT_STATS_DATA = "stats_generated"
-
 EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
 
 EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
 
 EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
-
-EVENT_LOG_LINE_READ = "log_line_generated"
-
-EVENT_LOG_CHUNK_READ = "log_chunk_generated"
 
 EVENT_LOG_RECORDING_START = "log_record_start"
 
@@ -55,7 +49,7 @@ EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 
 EVENT_ARBITRARY_DATA = "data_generated"
 
-EVENT_TELEMETRY_DATA = "telemetry_data"
+EVENT_ARBITRARY_ERROR = "error_generated"
 
 EVENT_KEY = "__event__"
 
@@ -72,7 +66,7 @@ EventType = Dict[Text, Any]
 
 
 
-def is_valid_event(evt):
+def is_valid_event(evt)->bool:
     
     if "name" in evt and "type" in evt and "topic" in evt:
         return True
@@ -86,201 +80,6 @@ def utc_timestamp():
 
 
 
-# noinspection PyPep8Naming
-def StatsDataEvent(
-    topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_STATS_DATA,
-        "type": "event",
-        "state": "data",
-        "topic": topic,
-        "data": data,
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-    
-    
-
-# noinspection PyPep8Naming
-def StatsErrorEvent(
-    topic: Text,
-    error: Text,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_STATS_DATA,
-        "type": "event",
-        "state": "error",
-        "topic": topic,
-        "data": {"message": str(error, 'utf-8')},
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-
-
-# noinspection PyPep8Naming
-def LogErrorEvent(
-    topic: Text,
-    logkey: Text,
-    error: Text,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_LINE_READ,
-        "type": "event",
-        "state": "error", 
-        "topic": topic,
-        "data": {"name":logkey, "message": str(error, 'utf-8')},
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-    
-    
-    
-
-# noinspection PyPep8Naming
-def LogEvent(
-    topic: Text,    
-    logkey: Text,
-    logdata: Text,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_LINE_READ,
-        "type": "event",
-        "state": "data", 
-        "topic": topic,        
-        "data": {"name":logkey, "log": str(logdata, 'utf-8')},
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-    
-    
-
-# noinspection PyPep8Naming
-def LogChunkEvent(
-    topic: Text,
-    logkey: Text,
-    chunk: Text,    
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_CHUNK_READ,
-        "type": "event",
-        "state": "data",
-        "topic": topic,
-        "data": {"name":logkey, "chunk": chunk},
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-    
-    
-
-
-# noinspection PyPep8Naming
-def StartLogRecordingEvent(
-    topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_RECORDING_START,
-        "type": "event",
-        "topic": topic,
-        "data": data,
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-    
-    
-
-# noinspection PyPep8Naming
-def ScriptExecutionEvent(
-    name: Text,    
-    topic: Text,
-    output: Text = None,    
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": name,
-        "type": "event",
-        "topic": topic,
-        "data": {"output": str(output, 'utf-8')},
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-
-
-
-# noinspection PyPep8Naming
-def TelemetryDataEvent(
-    topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_TELEMETRY_DATA,
-        "type": "event",
-        "topic": topic,
-        "data": data,
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-
-
-
-
-# noinspection PyPep8Naming
-def StopLogRecordingEvent(
-    topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_LOG_RECORDING_STOP,
-        "type": "event",
-        "topic": topic,
-        "data": data,
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
-
-
-
-
-# noinspection PyPep8Naming
-def PingEvent(
-    topic: Text,
-    data: Optional[Dict[Text, Any]] = None,
-    note: Optional[Text] = None,
-    timestamp: Optional[float] = None,
-) -> EventType:
-    return {
-        "name": EVENT_PING_GENERATED,
-        "type": "event",
-        "state": "data",
-        "topic": topic,
-        "data": data,
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }    
-
-    
 
 # noinspection PyPep8Naming
 def SimpleTextNotificationEvent(
@@ -310,6 +109,7 @@ def SimpleTextNotificationEvent(
     
 
 
+
 # noinspection PyPep8Naming
 def DataNotificationEvent(
     topic: Text,
@@ -337,21 +137,232 @@ def DataNotificationEvent(
         "code": code,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
-    
-    
+
 
 
 # noinspection PyPep8Naming
 def DataEvent(
     topic: Text,
     data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     return {
         "name": EVENT_ARBITRARY_DATA,
         "type": "event",
+        "topic": topic,
+        "data": data,
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+
+
+
+# noinspection PyPep8Naming
+def ErrorEvent(
+    topic: Text,
+    message: Text = None,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_ARBITRARY_ERROR,
+        "topic": "error" + "/" + topic,
+        "data": {"message":message, "data": data},
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+
+
+
+
+# noinspection PyPep8Naming
+def StatsDataEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return DataEvent(
+        topic=topic,
+        data=data,
+        note=note,
+        timestamp=timestamp
+    )
+    
+    
+
+# noinspection PyPep8Naming
+def StatsErrorEvent(
+    topic: Text,
+    error: Text,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return ErrorEvent(
+        topic=topic,
+        message=error,
+        data={"message": str(error, 'utf-8')},
+        note=note,
+        timestamp=timestamp
+        )
+
+
+
+
+# noinspection PyPep8Naming
+def TelemetryDataEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return DataEvent(
+        topic=topic,
+        data=data,
+        note=note,
+        timestamp=timestamp
+    )   
+
+
+
+# noinspection PyPep8Naming
+def LogErrorEvent(
+    topic: Text,
+    logkey: Text,
+    error: Text,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:  
+    return ErrorEvent(
+        topic=topic,
+        message=error,
+        data={"name":logkey},
+        note=note,
+        timestamp=timestamp
+        ) 
+    
+    
+
+# noinspection PyPep8Naming
+def LogEvent(
+    topic: Text,    
+    logkey: Text,
+    logdata: Text,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return DataEvent(
+        topic=topic,
+        data={"name":logkey, "data": str(logdata, 'utf-8')},
+        note=note,
+        timestamp=timestamp
+    )
+    
+    
+
+# noinspection PyPep8Naming
+def LogChunkEvent(
+    topic: Text,
+    logkey: Text,
+    chunk: Text,    
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    '''
+        Internal event. Not for client consumption
+    '''
+    return {
+        "name": EVENT_ARBITRARY_DATA,
+        "type": "event",
+        "state": "data",
+        "topic": topic,
+        "data": {"name":logkey, "chunk": chunk},
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+    
+    
+
+
+# noinspection PyPep8Naming
+def StartLogRecordingEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    '''
+        Internal event. Not for client consumption
+    '''
+    return {
+        "name": EVENT_LOG_RECORDING_START,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+
+
+
+
+
+
+# noinspection PyPep8Naming
+def StopLogRecordingEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_LOG_RECORDING_STOP,
+        "type": "event",
+        "topic": topic,
+        "data": data,
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }
+
+
+
+# noinspection PyPep8Naming
+def PingEvent(
+    topic: Text,
+    data: Optional[Dict[Text, Any]] = None,
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    return {
+        "name": EVENT_PING_GENERATED,
+        "type": "event",
         "state": "data",
         "topic": topic,
         "data": data,
+        "note": note,
+        "timestamp": utc_timestamp() if timestamp == None else timestamp
+    }  
+    
+    
+
+# noinspection PyPep8Naming
+def ScriptExecutionEvent(
+    name: Text,    
+    topic: Text,
+    output: Text = None,    
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    '''
+        Internal event. Not for client consumption
+    '''
+    return {
+        "name": name,
+        "type": "event",
+        "topic": topic,
+        "data": {"output": str(output, 'utf-8')},
+        "note": note,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }

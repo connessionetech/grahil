@@ -29,7 +29,6 @@ from oneadmin.urls import get_url_patterns
 from oneadmin.core.constants import TOPIC_LOGMONITORING
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX
-from oneadmin.core.event import StatsDataEvent, EVENT_STATS_DATA
 from oneadmin.exceptions import ConfigurationLoadError
 
 import logging
@@ -340,7 +339,7 @@ class TornadoApplication(tornado.web.Application):
         self.logger.debug("handle_event for " + str(event["name"]))
         
         ''' event data aggregation is a good case for data filter or data plugins '''
-        if event["name"] == EVENT_STATS_DATA:
+        if event["topic"] == TOPIC_STATS:
             modules:List = self.modules.getModules()
             for mod in modules:
                 if isinstance(mod, TargetProcess):

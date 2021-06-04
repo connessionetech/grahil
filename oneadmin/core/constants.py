@@ -37,7 +37,7 @@ TOPIC_LOG_ACTIONS = "/log/actions"
 
 TOPIC_LOGMONITORING = "/logging"
 
-TOPIC_SYSMONITORING = "/stats"
+TOPIC_STATS = "/stats"
 
 TOPIC_PING = "/ping"
 

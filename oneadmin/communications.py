@@ -32,7 +32,6 @@ import datetime
 import asyncio
 
 from tornado.queues import Queue
-from tornado.websocket import websocket_connect
 
 
 

@@ -2,7 +2,7 @@
 	"configuration": {
 		"base_package": "redfoxagent",
 		"server": {
-			"enabled": false,
+			"enabled": true,
 			"http_port": 8000,
 			"https_port": 8000,
 			"bind_host": "127.0.0.1",
