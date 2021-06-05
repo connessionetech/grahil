@@ -1,0 +1,20 @@
+{
+	"id": "cowin_schedule_notify_rule",
+	"description": "Rule for sending cowin schedule snapshot as notification",
+	"listen-to": "/cowin/shedule/snapshot",
+	"enabled": true,
+	"trigger":{
+		"on-payload-object": {
+			"key":"data",
+			"on-content": "*",
+			"on-condition": "equals"
+		},		
+		"evaluator": null
+	},
+	"response":{
+		"nonce" : false,
+		"intent": "cowin_schedule_notify",
+		"parameters": {
+		}
+	}	
+}

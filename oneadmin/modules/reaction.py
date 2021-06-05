@@ -74,7 +74,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     
     
     def initialize(self)->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         pass
         
         
@@ -102,7 +102,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     '''
     def scheduler_events_listener(self, event:SchedulerEvent):
         
-        self.logger.info("code %s", str(event.code))
+        self.logger.debug("code %s", str(event.code))
         
         '''
         if event.exception:
@@ -329,7 +329,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
                     num_rules_for_topic = num_rules_for_topic + 1
                     self.__topics_of_intertest[rule.target_topic] = {"num_rules": num_rules_for_topic}
                     
-                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))  
+                self.logger.debug("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))  
             
             else:
                 raise RulesError("Invalid rule " + str(rule))
@@ -341,7 +341,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
             self.logger.error(err)
         
         finally:
-            self.logger.info("Total topics " + str(len(self.__topics_of_intertest)))  
+            self.logger.debug("Total topics " + str(len(self.__topics_of_intertest)))  
     
     
     
@@ -361,7 +361,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
                 else:
                     self.__topics_of_intertest[rule.target_topic]["num_rules"] = num_rules_for_topic
                 
-                self.logger.info("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))
+                self.logger.debug("Total rules for topic " + rule.target_topic + " = "  + str(num_rules_for_topic))
             
             except Exception as e:
                 err = "Unable to register rule " + str(e)
@@ -369,7 +369,7 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
         
             finally:
                 del self.__rules[id]
-                self.logger.info("Total topics " + str(len(self.__topics_of_intertest)))  
+                self.logger.debug("Total topics " + str(len(self.__topics_of_intertest)))  
     
             
     

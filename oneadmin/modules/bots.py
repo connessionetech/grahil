@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatErrorBotResponse
-from oneadmin.core.abstracts import ServiceBot, IEventHandler, ntentProvider, IClientChannel
+from oneadmin.core.abstracts import ServiceBot, IEventHandler, IntentProvider, IClientChannel
 from oneadmin.core.utilities import is_notification_event, is_data_notification_event, isVideo, isImage
 from oneadmin.exceptions import RPCError
 from oneadmin.core.intent import INTENT_GET_SOFTWARE_VERSION_NAME
@@ -279,7 +279,14 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
             response_data = event["data"]
             await self.send_message(self.__bot_master, response_text, response_data)
         pass
-    
+
+
+
+    async def sendImage(self, image, message:str=None)-> None:
+        if self.__bot_master:
+            response_data = {"data" :  image}
+            await self.send_message(self.__bot_master, message, response_data)
+        pass    
     
         
     

@@ -583,6 +583,10 @@ class ServiceBot(IModule):
     
     async def send_notification(self, message:Text)-> None:
         raise NotImplementedError()
+
+
+    async def sendImage(self, image, message:str=None)-> None:
+        raise NotImplementedError()
         
 
 

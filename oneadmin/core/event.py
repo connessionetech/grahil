@@ -31,16 +31,6 @@ EVENT CONSTANTS
 
 EVENT_ANY = "*"
 
-EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
-
-EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
-
-EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
-
-EVENT_LOG_RECORDING_START = "log_record_start"
-
-EVENT_LOG_RECORDING_STOP = "log_record_stop"
-
 EVENT_PING_GENERATED = "ping_generated"
 
 EVENT_TEXT_NOTIFICATION = "text_notification"
@@ -50,6 +40,16 @@ EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 EVENT_ARBITRARY_DATA = "data_generated"
 
 EVENT_ARBITRARY_ERROR = "error_generated"
+
+EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
+
+EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
+
+EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
+
+EVENT_LOG_RECORDING_START = "log_record_start"
+
+EVENT_LOG_RECORDING_STOP = "log_record_stop"
 
 EVENT_KEY = "__event__"
 
