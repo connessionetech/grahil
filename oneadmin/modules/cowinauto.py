@@ -68,7 +68,7 @@ class CowinAutomation(IModule):
     
     def initialize(self) ->None:
         self.logger.info("Module init")
-        tornado.ioloop.IOLoop.current().spawn_callback(self.check_available_schedules)
+        #tornado.ioloop.IOLoop.current().spawn_callback(self.check_available_schedules)
     
 
 
@@ -81,14 +81,14 @@ class CowinAutomation(IModule):
         Returns a list of supported actions
     '''
     def supported_actions(self) -> List[object]:
-        return [ActionCoWinScheduleNotify()]
+        return [ActionCoWinScheduleCheck(), ActionCoWinScheduleNotify()]
 
 
     '''
         Returns a list supported of action names
     '''
     def supported_action_names(self) -> List[Text]:
-        return [ACTION_COWIN_SCHEULE_NOTIFY]
+        return [ACTION_COWIN_SCHEDULE_CHECK, ACTION_COWIN_SCHEDULE_NOTIFY]
     
     
     
@@ -96,12 +96,13 @@ class CowinAutomation(IModule):
         Returns a list supported of intents
     '''
     def supported_intents(self) -> List[Text]:
-        return [INTENT_COWIN_SCHEULE_NOTIFY]
+        return [INTENT_COWIN_SCHEDULE_CHECK, INTENT_COWIN_SCHEDULE_NOTIFY]
 
 
 
 
     async def check_available_schedules(self):
+        self.logger.info("Checking schedule")
         url = self.__conf["site_url"]
         phonenumber = self.__conf["phone_number"]
         pincode = self.__conf["pincode"]
@@ -213,7 +214,7 @@ class CowinAutomation(IModule):
             schedule_button=driver.find_element_by_xpath('/html/body/app-root/ion-app/ion-router-outlet/app-beneficiary-dashboard/ion-content/div/div/ion-grid/ion-row/ion-col/ion-grid[1]/ion-row[4]/ion-col/ion-grid/ion-row[4]/ion-col[2]/ul/li')
             hov = ActionChains(driver).move_to_element(schedule_button)
             hov.perform()
-            sleep(2)  
+            sleep(5)  
             schedule_button.click()
 
             sleep(5)
@@ -254,16 +255,16 @@ class CowinAutomation(IModule):
 
 
 # custom intents
-INTENT_COWIN_SCHEULE_NOTIFY = INTENT_PREFIX + "cowin_schedule_notify"
+INTENT_COWIN_SCHEDULE_NOTIFY = INTENT_PREFIX + "cowin_schedule_notify"
+INTENT_COWIN_SCHEDULE_CHECK = INTENT_PREFIX + "cowin_schedule_check"
 
 
 # custom actions
-ACTION_COWIN_SCHEULE_NOTIFY = ACTION_PREFIX + "cowin_schedule_notify"
+ACTION_COWIN_SCHEDULE_NOTIFY = ACTION_PREFIX + "cowin_schedule_notify"
+ACTION_COWIN_SCHEDULE_CHECK = ACTION_PREFIX + "cowin_schedule_check"
 
 
-'''
-Module action demo
-'''
+
 class ActionCoWinScheduleNotify(Action):
 
 
@@ -275,7 +276,7 @@ class ActionCoWinScheduleNotify(Action):
     Abstract method, must be defined in concrete implementation. action names must be unique
     '''
     def name(self) -> Text:
-        return ACTION_COWIN_SCHEULE_NOTIFY
+        return ACTION_COWIN_SCHEDULE_NOTIFY
     
     
     
@@ -295,6 +296,40 @@ class ActionCoWinScheduleNotify(Action):
             return ActionResponse(data = None, events=[])
         else:
             raise ModuleNotFoundError("`service_bot` module does not exist")
+        pass
+
+
+
+
+class ActionCoWinScheduleCheck(Action):
+
+
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+    
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_COWIN_SCHEDULE_CHECK
+    
+    
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        service_bot = None
+        
+        if modules.hasModule(CowinAutomation.NAME):
+            cowinmod:CowinAutomation = modules.getModule(CowinAutomation.NAME)
+            await cowinmod.check_available_schedules()
+            return ActionResponse(data = None, events=[])
+        else:
+            raise ModuleNotFoundError("`" + CowinAutomation.NAME + "` module does not exist")
         pass
 
 

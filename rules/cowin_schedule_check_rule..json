@@ -1,0 +1,19 @@
+{
+	"id": "cowin_schedule_check_rule",
+	"description": "Rule for sending cowin schedule snapshot as notification",
+	"listen-to": "{time}",
+	"enabled": false,
+	"trigger": {
+		"on-time-object": {
+			"recurring": true,
+			"using-expression": "*/5 * * * *"
+		},
+		"evaluator": null
+	},
+	"response":{
+		"nonce" : false,
+		"intent": "cowin_schedule_check",
+		"parameters": {
+		}
+	}	
+}
