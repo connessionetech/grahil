@@ -293,14 +293,14 @@ class LogMonitor(IModule, ILogMonitor):
         except Exception as e:
             
             err = "An error occurred in monitoring log." + str(e)
-            self.logger.warning(err)
+            self.logger.error(err)
             
             await self.dispatchevent(LogErrorEvent(log_topic_path, logkey=logname,error=err))
             
             if logname in self.__log_files:
                 await self._retry(logname)
             else:
-                self.logger.warning("Log was de-registered from monitoring")            
+                self.logger.error("Log was de-registered from monitoring")            
         pass
     
     

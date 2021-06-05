@@ -1,0 +1,13 @@
+{
+	"enabled": false,
+	"klass": "CowinAutomation",
+	"conf": {
+
+		"site_url": "https://selfregistration.cowin.gov.in/",
+		"phone_number": "",
+		"pincode": "",
+		"otp_mail_server_user": "user@gmail.com",
+		"otp_mail_server_password": "",
+		"schedule_image_name": "schedule.png"
+	}
+}
