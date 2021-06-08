@@ -76,12 +76,12 @@ output="$output, \"disk\": [$disk_info],"
 
 net_info=""
 for inter in $(ls /sys/class/net/); do   
-    net_info="$net_info \"$inter\":"
-    info=$(ip -s -s link show dev $inter | awk 'NR==4{printf "{\"bytes_recv\": %s, \"packets_recv\": %s, \"errin\": %s, \"dropin\": %s, ", $1,$2,$3,$5} NR==8{printf "\"bytes_sent\": %s, \"packets_sent\": %s, \"errout\": %s, \"dropout\": %s},", $1,$2,$3,$5}')
+    net_info="$net_info{\"id\":\"$inter\", "
+    info=$(ip -s -s link show dev $inter | awk 'NR==4{printf "\"bytes_recv\": %s, \"packets_recv\": %s, \"errin\": %s, \"dropin\": %s, ", $1,$2,$3,$5} NR==8{printf "\"bytes_sent\": %s, \"packets_sent\": %s, \"errout\": %s, \"dropout\": %s},", $1,$2,$3,$5}')
     net_info="$net_info $info"
 done
 
 net_info=${net_info::-1}
-output="$output\"network\": {$net_info}"
+output="$output\"network\": [$net_info]"
 output="$output}"
 echo $output

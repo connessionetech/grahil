@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.core.abstracts import IScriptRunner, IModule
-from oneadmin.core.event import EVENT_SCRIPT_EXECUTION_STOP,EVENT_SCRIPT_EXECUTION_START, EVENT_SCRIPT_EXECUTION_PROGRESS, ScriptExecutionEvent
+from oneadmin.core.event import ScriptExecutionProgressEvent, ScriptExecutionStartEvent, ScriptExecutionStopEvent
 from oneadmin.core.constants import TOPIC_SCRIPTS
 from oneadmin.core.utilities import build_script_topic_path
 from oneadmin.exceptions import RunnableScriptError
@@ -40,6 +40,10 @@ class ScriptRunner(IModule, IScriptRunner):
     '''
     classdocs
     '''
+
+    SCRIPT_START = "start"    
+    SCRIPT_PROGRESS = "progress"
+    SCRIPT_STOP = "stop"
     
     NAME = "script_runner"
 
@@ -229,19 +233,25 @@ class ScriptRunner(IModule, IScriptRunner):
     
     
     
-    async def on_execution_update(self, eventname:str, script_id:str, data:str = {})->None:
+    async def on_execution_update(self, eventaction:str, script_id:str, data:str = {})->None:
         """ Async handler for script execution states. This method is called by all executing scripts to notify change of state. """
         
         try:
             topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
-            await self.dispatchevent(ScriptExecutionEvent(eventname, topic, output=data))
+
+            if eventaction == ScriptRunner.SCRIPT_START:
+                await self.dispatchevent(ScriptExecutionStartEvent(topic, scriptid=script_id, output=data))
+            elif eventaction == ScriptRunner.SCRIPT_PROGRESS:
+                await self.dispatchevent(ScriptExecutionProgressEvent(topic, scriptid=script_id, output=data))
+            elif eventaction == ScriptRunner.SCRIPT_STOP:
+                await self.dispatchevent(ScriptExecutionStopEvent(topic, scriptid=script_id, output=data))            
         
         except Exception as e:
             err = e
             self.logger.error("Error terminating process gracefully %s", str(e))
         
         finally:
-            if eventname == EVENT_SCRIPT_EXECUTION_STOP:
+            if eventaction == ScriptRunner.SCRIPT_STOP:
                 await self.__script_execution_cleanup(script_id)
         pass
     
@@ -354,11 +364,11 @@ class Runnable(object):
                 if not self.__running:
                     self.__running = True
                     if self.__update_handler:
-                        await self.__update_handler(EVENT_SCRIPT_EXECUTION_START, self.uuid)      
+                        await self.__update_handler(ScriptRunner.SCRIPT_START, self.uuid)      
             
                 
                 if self.__update_handler:
-                    await self.__update_handler(EVENT_SCRIPT_EXECUTION_PROGRESS, self.uuid, line_str)
+                    await self.__update_handler(ScriptRunner.SCRIPT_PROGRESS, self.uuid, line_str)
                 
         except StreamClosedError as se:
             error = se
@@ -397,5 +407,5 @@ class Runnable(object):
         if self.__running:
             self.__running = False
             if self.__update_handler:
-                await self.__update_handler(EVENT_SCRIPT_EXECUTION_STOP, self.uuid)
+                await self.__update_handler(ScriptRunner.SCRIPT_STOP, self.uuid)
         pass

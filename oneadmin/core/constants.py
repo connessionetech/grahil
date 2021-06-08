@@ -28,6 +28,15 @@ ATTR_NAME = "name"
 ATTR_LOG_NAME = "log_name"
 
 
+''' topic action constants'''
+
+TOPIC_ACTION_START = "/start"
+
+TOPIC_ACTION_STOP = "/stop"
+
+TOPIC_ACTION_PROGRESS = "/progress"
+
+
 
 ''' topic names'''
 

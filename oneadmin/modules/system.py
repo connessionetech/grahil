@@ -117,6 +117,7 @@ class SystemMonitor(IModule, ISystemMonitor):
         output = proc.stdout.read()
         stats = output.decode('UTF-8').strip()
         response = json.loads(stats)
+        response["timestamp"] = self.__current_milli_time()
         return response
     
     
@@ -346,10 +347,10 @@ class SystemMonitor(IModule, ISystemMonitor):
                 system_stats =  {
                         "os":{
                             "arch":os_arch,
-                            "os_name": os_name,
-                            "os_type": os_type,
-                            "os_flavor": os_flavor,
-                            "os_version": os_version,
+                            "name": os_name,
+                            "type": os_type,
+                            "flavor": os_flavor,
+                            "version": os_version,
                             "boot_time": boot_time,
                             "uptime": uptime,
                             "system_datetime":system_datetime,
@@ -359,11 +360,11 @@ class SystemMonitor(IModule, ISystemMonitor):
                         "meta_info":{
                         },
                         "cpu":{
-                                "cpu_frequency": cpu_frequency,
-                                "cpu_count": cpu_count,
-                                "cpu_vendor": cpu_vendor,
-                                "cpu_model": cpu_model,
-                                "cpu_percent":cpu_percent
+                                "frequency": cpu_frequency,
+                                "count": cpu_count,
+                                "vendor": cpu_vendor,
+                                "model": cpu_model,
+                                "percent":cpu_percent
 
                         },
                         "memory":{
@@ -371,11 +372,9 @@ class SystemMonitor(IModule, ISystemMonitor):
                                 "used": used_mem,
                                 "free": free_mem,
                                 "percent":percent_mem,
-                                "swap":{
-                                    "total": total_swap_mem,
-                                    "used": used_swap_mem,
-                                    "free": free_swap_mem
-                                }
+                                "swap_total": total_swap_mem,
+                                "swap_used": used_swap_mem,
+                                "swap_free": free_swap_mem
                         },
                         "disk":disk_usage,
                         "network":nic_stats

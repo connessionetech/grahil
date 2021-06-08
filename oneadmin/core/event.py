@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import datetime
+from oneadmin.core.constants import TOPIC_ACTION_PROGRESS, TOPIC_ACTION_START, TOPIC_ACTION_STOP
 from typing import Dict, Text, Any, List, Optional, Union
 from builtins import int
 
@@ -40,12 +41,6 @@ EVENT_TEXT_DATA_NOTIFICATION = "text_data_notification"
 EVENT_ARBITRARY_DATA = "data_generated"
 
 EVENT_ARBITRARY_ERROR = "error_generated"
-
-EVENT_SCRIPT_EXECUTION_START = "script_execution_started"
-
-EVENT_SCRIPT_EXECUTION_STOP = "script_execution_stopped"
-
-EVENT_SCRIPT_EXECUTION_PROGRESS = "script_execution_progress"
 
 EVENT_LOG_RECORDING_START = "log_record_start"
 
@@ -345,24 +340,61 @@ def PingEvent(
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }  
     
-    
+
 
 # noinspection PyPep8Naming
-def ScriptExecutionEvent(
-    name: Text,    
+def ScriptExecutionStartEvent(
     topic: Text,
-    output: Text = None,    
+    scriptid: Text, 
+    output: Text,    
     note: Optional[Text] = None,
     timestamp: Optional[float] = None,
 ) -> EventType:
     '''
         Internal event. Not for client consumption
     '''
-    return {
-        "name": name,
-        "type": "event",
-        "topic": topic,
-        "data": {"output": str(output, 'utf-8')},
-        "note": note,
-        "timestamp": utc_timestamp() if timestamp == None else timestamp
-    }
+    return DataEvent(
+        topic=topic + TOPIC_ACTION_START,
+        data={"name": scriptid, "data": str(output, 'utf-8')},
+        note=note,
+        timestamp=timestamp
+    )
+
+
+
+# noinspection PyPep8Naming
+def ScriptExecutionStopEvent(
+    topic: Text,
+    scriptid: Text, 
+    output: Text,    
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    '''
+        Internal event. Not for client consumption
+    '''
+    return DataEvent(
+        topic=topic + TOPIC_ACTION_STOP,
+        data={"name": scriptid, "data": str(output, 'utf-8')},
+        note=note,
+        timestamp=timestamp
+    )
+
+
+
+def ScriptExecutionProgressEvent(
+    topic: Text,
+    scriptid: Text, 
+    output: Text,    
+    note: Optional[Text] = None,
+    timestamp: Optional[float] = None,
+) -> EventType:
+    '''
+        Internal event. Not for client consumption
+    '''
+    return DataEvent(
+        topic=topic + TOPIC_ACTION_PROGRESS,
+        data={"name": scriptid, "data": str(output, 'utf-8')},
+        note=note,
+        timestamp=timestamp
+    )
