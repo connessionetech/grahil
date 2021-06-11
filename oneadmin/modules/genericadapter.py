@@ -20,13 +20,12 @@ from oneadmin.core.abstracts import IntentProvider
 from oneadmin.core.constants import TARGET_DELEGATE_MODULE
 from oneadmin.core.grahil_types import *
 from oneadmin.exceptions import TargetServiceError
-from oneadmin.responsebuilder import buildDataNotificationEvent  
 from oneadmin.core.abstracts import TargetProcess
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import Action, ACTION_PREFIX, ActionResponse
 from oneadmin.core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
     NOTIFICATIONS_NOTICE
-from oneadmin.core.event import SimpleTextNotificationEvent
+from oneadmin.core.event import SimpleNotificationEvent
 
 import tornado
 import os
@@ -132,6 +131,8 @@ class GenericDelegate(TargetProcess):
         Check out the target throughly every N seconds
     '''
     async def __analyse_target(self):
+
+        await asyncio.sleep(15)
         
         pass
                 
@@ -192,7 +193,7 @@ class GenericDelegate(TargetProcess):
             errors = errors + "Process is already active" + "\n"
                     
         if len(errors) > 0:
-            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            evt = SimpleNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt)
         else:
             self.__last_start = self.__current_milli_time
@@ -220,7 +221,7 @@ class GenericDelegate(TargetProcess):
             errors = errors + "Process is already inactive" + "\n"
                     
         if len(errors) > 0:
-            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            evt = SimpleNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt)
         else:
             self.__last_stop = self.__current_milli_time

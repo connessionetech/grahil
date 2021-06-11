@@ -20,7 +20,7 @@ from oneadmin.core.abstracts import IntentProvider, IClientChannel, IMQTTClient,
 from oneadmin.exceptions import RPCError
 from oneadmin.core.utilities import is_data_message, is_command_message, has_sender_id_message,has_uuid_message, requires_ack_message
 from oneadmin.responsebuilder import formatSuccessMQTTResponse, formatErrorMQTTResponse,formatAckMQTTResponse
-from oneadmin.core.event import TelemetryDataEvent
+from oneadmin.core.event import DataEvent
 
 import sys
 import json
@@ -270,6 +270,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
     
     async def handleMessage(self, topic:Text, msg:Text, handler=None):
         
+        requestid = None
         intent = None
         args = {}
         sender = None
@@ -316,7 +317,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
                     self.__requests[local_request_id] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
                     await self.__mgsqueue.put({"requestid": local_request_id, "message": response})
                 
-                self.dispatchevent(TelemetryDataEvent(topic, data))
+                self.dispatchevent(DataEvent(topic, data))
                     
         except Exception as le:
             

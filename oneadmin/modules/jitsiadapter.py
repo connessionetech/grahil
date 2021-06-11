@@ -46,7 +46,7 @@ import json
 import re
 from oneadmin.core.constants import TOPIC_NOTIFICATIONS, NOTIFICATIONS_WARN,\
     NOTIFICATIONS_NOTICE
-from oneadmin.core.event import SimpleTextNotificationEvent
+from oneadmin.core.event import SimpleNotificationEvent
 
 
 
@@ -325,7 +325,7 @@ class JitsiDelegate(TargetProcess):
             errors = errors + "nginx is already active" + "\n"
         
         if len(errors) > 0:
-            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            evt = SimpleNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt) 
         
         
@@ -356,7 +356,7 @@ class JitsiDelegate(TargetProcess):
             errors = errors + "nginx is already inactive" + "\n"
         
         if len(errors) > 0:
-            evt = SimpleTextNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
+            evt = SimpleNotificationEvent(TOPIC_NOTIFICATIONS, errors, NOTIFICATIONS_WARN)
             self.dispatchevent(evt) 
         
         

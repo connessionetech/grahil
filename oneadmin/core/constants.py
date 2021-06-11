@@ -28,13 +28,13 @@ ATTR_NAME = "name"
 ATTR_LOG_NAME = "log_name"
 
 
-''' topic action constants'''
+''' event action constants'''
 
-TOPIC_ACTION_START = "/start"
+EVENT_STATE_START = "start"
 
-TOPIC_ACTION_STOP = "/stop"
+EVENT_STATE_STOP = "stop"
 
-TOPIC_ACTION_PROGRESS = "/progress"
+EVENT_STATE_PROGRESS = "progress"
 
 
 
@@ -50,7 +50,7 @@ TOPIC_STATS = "/stats"
 
 TOPIC_PING = "/ping"
 
-TOPIC_EVENTS = "/events"
+TOPIC_NOTIFICATION = "/notification"
 
 TOPIC_SCRIPTS = "/script"
 

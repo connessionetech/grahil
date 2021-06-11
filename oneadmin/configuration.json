@@ -43,7 +43,7 @@
 							"max_users": 0
 						},
 						{
-							"name": "/events",
+							"name": "/notification",
 							"type": "subscription",
 							"queue_size": 10,
 							"max_users": 0

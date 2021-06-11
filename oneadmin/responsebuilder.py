@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
 import base64
-from oneadmin.core.event import DataEvent, DataNotificationEvent, SimpleTextNotificationEvent
+from oneadmin.core.event import DataEvent, SimpleNotificationEvent
 
 
 class EventType(object):
@@ -126,7 +126,7 @@ def formatErrorResponse(message, code):
 
 
 def buildSimpleNotificationEvent(topic, msg, code=4, category=None):
-    return SimpleTextNotificationEvent(topic,msg,code)
+    return SimpleNotificationEvent(topic,msg,code)
 
 
 

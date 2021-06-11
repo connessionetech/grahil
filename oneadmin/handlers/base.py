@@ -21,7 +21,7 @@ from oneadmin.core.intent import INTENT_DELETE_FILE_NAME, INTENT_STOP_LOG_RECORD
 from oneadmin.communications import PubSubHub
 from oneadmin import responsebuilder
 from oneadmin.exceptions import RPCError, AccessPermissionsError
-from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
+from oneadmin.core.constants import TOPIC_NOTIFICATION, TOPIC_PING, PUBSUBHUB_MODULE, RPC_GATEWAY_MODULE
 from oneadmin.core.abstracts import LoggingHandler
 
 import base64
@@ -201,7 +201,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler, LoggingHandler):
         
         self.logger.info("Total clients %d", self.application.totalclients)
         pubsubhub.subscribe_topics([TOPIC_PING], self)
-        pubsubhub.subscribe_topics([TOPIC_EVENTS], self)
+        pubsubhub.subscribe_topics([TOPIC_NOTIFICATION], self)
         
         # Notify system capabilities to client on connect
         capabilities = self.application.get_system_capabilities()

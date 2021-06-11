@@ -9,7 +9,7 @@ from oneadmin.responsebuilder import formatSuccessRPCResponse, formatErrorRPCRes
 from oneadmin.core.abstracts import IModule, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import is_valid_event
-from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING
+from oneadmin.core.constants import TOPIC_NOTIFICATION, TOPIC_PING
 from oneadmin.responsebuilder import formatSuccessResponse
 
 

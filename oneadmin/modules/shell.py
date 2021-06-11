@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.core.abstracts import IScriptRunner, IModule
-from oneadmin.core.event import ScriptExecutionProgressEvent, ScriptExecutionStartEvent, ScriptExecutionStopEvent
-from oneadmin.core.constants import TOPIC_SCRIPTS
+from oneadmin.core.event import ScriptExecutionEvent
+from oneadmin.core.constants import EVENT_STATE_PROGRESS, EVENT_STATE_START, EVENT_STATE_STOP, TOPIC_SCRIPTS
 from oneadmin.core.utilities import build_script_topic_path
 from oneadmin.exceptions import RunnableScriptError
 
@@ -240,11 +240,11 @@ class ScriptRunner(IModule, IScriptRunner):
             topic =  build_script_topic_path(TOPIC_SCRIPTS, script_id)
 
             if eventaction == ScriptRunner.SCRIPT_START:
-                await self.dispatchevent(ScriptExecutionStartEvent(topic, scriptid=script_id, output=data))
+                await self.dispatchevent(ScriptExecutionEvent(topic, state=EVENT_STATE_START, scriptid=script_id, output=data))
             elif eventaction == ScriptRunner.SCRIPT_PROGRESS:
-                await self.dispatchevent(ScriptExecutionProgressEvent(topic, scriptid=script_id, output=data))
+                await self.dispatchevent(ScriptExecutionEvent(topic, state=EVENT_STATE_PROGRESS, scriptid=script_id, output=data))
             elif eventaction == ScriptRunner.SCRIPT_STOP:
-                await self.dispatchevent(ScriptExecutionStopEvent(topic, scriptid=script_id, output=data))            
+                await self.dispatchevent(ScriptExecutionEvent(topic, state=EVENT_STATE_STOP, scriptid=script_id, output=data))            
         
         except Exception as e:
             err = e

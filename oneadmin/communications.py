@@ -22,7 +22,7 @@ from oneadmin.exceptions import RulesError
 from oneadmin.core.abstracts import IEventDispatcher, IClientChannel, IntentProvider
 from oneadmin.exceptions import RPCError, ModuleNotFoundError
 from oneadmin.core.event import EventType, PingEvent, is_valid_event
-from oneadmin.core.constants import TOPIC_EVENTS, TOPIC_PING
+from oneadmin.core.constants import TOPIC_NOTIFICATION, TOPIC_PING
 
 
 import logging
@@ -227,13 +227,13 @@ class PubSubHub(object):
     
     
     '''
-        Publishes event data to a events channel - "/events"
+        Publishes event data to a events channel -
         *To be deprecated in favor of new event system*
     '''
-    async def publish_event(self, event):
-        if TOPIC_EVENTS in self.channels:
+    async def publish_notification(self, event):
+        if TOPIC_NOTIFICATION in self.channels:
             if self.__isValidEvent(event):
-                await self.__submit(TOPIC_EVENTS, event)
+                await self.__submit(TOPIC_NOTIFICATION, event)
         pass
     
     
@@ -253,18 +253,6 @@ class PubSubHub(object):
                 if is_valid_event(event):
                     await self.__submit(event["topic"], event)
             pass
-        
-    
-    
-    
-    '''
-        Validates message as `event`for reactionengine
-    '''
-    def __isValidReactableEvent(self, event):
-        # validate event object and place in queue
-        if 'topic' in event and 'data' in event:
-            return True
-        return False
     
     
     
