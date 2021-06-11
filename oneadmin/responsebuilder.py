@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
 import base64
-from oneadmin.core.event import DataEvent, SimpleNotificationEvent
+from oneadmin.core.event import DataEvent, DataNotificationEvent, SimpleNotificationEvent
 
 
 class EventType(object):
@@ -134,7 +134,6 @@ def buildDataNotificationEvent(data, topic, msg, code=4, category=None):
     return DataNotificationEvent(topic,code,msg,data)
 
 
-
 def buildDataEvent(data, topic, category=None):
     return DataEvent(topic,data)
 
@@ -143,8 +142,6 @@ def buildDataEvent(data, topic, category=None):
 def formatSuccessBotResponse(requestid, data):
     return data
     pass
-
-
 
 
 def formatErrorBotResponse(requestid, error):
