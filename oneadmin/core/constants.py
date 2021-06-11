@@ -42,7 +42,7 @@ EVENT_STATE_PROGRESS = "progress"
 
 TOPIC_ANY = "*"
 
-TOPIC_LOG_ACTIONS = "/log/actions"
+TOPIC_LOG_ACTIONS = "/logging/actions"
 
 TOPIC_LOGMONITORING = "/logging"
 
@@ -53,6 +53,8 @@ TOPIC_PING = "/ping"
 TOPIC_NOTIFICATION = "/notification"
 
 TOPIC_SCRIPTS = "/script"
+
+TOPIC_DELEGATE_MONITORING = "/targetdelegate"
 
 TOPIC_NOTIFICATIONS = "/notifications"
 

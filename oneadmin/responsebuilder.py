@@ -125,17 +125,17 @@ def formatErrorResponse(message, code):
 
 
 
-def buildSimpleNotificationEvent(topic, msg, code=4, category=None):
-    return SimpleNotificationEvent(topic,msg,code)
+def buildSimpleNotificationEvent(topic, msg, code=4, meta=None):
+    return SimpleNotificationEvent(topic=topic,message=msg, code=code, meta=meta)
 
 
 
-def buildDataNotificationEvent(data, topic, msg, code=4, category=None):    
-    return DataNotificationEvent(topic,code,msg,data)
+def buildDataNotificationEvent(data, topic, msg, code=4, meta=None):    
+    return DataNotificationEvent(topic=topic,code=code,message=msg,data=data,meta=meta)
 
 
-def buildDataEvent(data, topic, category=None):
-    return DataEvent(topic,data)
+def buildDataEvent(data, topic, meta=None):
+    return DataEvent(topic=topic, data=data, meta=meta)
 
 
 

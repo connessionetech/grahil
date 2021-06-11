@@ -128,6 +128,7 @@ def DataEvent(
 
 # noinspection PyPep8Naming
 def DataNotificationEvent(
+    topic: Text,
     message: Text,
     code: int,
     data: Optional[Dict[Text, Any]] = None,
@@ -139,7 +140,7 @@ def DataNotificationEvent(
         "name": EVENT_TEXT_DATA_NOTIFICATION,
         "type": "event",
         "state": "data",
-        "topic": TOPIC_NOTIFICATION,
+        "topic": topic,
         "data": {"message": message, "code": code, "data": data},
         "note": note,
         "meta": meta,

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 from oneadmin.core.abstracts import IntentProvider
-from oneadmin.core.constants import TARGET_DELEGATE_MODULE
+from oneadmin.core.constants import TARGET_DELEGATE_MODULE, TOPIC_DELEGATE_MONITORING
 from oneadmin.core.grahil_types import *
 from oneadmin.exceptions import TargetServiceError
 from oneadmin.responsebuilder import buildDataNotificationEvent  
@@ -343,7 +343,7 @@ class TargetDelegate(TargetProcess):
                         if not self.__streaming:
                             self.__streaming = True
                             self.__streaming_process.set_exit_callback(self.__ffmpeg_closed)
-                            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has started streaming")
+                            evt = buildDataNotificationEvent(topic=TOPIC_DELEGATE_MONITORING, meta={"context": "Camera Device"}, data={"streaming":self.__streaming}, msg="Target camera has started streaming")
                             await self.eventcallback(evt)
                         pass 
         except Exception as e:
@@ -375,7 +375,7 @@ class TargetDelegate(TargetProcess):
     async def on_streaming_stopped(self):
         if self.__streaming:
             self.__streaming = False
-            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "Camera Device", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has stopped streaming")
+            evt = buildDataNotificationEvent(topic=TOPIC_DELEGATE_MONITORING, meta={"context": "Camera Device"}, data={"streaming":self.__streaming}, msg="Target camera has stopped streaming")
             await self.eventcallback(evt)
         pass
     
@@ -492,8 +492,7 @@ class TargetDelegate(TargetProcess):
         
     async def do_fulfill_test(self, name:str = "output.avi", path:str = None):
         try:
-            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has stopped streaming")
-            await self.eventcallback(evt)           
+            self.logger.info("do_fulfill_test")
             
         except Exception as e:
             raise TargetServiceError("Unable to capture video " + str(e))   

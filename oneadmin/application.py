@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from oneadmin.responsebuilder import buildDataEvent
 from oneadmin.core.utilities import buildTopicPath, getLogFileKey
 from oneadmin.communications import PubSubHub
 from oneadmin.core.grahil_core import ModuleRegistry

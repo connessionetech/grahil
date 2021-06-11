@@ -20,7 +20,6 @@ from oneadmin.core.abstracts import IntentProvider, TargetProcess
 from oneadmin.core.constants import TARGET_DELEGATE_MODULE
 from oneadmin.core.grahil_types import *
 from oneadmin.exceptions import TargetServiceError
-from oneadmin.responsebuilder import buildDataNotificationEvent
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import Action, ACTION_PREFIX, ActionResponse
 
@@ -389,9 +388,7 @@ class JitsiDelegate(TargetProcess):
     
     async def do_fulfill_test(self, name:str = "output.avi", path:str = None):
         try:
-            evt = buildDataNotificationEvent(data={"subject" : "Target", "concern": "TargetCameraDevice", "content":{"streaming":self.__streaming}}, topic="/grahil_events", msg="Target camera has stopped streaming")
-            await self.eventcallback(evt)           
-            
+            self.logger.info("Do fulfill test")            
         except Exception as e:
             raise TargetServiceError("Unable to capture video " + str(e))   
     
