@@ -15,12 +15,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+from typing import Any, Dict
 from oneadmin.core.intent import INTENT_WRITE_LOG_CHUNKS_NAME
 
 import ntpath
 import os
 import json
 import filetype
+from jsonschema import validate
+
 
 
 
@@ -50,23 +53,67 @@ def has_sender_id_message(msg):
 
 
 
-def is_data_message(msg):
+def is_command_message(data:Dict):
+
+    schema = {
+        "type" : "object",
+        "properties" : {
+            "client-id" : {"type" : "string"},
+            "session-id" : {"type" : "string"},
+            "intent" : {"type" : "string"},
+            "timestamp" : {"type" : "number"},
+            "data" : {
+                "type" : "object",
+                "properties" : {
+                    "params" : {"type" : "object"},
+                    "res-topic" : {"type" : "string"}
+                },
+                "required": ["params"]
+            }
+        },
+        "required": ["client-id", "session-id", "intent", "timestamp", "data"]
+    }
+
     
-    if "data" in msg:
-        if msg["data"] != None and msg["data"] != "":
-            return True
-        
-    return False
+    try:
+        validate(instance=data, schema=schema)
+        return True
+    except:
+        return False
+    pass
 
 
 
-def is_command_message(msg):
+def is_data_message(data:Dict):
+
+    schema = {
+        "type" : "object",
+        "properties" : {
+            "client-id" : {"type" : "string"},
+            "session-id" : {"type" : "string"},
+            "intent" : {"type" : "string"},
+            "timestamp" : {"type" : "number"},
+            "data" : {
+                "type" : "object",
+                "properties" : {
+                    "params" : {"type" : "object"},
+                    "res-topic" : {"type" : "string"}
+                },
+                "required": ["params"]
+            }
+        },
+        "required": ["client-id", "session-id", "intent", "timestamp", "data"]
+    }
     
-    if "intent" in msg:
-        if msg["intent"] != None and msg["intent"] != "":
-            return True
-        
-    return False
+    
+    try:
+        validate(instance=data, schema=schema)
+        return True
+    except:
+        return False
+    pass
+
+
 
 
 

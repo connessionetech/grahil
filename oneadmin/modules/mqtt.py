@@ -154,7 +154,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
             stack.push_async_callback(self.cancel_tasks, tasks)
     
             # Connect to the MQTT broker
-            self.client = Client(self.__conf["host"])
+            self.client = Client(self.__conf["host"], self.__conf["port"])
             await stack.enter_async_context(self.client)
     
             # You can create any number of topic filters
@@ -222,7 +222,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_with_filter")
             #self.logger.info(template.format(message.payload.decode()))
-            await self. handleMessage(message.topic, message.payload.decode())
+            await self.handleMessage(message.topic, message.payload.decode())
             pass
         
         
@@ -233,7 +233,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
             # UTF8-encoded string (hence the `bytes.decode` call).
             self.logger.info("messages_without_filter")
             #self.logger.info(template.format(message.payload.decode()))
-            await self. handleMessage(message.topic, message.payload.decode())
+            await self.handleMessage(message.topic, message.payload.decode())
             pass
     
     
@@ -275,42 +275,42 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
         args = {}
         sender = None
         restopic = None
-        
+        parameters = None
+        is_command = False
+        is_data = False
+
+
         message = json.loads(msg)
         
         if is_command_message(message):
+            is_command = True
             intent = message["intent"]
             data = message["data"]
-            
+            parameters = data["params"]
         elif is_data_message(message):
+            is_data = True
             data = message["data"]
-        else:
-            raise RPCError("Unknown message type")
-        
-        if has_uuid_message(message):
-            local_request_id = message["session-id"]
+            parameters = data["params"]
         else:
             raise RPCError("Unknown message type")
         
         
-        if has_sender_id_message(message):
-            sender = message["client-id"]
-            
-        
+        local_request_id = message["session-id"]
+        sender = message["client-id"]
+
         if requires_ack_message(message):
-            restopic = data["res-topic"]
+            restopic = parameters["res-topic"]
         
         
         try:
             
-            if is_command_message(message):
-                
-                args = {} if data["params"] is None else data["params"]
+            if is_command:
+                args = {} if parameters == None else parameters
                 args["handler"]= self
                 requestid = await self.notifyintent(intent, args)
                 self.__requests[requestid] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
             
-            elif is_data_message(message):
+            elif is_data:
                 
                 if requires_ack_message(message):
                     response = formatAckMQTTResponse(local_request_id)

@@ -146,7 +146,6 @@ def DataNotificationEvent(
         "meta": meta,
         "timestamp": utc_timestamp() if timestamp == None else timestamp
     }
-
     
 
 
@@ -307,6 +306,7 @@ def StartLogRecordingEvent(
     '''
     return {
         "name": EVENT_LOG_RECORDING_START,
+        "state": "data",
         "type": "event",
         "topic": topic,
         "data": data,
@@ -329,6 +329,7 @@ def StopLogRecordingEvent(
 ) -> EventType:
     return {
         "name": EVENT_LOG_RECORDING_STOP,
+        "state": "data",
         "type": "event",
         "topic": topic,
         "data": data,
