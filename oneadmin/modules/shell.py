@@ -233,7 +233,7 @@ class ScriptRunner(IModule, IScriptRunner):
     
     
     
-    async def on_execution_update(self, eventaction:str, script_id:str, data:str = {})->None:
+    async def on_execution_update(self, eventaction:str, script_id:str, data:str = None)->None:
         """ Async handler for script execution states. This method is called by all executing scripts to notify change of state. """
         
         try:
