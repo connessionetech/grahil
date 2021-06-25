@@ -33,7 +33,6 @@ from oneadmin.configurations import Configuration
 from oneadmin.application import TornadoApplication
 from tornado.httpserver import HTTPServer
 
-# import cv2
 
 def setup_logging(
     default_path='logging.json',
