@@ -19,9 +19,9 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "simple",
-            "filename": "redfoxagent.log",
-            "maxBytes": 10485760,
-            "backupCount": 20,
+            "filename": "log/grahil.log",
+            "maxBytes": 20971520,
+            "backupCount": 10,
             "encoding": "utf8"
         },
 
@@ -29,9 +29,9 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "ERROR",
             "formatter": "simple",
-            "filename": "redfoxagent.log",
-            "maxBytes": 10485760,
-            "backupCount": 20,
+            "filename": "log/errors.log",
+            "maxBytes": 20971520,
+            "backupCount": 10,
             "encoding": "utf8"
         }
     },
