@@ -19,7 +19,7 @@ from oneadmin.core.abstracts import IMailer, IModule
 
 from builtins import str
 from email.message import EmailMessage
-from typing import Text
+from typing import Dict, Text
 import aiosmtplib
 import logging
 
@@ -53,6 +53,9 @@ class SMTPMailer(IModule, IMailer):
         self.logger.info("Module init")
         pass
     
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True 
     
     
     async def send_mail(self, subject:Text, body:Text) ->None:

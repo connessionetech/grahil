@@ -16,7 +16,7 @@ import tornado
 import time
 import logging
 import datetime
-from typing import List, Text
+from typing import Dict, List, Text
 import json
 
 from selenium import webdriver
@@ -70,6 +70,9 @@ class CowinAutomation(IModule):
         self.logger.info("Module init")
         #tornado.ioloop.IOLoop.current().spawn_callback(self.check_available_schedules)
     
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
 
 
     def get_url_patterns(self)->List:

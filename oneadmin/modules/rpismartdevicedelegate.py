@@ -106,6 +106,12 @@ class TargetDelegate(TargetProcess):
         return TargetDelegate.NAME
         
     
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
+
+
+    
     '''
     Initializes the RPI pins 
     Ref https://www.instructables.com/Servo-Motor-Control-With-Raspberry-Pi/

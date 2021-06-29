@@ -18,7 +18,7 @@ import tornado
 import logging
 import json
 
-from typing import Text, List
+from typing import Dict, Text, List
 
 
 
@@ -49,8 +49,11 @@ class ApiHostModule(IModule):
     
     def initialize(self) ->None:
         self.logger.info("Module init")
-        
-        
+
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
     
     
 

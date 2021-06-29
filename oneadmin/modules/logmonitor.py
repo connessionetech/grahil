@@ -80,6 +80,10 @@ class LogMonitor(IModule, ILogMonitor):
         self.register_static_log_targets()
         pass 
     
+
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True 
     
     
     def get_url_patterns(self)->List:

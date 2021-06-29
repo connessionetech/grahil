@@ -11,7 +11,7 @@ from oneadmin.responsebuilder import formatSuccessResponse, formatErrorResponse
 from oneadmin.application import TornadoApplication
 
 import logging
-from typing import Text, List
+from typing import Dict, Text, List
 import datetime
 import jwt
 import json
@@ -59,6 +59,12 @@ class SecurityProvider(IModule):
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__token_validator)
         pass
+
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
+    
     
     
     def get_url_patterns(self)->List:

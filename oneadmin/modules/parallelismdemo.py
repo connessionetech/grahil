@@ -48,6 +48,11 @@ class ParallelismDemo(IModule):
     def initialize(self) ->None:
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__spinthreads)
+
+   
+    
+    def valid_configuration(self, conf:dict) ->bool:
+        return True
         
         
     

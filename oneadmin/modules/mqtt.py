@@ -31,7 +31,7 @@ from contextlib import AsyncExitStack
 from asyncio_mqtt import Client, MqttError
 from builtins import str
 from tornado.queues import Queue
-from typing import Text, Callable, List
+from typing import Dict, Text, Callable, List
 
 
 
@@ -142,6 +142,10 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
         tornado.ioloop.IOLoop.current().spawn_callback(self.__initialize)
         pass
     
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True 
     
     
     async def _setup(self):

@@ -86,6 +86,9 @@ class SystemMonitor(IModule, ISystemMonitor):
         pass
 
 
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
 
     
     

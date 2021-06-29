@@ -105,7 +105,11 @@ class GenericDelegate(TargetProcess):
     def initialize(self) ->None:
         self.logger.info("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__analyse_target)
-    
+
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True 
     
     
     

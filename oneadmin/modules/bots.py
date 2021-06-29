@@ -34,7 +34,7 @@ from tornado.platform import asyncio
 from aiogram.types.input_file import InputFile
 from aiogram import Bot, Dispatcher, types
 from tornado.queues import Queue
-from typing import Text
+from typing import Dict, Text
 
 
 
@@ -79,6 +79,11 @@ class TelegramBot(ServiceBot, IEventHandler, IntentProvider, IClientChannel):
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__event_processor)
         tornado.ioloop.IOLoop.current().spawn_callback(self.__activate_bot)
+    
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
     
     
     

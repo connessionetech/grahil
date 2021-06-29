@@ -105,6 +105,9 @@ class JitsiDelegate(TargetProcess):
     
     
     
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True 
+    
     
     def getname(self) ->Text:
         return JitsiDelegate.NAME

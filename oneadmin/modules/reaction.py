@@ -39,7 +39,7 @@ from apscheduler.schedulers.tornado import TornadoScheduler
 from apscheduler.triggers.cron import CronTrigger
 from builtins import str
 from apscheduler.events import EVENT_ALL, JobEvent, SchedulerEvent
-from typing import Text
+from typing import Dict, Text
 from settings import settings
 
 
@@ -76,7 +76,10 @@ class ReactionEngine(IModule, IEventHandler, IntentProvider, IReactionEngine):
     def initialize(self)->None:
         self.logger.debug("Module init")
         pass
-        
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True    
         
     
     

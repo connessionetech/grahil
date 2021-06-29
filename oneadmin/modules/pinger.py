@@ -25,7 +25,7 @@ import logging
 import tornado
 import datetime
 import asyncio
-from typing import Text
+from typing import Dict, Text
 
 
 
@@ -51,6 +51,10 @@ class Pinger(IModule):
         self.logger.info("Module init")
         self.start()
         pass
+
+
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
     
     
     async def __generatePing(self):

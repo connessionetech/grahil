@@ -78,6 +78,8 @@ class ScriptRunner(IModule, IScriptRunner):
         pass
     
     
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
     
     
     def list_script_files(self, dir_path):

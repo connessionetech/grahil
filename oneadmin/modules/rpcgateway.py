@@ -19,7 +19,7 @@ import tornado
 import json
 
 from tornado.queues import Queue
-from typing import Text,List
+from typing import Dict, Text,List
 
 
 
@@ -54,6 +54,10 @@ class RPCGateway(IModule, IntentProvider, IClientChannel):
         tornado.ioloop.IOLoop.current().spawn_callback(self.__notifyHandler)
         pass
     
+    
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
 
     
     

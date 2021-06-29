@@ -20,7 +20,7 @@ import json
 
 from tornado import ioloop
 from tornado.web import url
-from typing import Text, List
+from typing import Dict, Text, List
 from datetime import datetime
 
 
@@ -53,7 +53,10 @@ class SmartHome(IModule):
     def initialize(self) ->None:
         self.logger.info("Module init")
         
-        
+
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True      
     
 
     def get_url_patterns(self)->List:

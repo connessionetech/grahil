@@ -66,8 +66,19 @@ class IModule(IEventDispatcher):
         raise NotImplementedError
     
     
+    '''
+        Returns the name of a module
+    '''
     def getname(self) ->Text:
         raise NotImplementedError
+
+    
+    '''
+        Validates configuration object for the module. Every module should implement its own
+        validation logic to verify a passed configuration object
+    '''
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
     
     
     '''

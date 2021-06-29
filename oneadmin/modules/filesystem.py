@@ -55,7 +55,7 @@ from tornado.ioloop import IOLoop
 from os import path
 from collections import deque
 from builtins import str
-from typing import List, Text
+from typing import Dict, List, Text
 from tornado.web import url
 
 
@@ -131,7 +131,11 @@ class FileManager(IModule):
     def initialize(self) ->None:
         self.logger.info("Module init")
         pass
-        
+    
+
+    
+    def valid_configuration(self, conf:Dict) ->bool:
+        return True
         
         
     
