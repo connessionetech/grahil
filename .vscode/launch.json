@@ -5,7 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: run.py",
+            "name": "Updater",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/update.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Grahil",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/run.py",
