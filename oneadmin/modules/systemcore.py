@@ -37,7 +37,7 @@ class SystemCore(IModule):
     classdocs
     '''
     
-    NAME = "identity"
+    NAME = "core"
 
     thread_pool = ThreadPoolExecutor(2)
 
@@ -177,7 +177,9 @@ class SystemCore(IModule):
 
 
 
+
 INTENT_RESTART_SELF_NAME = INTENT_PREFIX + "restart_self"
+
 ACTION_RESTART_SELF_NAME = ACTION_PREFIX + "restart_self"
 
 
@@ -198,6 +200,14 @@ class ActionRestartSelf(Action):
     '''
     async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
         logging.info("Self restart")
+
+        __core = None
+        if modules.hasModule(SystemCore.NAME):
+                __core:SystemCore = modules.getModule(SystemCore.NAME)
+                __ver = __core.reload()
+                return ActionResponse(data = __ver, events=[])
+        else:
+                raise ModuleNotFoundError("`" + SystemCore.NAME + "` module does not exist")
         pass
 
 
