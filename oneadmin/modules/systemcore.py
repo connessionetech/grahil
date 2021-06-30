@@ -6,8 +6,11 @@ Created on 14-Mar-2021
 
 
 from concurrent.futures.thread import ThreadPoolExecutor
+from oneadmin.core.intent import INTENT_PREFIX
+from oneadmin.core.action import ACTION_PREFIX, Action, ActionResponse
 from oneadmin.core.constants import TOPIC_IDENTITY
 from oneadmin.core.event import DataEvent
+from oneadmin.core import grahil_types
 import sys
 
 import tornado
@@ -17,7 +20,7 @@ import os
 import uuid
 
 from tornado.process import Subprocess
-from oneadmin.core.abstracts import IModule
+from oneadmin.core.abstracts import IModule, IntentProvider
 from oneadmin.responsebuilder import formatSuccessBotResponse, formatSuccessResponse
 from tornado.web import url
 import logging
@@ -76,14 +79,14 @@ class SystemCore(IModule):
         Returns a list of supported actions
     '''
     def supported_actions(self) -> List[object]:
-        return []
+        return [ActionRestartSelf()]
 
 
     '''
         Returns a list supported of action names
     '''
     def supported_action_names(self) -> List[Text]:
-        return []
+        return [ACTION_RESTART_SELF_NAME]
     
     
     
@@ -91,7 +94,9 @@ class SystemCore(IModule):
         Returns a list supported of intents
     '''
     def supported_intents(self) -> List[Text]:
-        return []
+        return [INTENT_RESTART_SELF_NAME]
+
+
 
 
 
@@ -167,5 +172,32 @@ class SystemCore(IModule):
         root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         script_path = os.path.join(root_path, "reload.sh")
         bashCommand = "nohup /bin/bash " + script_path + " " + "grahil.service"
-        tornado.ioloop.IOLoop.current().run_in_executor(Identifier.thread_pool, lambda : subprocess.Popen(bashCommand.split()))
+        tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.Popen(bashCommand.split()))
         pass
+
+
+
+INTENT_RESTART_SELF_NAME = INTENT_PREFIX + "restart_self"
+ACTION_RESTART_SELF_NAME = ACTION_PREFIX + "restart_self"
+
+
+
+class ActionRestartSelf(Action):
+
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_RESTART_SELF_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        logging.info("Self restart")
+        pass
+
+
