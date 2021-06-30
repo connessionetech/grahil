@@ -321,7 +321,7 @@ class MQTTGateway(IModule, IMQTTClient, IntentProvider, IClientChannel):
                     self.__requests[local_request_id] = {"local_request_id": local_request_id, "handler": handler, "client-id": sender, "res-topic": restopic}
                     await self.__mgsqueue.put({"requestid": local_request_id, "message": response})
                 
-                self.dispatchevent(DataEvent(topic, data))
+                await self.dispatchevent(DataEvent(topic, data))
                     
         except Exception as le:
             
