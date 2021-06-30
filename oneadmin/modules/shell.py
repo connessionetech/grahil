@@ -71,7 +71,7 @@ class ScriptRunner(IModule, IScriptRunner):
     
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         self.root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         self.__script_dir = os.path.join(self.root_path, self.__conf["script_folder"])
         self.list_script_files(self.__script_dir)

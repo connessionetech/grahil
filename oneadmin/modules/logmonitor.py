@@ -76,7 +76,7 @@ class LogMonitor(IModule, ILogMonitor):
     
     
     def initialize(self)->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         self.register_static_log_targets()
         pass 
     

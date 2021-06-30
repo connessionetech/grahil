@@ -48,7 +48,7 @@ class ApiHostModule(IModule):
 
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
 
 
 

@@ -3,5 +3,6 @@
 	"klass": "SystemCore",
 	"order": -10,
 	"conf": {
+		"identity": ""
 	}
 }

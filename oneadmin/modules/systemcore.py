@@ -59,7 +59,7 @@ class SystemCore(IModule):
 
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__evaluate_identity)
     
 
@@ -107,9 +107,14 @@ class SystemCore(IModule):
             await self.dispatchevent(DataEvent(TOPIC_IDENTITY, data={"identity": self.__identity}))
         else:
             try:
-                uid:uuid.UUID = await self.__get_uid()
+                uid = await self.__get_uid()
                 address = await self.__get_ip()
-                self.__identity = str(uid.hex) + "@" + address
+
+                if isinstance(uid, str):
+                    self.__identity = uid + "@" + address
+                else:
+                    self.__identity = str(uid.hex) + "@" + address
+                
                 await self.dispatchevent(DataEvent(TOPIC_IDENTITY, data={"identity": self.__identity}))
             except Exception as e:
                 self.logger.error("Error evaluating identity %s", str(e))

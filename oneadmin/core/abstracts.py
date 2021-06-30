@@ -161,7 +161,7 @@ class TargetProcess(IModule):
     
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         self.__initialize()
         
     
@@ -559,7 +559,7 @@ class ServiceBot(IModule):
     
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
     
     
     

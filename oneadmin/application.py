@@ -329,6 +329,7 @@ class TornadoApplication(tornado.web.Application):
         ''' event data aggregation is a good case for data filter or data plugins '''
         if event["topic"] == TOPIC_IDENTITY:
             self.identity = event["data"]["identity"]
+            self.logger.info("Id = %s", self.identity)
             pass
             
 

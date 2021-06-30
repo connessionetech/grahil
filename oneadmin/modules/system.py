@@ -81,7 +81,7 @@ class SystemMonitor(IModule, ISystemMonitor):
 
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         tornado.ioloop.IOLoop.current().spawn_callback(self.__generateSystemStats)
         pass
 

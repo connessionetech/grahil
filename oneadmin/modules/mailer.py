@@ -50,7 +50,7 @@ class SMTPMailer(IModule, IMailer):
     
     
     def initialize(self) ->None:
-        self.logger.info("Module init")
+        self.logger.debug("Module init")
         pass
     
 
