@@ -58,6 +58,8 @@ TOPIC_DELEGATE_MONITORING = "/targetdelegate"
 
 TOPIC_NOTIFICATIONS = "/notifications"
 
+TOPIC_IDENTITY = "/internal/identity"
+
 
 ''' Notification codes'''
 

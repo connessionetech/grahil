@@ -1,6 +1,6 @@
 {
 	"configuration": {
-		"base_package": "redfoxagent",
+		"base_package": "oneadmin",
 		"server": {
 			"enabled": true,
 			"http_port": 8000,
@@ -19,11 +19,6 @@
 			"enabled": false,
 			"cert_file": "server.crt",
 			"private_key": "server.key"
-		},
-		"security": {
-			"jwt_algorithm": "HS256",
-			"jwt_secret": "gs5f4hd6dg4h",
-			"token_expiry_hours": 24
 		},
 		"modules": {
 			"pubsub": {

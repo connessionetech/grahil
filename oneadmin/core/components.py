@@ -41,6 +41,7 @@ import copy
 from tornado.ioloop import IOLoop
 from concurrent.futures.thread import ThreadPoolExecutor
 from tornado.websocket import websocket_connect
+import uuid
 
 
 

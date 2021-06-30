@@ -49,16 +49,15 @@ class TornadoApplication(tornado.web.Application):
         self.__config = conf
         self.__system_stats = None
         self.__clients = {}
+        self.__identity = None
         self.__module_registry = ModuleRegistry()
         
         modules = conf["modules"]
         
         
         try:
-            self.__filemanager = None
             self.__pubsubhub = None
             self.__action__dispatcher = None
-            self.__communication_hub = CommunicationHub()  
             
             
             
@@ -319,16 +318,6 @@ class TornadoApplication(tornado.web.Application):
             except Exception as e:
                 self.logger.error("Oops! an error occurred registering log for monitoring.%s", str(e))
     
-    
-    
-    
-    '''
-    async def handleDelegateEvents(self, event):
-        self.logger.debug("Event received from delegate")
-        await self.__pubsubhub.publish_event(event)
-    '''
-    
-    
   
     
     '''
@@ -338,6 +327,11 @@ class TornadoApplication(tornado.web.Application):
         self.logger.debug("handle_event for " + str(event["name"]))
         
         ''' event data aggregation is a good case for data filter or data plugins '''
+        if event["topic"] == TOPIC_IDENTITY:
+            self.identity = event["data"]["identity"]
+            pass
+            
+
         if event["topic"] == TOPIC_STATS:
             modules:List = self.modules.getModules()
             for mod in modules:
@@ -359,7 +353,17 @@ class TornadoApplication(tornado.web.Application):
         self.logger.debug("handle_actionable intent for " + str(source))
         return await self.action_dispatcher.handle_request(source, intent, args, event)
     
+
+    @property
+    def identity(self):
+        return self.__identity
+    
+
+    @identity.setter
+    def identity(self, uid):
+        self.__identity = uid
    
+
     
     @property
     def totalclients(self):

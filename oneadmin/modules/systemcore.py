@@ -6,6 +6,8 @@ Created on 14-Mar-2021
 
 
 from concurrent.futures.thread import ThreadPoolExecutor
+from oneadmin.core.constants import TOPIC_IDENTITY
+from oneadmin.core.event import DataEvent
 import sys
 
 import tornado
@@ -95,12 +97,17 @@ class SystemCore(IModule):
 
     async def __evaluate_identity(self):
 
-        try:
-            uid:uuid.UUID = await self.__get_uid()
-            address = await self.__get_ip()
-            self.__identity = str(uid.hex) + "@" + address
-        except Exception as e:
-            self.logger.error("Error evaluating identity %s", str(e))
+        if "identity" in self.__conf and self.__conf["identity"] != "":
+            self.__identity = self.__conf["identity"]
+            await self.dispatchevent(DataEvent(TOPIC_IDENTITY, data={"identity": self.__identity}))
+        else:
+            try:
+                uid:uuid.UUID = await self.__get_uid()
+                address = await self.__get_ip()
+                self.__identity = str(uid.hex) + "@" + address
+                await self.dispatchevent(DataEvent(TOPIC_IDENTITY, data={"identity": self.__identity}))
+            except Exception as e:
+                self.logger.error("Error evaluating identity %s", str(e))
     
 
 
