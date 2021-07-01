@@ -6,6 +6,7 @@ Created on 14-Mar-2021
 
 
 from concurrent.futures.thread import ThreadPoolExecutor
+import shutil
 from oneadmin.core.intent import INTENT_PREFIX
 from oneadmin.core.action import ACTION_PREFIX, Action, ActionResponse
 from oneadmin.core.constants import TOPIC_IDENTITY
@@ -49,6 +50,7 @@ class SystemCore(IModule):
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
         self.__identity = None
+        self.__interpreter = None
         self.__conf = conf
     
     
@@ -60,6 +62,7 @@ class SystemCore(IModule):
     
     def initialize(self) ->None:
         self.logger.debug("Module init")
+        self.__interpreter = sys.executable
         tornado.ioloop.IOLoop.current().spawn_callback(self.__evaluate_identity)
     
 
@@ -173,12 +176,54 @@ class SystemCore(IModule):
     '''
     Restarts self
     '''
-    def reload(self):
+    async def reload(self):
         root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         script_path = os.path.join(root_path, "reload.sh")
         bashCommand = "nohup /bin/bash " + script_path + " " + "grahil.service"
         tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.Popen(bashCommand.split()))
         pass
+
+
+    
+    '''
+    Triggers update script
+    '''
+    async def update(self):
+        # Make a copy of update script at a different location
+        root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        update_scripts_dir = os.path.join(root_path, "update")
+        user_dir =  os.path.expanduser('~')
+        target_update_scripts_dir = os.path.join(user_dir, "update")
+        copied:bool = await tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, self.copy_update_scripts, update_scripts_dir, target_update_scripts_dir)
+         
+        if not copied:
+            raise FileNotFoundError("update script was not found at expected location")
+
+        updater_script_path = os.path.join(target_update_scripts_dir, "update.py")
+        updater_script_command = "nohup" + " " + sys.executable + " " + updater_script_path
+        tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.Popen(updater_script_command.split()))
+        
+        # start update program with no hup
+        # use external location to communicate state/progress of the update
+        # this method will be called just once
+        pass
+
+
+
+    '''
+    Synchronous function to move update scripts to a different location before running update
+    '''
+    def copy_update_scripts(self, src:str, dest:str) ->bool:
+
+        try:
+            if os.path.exists(dest):
+                shutil.rmtree(dest)
+            shutil.copytree(src, dest)
+            return True
+
+        except Exception as e:
+            return False
+
 
 
 
