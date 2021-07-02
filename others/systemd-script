@@ -1,0 +1,23 @@
+sudo nano /lib/systemd/system/grahil.service
+
+
+[Unit]
+Description=Grahil micro services
+After=multi-user.target
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/rajdeeprath/venv/grahil/bin/python3.7 /home/rajdeeprath/github/grahil-py/run.py
+[Install]
+WantedBy=multi-user.target
+
+SAVE
+
+sudo chmod 644 /lib/systemd/system/grahil.service
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable grahil.service
+sudo systemctl start grahil.service
+
+sudo systemctl disable grahil.service
