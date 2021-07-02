@@ -82,14 +82,14 @@ class SystemCore(IModule):
         Returns a list of supported actions
     '''
     def supported_actions(self) -> List[object]:
-        return [ActionRestartSelf()]
+        return [ActionRestartSelf(), ActionUpdate()]
 
 
     '''
         Returns a list supported of action names
     '''
     def supported_action_names(self) -> List[Text]:
-        return [ACTION_RESTART_SELF_NAME]
+        return [ACTION_RESTART_SELF_NAME, ACTION_UPDATE_SELF_NAME]
     
     
     
@@ -97,7 +97,7 @@ class SystemCore(IModule):
         Returns a list supported of intents
     '''
     def supported_intents(self) -> List[Text]:
-        return [INTENT_RESTART_SELF_NAME]
+        return [INTENT_RESTART_SELF_NAME, INTENT_UPDATE_SELF_NAME]
 
 
 
@@ -177,10 +177,13 @@ class SystemCore(IModule):
     Restarts self
     '''
     async def reload(self):
+        '''
         root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
         script_path = os.path.join(root_path, "reload.sh")
-        bashCommand = "nohup /bin/bash " + script_path + " " + "grahil.service"
-        tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.Popen(bashCommand.split()))
+        bashCommand = script_path
+        '''
+        self.logger.info("Restarting...")        
+        tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.run(["systemctl", "restart", "grahil.service"]))
         pass
 
 
@@ -189,23 +192,8 @@ class SystemCore(IModule):
     Triggers update script
     '''
     async def update(self):
-        # Make a copy of update script at a different location
-        root_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        update_scripts_dir = os.path.join(root_path, "update")
-        user_dir =  os.path.expanduser('~')
-        target_update_scripts_dir = os.path.join(user_dir, "update")
-        copied:bool = await tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, self.copy_update_scripts, update_scripts_dir, target_update_scripts_dir)
-         
-        if not copied:
-            raise FileNotFoundError("update script was not found at expected location")
 
-        updater_script_path = os.path.join(target_update_scripts_dir, "update.py")
-        updater_script_command = "nohup" + " " + sys.executable + " " + updater_script_path
-        tornado.ioloop.IOLoop.current().run_in_executor(SystemCore.thread_pool, lambda : subprocess.Popen(updater_script_command.split()))
-        
-        # start update program with no hup
-        # use external location to communicate state/progress of the update
-        # this method will be called just once
+        self.logger.info("updating...")
         pass
 
 
@@ -229,8 +217,10 @@ class SystemCore(IModule):
 
 
 INTENT_RESTART_SELF_NAME = INTENT_PREFIX + "restart_self"
+INTENT_UPDATE_SELF_NAME = INTENT_PREFIX + "update_self"
 
 ACTION_RESTART_SELF_NAME = ACTION_PREFIX + "restart_self"
+ACTION_UPDATE_SELF_NAME = ACTION_PREFIX + "update_self"
 
 
 
@@ -254,7 +244,35 @@ class ActionRestartSelf(Action):
         __core = None
         if modules.hasModule(SystemCore.NAME):
                 __core:SystemCore = modules.getModule(SystemCore.NAME)
-                __ver = __core.reload()
+                __ver = await __core.reload()
+                return ActionResponse(data = __ver, events=[])
+        else:
+                raise ModuleNotFoundError("`" + SystemCore.NAME + "` module does not exist")
+        pass
+
+
+
+class ActionUpdate(Action):
+
+    
+    '''
+    Abstract method, must be defined in concrete implementation. action names must be unique
+    '''
+    def name(self) -> Text:
+        return ACTION_UPDATE_SELF_NAME
+    
+    
+    
+    '''
+    async method that executes the actual logic
+    '''
+    async def execute(self, requester:IntentProvider, modules:grahil_types.Modules, params:dict=None) -> ActionResponse:
+        logging.info("Update")
+
+        __core = None
+        if modules.hasModule(SystemCore.NAME):
+                __core:SystemCore = modules.getModule(SystemCore.NAME)
+                __ver = await __core.update()
                 return ActionResponse(data = __ver, events=[])
         else:
                 raise ModuleNotFoundError("`" + SystemCore.NAME + "` module does not exist")
