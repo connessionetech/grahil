@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 from urllib.request import urlopen
 import logging
+import sys
 
 
 # Configure the logging system
@@ -148,6 +149,14 @@ if is_downloadable(manifest):
     payload_requirements_update = payload["dependencies"]["requirements_update"]
     payload_update_cleanups = payload["cleanups"]
 
+    # Check python version (3.7+)    
+    interpreter_major = sys.version_info.major
+    interpreter_minor = sys.version_info.minor
+    has_python_3_min_version = False
+
+    if interpreter_major == 3 and interpreter_minor > 6:
+        has_python_3_min_version = True
+
 
     # Download payload archive to filesystem
     path_to_zip_file = os.path.join(temp_dir_for_download.name, update_filename)
@@ -185,28 +194,40 @@ if is_downloadable(manifest):
     ## compare versions
     old_version_module_path = os.path.join(temp_dir_for_existing.name, "oneadmin", "version.py")
 
-    
-    #old_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
-    #old_version_module = importlib.util.module_from_spec(old_version_module_spec)
-    #old_version_module_spec.loader.exec_module(old_version_module)
-    old_version_module = imp.load_source(temp_dir_for_latest.name, old_version_module_path)
+
+    if has_python_3_min_version:    
+        old_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
+        old_version_module = importlib.util.module_from_spec(old_version_module_spec)
+        old_version_module_spec.loader.exec_module(old_version_module)
+    else:            
+        old_version_module = imp.load_source(temp_dir_for_latest.name, old_version_module_path)
+        
     old_version = old_version_module.__version__.split(".")
+    
+    
     new_version_module_path = os.path.join(temp_dir_for_latest.name, "oneadmin", "version.py")
 
-    
-    #new_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
-    #new_version_module = importlib.util.module_from_spec(new_version_module_spec)
-    #new_version_module_spec.loader.exec_module(new_version_module)
-    new_version_module = imp.load_source(temp_dir_for_latest.name, new_version_module_path)
+    if has_python_3_min_version:
+        new_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
+        new_version_module = importlib.util.module_from_spec(new_version_module_spec)
+        new_version_module_spec.loader.exec_module(new_version_module)
+    else:
+        new_version_module = imp.load_source(temp_dir_for_latest.name, new_version_module_path)
+
     new_version = new_version_module.__version__.split(".")
+    
+
+    ## Check to see if conditions are valid for an update
 
     upgrade=False    
+
     if new_version[0] > old_version[0]:
         upgrade=True
     elif (new_version[0] == old_version[0]) and  (new_version[1] > old_version[1]):
         upgrade=True
     elif (new_version[0] == old_version[0]) and  (new_version[1] == old_version[1]) and (new_version[2] > old_version[2]):
         upgrade=True
+
 
     logging.debug("upgrade %s", +str(upgrade))
     upgrade = True
@@ -282,6 +303,7 @@ if is_downloadable(manifest):
 
         
         ## verify everything
+        ## do some smart thing here
 
         
         ## stop running program service
