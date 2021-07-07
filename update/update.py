@@ -1,9 +1,11 @@
+import importlib
 import requests
 import tempfile
 import os
 import zipfile
 import pathlib
 import shutil
+from importlib import import_module
 import imp
 from jsonmerge import merge
 from jsonschema import validate
@@ -164,10 +166,19 @@ if is_downloadable(url):
 
     ## compare versions
     old_version_module_path = os.path.join(temp_dir_for_existing.name, "oneadmin", "version.py")
-    old_version_module = imp.load_source(versions_module_name, old_version_module_path)
-    old_version = old_version_module.__version__.split(".")
 
+    
+    #old_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
+    #old_version_module = importlib.util.module_from_spec(old_version_module_spec)
+    #old_version_module_spec.loader.exec_module(old_version_module)
+    old_version_module = imp.load_source(temp_dir_for_latest.name, old_version_module_path)
+    old_version = old_version_module.__version__.split(".")
     new_version_module_path = os.path.join(temp_dir_for_latest.name, "oneadmin", "version.py")
+
+    
+    #new_version_module_spec = importlib.util.spec_from_file_location(versions_module_name.strip(".py"), old_version_module_path)
+    #new_version_module = importlib.util.module_from_spec(new_version_module_spec)
+    #new_version_module_spec.loader.exec_module(new_version_module)
     new_version_module = imp.load_source(temp_dir_for_latest.name, new_version_module_path)
     new_version = new_version_module.__version__.split(".")
 

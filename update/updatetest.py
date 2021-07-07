@@ -1,25 +1,32 @@
-import requests
-import tempfile
-import os
-import zipfile
-import pathlib
-import shutil
-import imp
 from jsonmerge import merge
 from jsonschema import validate
-import json
-import sys
 import time
 from pathlib import Path
-
+import subprocess
 import logging
 
 
+
 # Configure the logging system
-logging.basicConfig(filename ='grahil_update.log',
-                    level = logging.ERROR)
+logging.basicConfig(filename ='/home/rajdeeprath/grahil_update.log',
+                    level = logging.INFO)
 
 
 logging.info("hello")
-os.system('systemctl restart grahil.service')
+subprocess.Popen(["systemctl", "stop", "grahil.service"])
 logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+time.sleep(2)
+logging.info("bellow")
+logging.info("end")

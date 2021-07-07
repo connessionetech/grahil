@@ -1,0 +1,15 @@
+{
+    "vendor": "Connessione Technoloigies Pvt. Ltd.",
+    "released": "2018-06-12 09:55:22",
+    "payload":{
+        "version": "1.0.10",
+        "url": "https://grahil.s3.amazonaws.com/grahil-py.zip",
+        "format": "zip",
+        "md5":"2ef23eae888ed7a5d2c6663c18ca3139",
+        "dependencies":{
+            "interpreter": "3.7",
+            "requirements_update": false
+        },
+        "cleanups":[]    
+    }
+}
