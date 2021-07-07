@@ -13,7 +13,7 @@ import json
 import sys
 import time
 from pathlib import Path
-
+from urllib.request import urlopen
 import logging
 
 
@@ -39,9 +39,11 @@ def is_downloadable(url):
 # Check manifest to determien what is the latest version available
 
 # Download file
-url = 'https://grahil.s3.amazonaws.com/grahil-py.zip'
+
+manifest = "https://grahil.s3.amazonaws.com/manifest.json"
 current_program_path = "/home/rajdeeprath/github/grahil-py/"
 program_backup_path = "/home/rajdeeprath/grahil_backups/"
+update_filename = "grahil-latest.zip"
 versions_module_name = "version.py"
 backup_filename = "grahil_last_working"
 backup_format = "zip"
@@ -129,11 +131,27 @@ temp_dir_for_existing = tempfile.TemporaryDirectory() # Where to copy and work w
 temp_dir_for_download = tempfile.TemporaryDirectory() # Where to download latest build
 temp_dir_for_updated = tempfile.TemporaryDirectory() # Where to build & test the update before installation
 
-if is_downloadable(url):
-    # download file
-    logging.info("Downloading update from %s", url)
-    path_to_zip_file = os.path.join(temp_dir_for_download.name, "grahil-latest.zip")
-    r = requests.get(url, allow_redirects=True)
+if is_downloadable(manifest):
+
+    logging.info("Downloading manifest from %s", manifest)
+
+    # Extract all the data from manifest    
+    manifest_content = urlopen(manifest).read()
+    manifest_data = json.loads(manifest_content)
+    manifest_provider = manifest_data["vendor"]
+    manifest_release_date = manifest_data["released"]
+    payload = manifest_data["payload"]
+    payload_version = payload["version"]
+    payload_url = payload["url"]
+    payload_hash = payload["md5"]
+    payload_interpreter = payload["dependencies"]["interpreter"]
+    payload_requirements_update = payload["dependencies"]["requirements_update"]
+    payload_update_cleanups = payload["cleanups"]
+
+
+    # Download payload archive to filesystem
+    path_to_zip_file = os.path.join(temp_dir_for_download.name, update_filename)
+    r = requests.get(payload_url, allow_redirects=True)
     open(path_to_zip_file, 'wb').write(r.content)
 
     if os.path.exists(path_to_zip_file) and os.path.isfile(path_to_zip_file):
@@ -142,7 +160,7 @@ if is_downloadable(url):
         logging.error("Update download failed")
         sys.exit()
     
-    # extract file to a tmp location
+    # Extract file to tmp working location
     with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
         zip_ref.extractall(temp_dir_for_latest.name)
     path = os.path.join(temp_dir_for_latest.name, "run.py")
@@ -152,7 +170,7 @@ if is_downloadable(url):
         logging.error("Failed to extract update content")
         sys.exit()
     
-    # copy existing program installation to a tmp location
+    # Copy existing program installation to tmp working location
     if os.path.exists(temp_dir_for_existing.name):
         shutil.rmtree(temp_dir_for_existing.name)
         
