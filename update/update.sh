@@ -19,8 +19,10 @@ subject="Python "
 
 
 LOGGING=true
-UPDATER_SCRIPT="/home/rajdeeprath/github/grahil-py/update/updatetest.py"
-UPDATER_DIR="$(dirname "${UPDATER_SCRIPT}")"
+
+# set location for updater files in config during cron setup
+UPDATER_DIR="/home/rajdeeprath/github/grahil-py/update"
+UPDATER_SCRIPT="$UPDATER_DIR/updatetest.py"
 UPDATER_LOG="$UPDATER_DIR/grahil_update.log"
 
 
