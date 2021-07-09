@@ -1,14 +1,9 @@
-import importlib
 import requests
 import tempfile
 import os
 import zipfile
 import pathlib
 import shutil
-from importlib import import_module
-import imp
-from jsonmerge import merge
-from jsonschema import validate
 import json
 import sys
 import time
@@ -16,11 +11,28 @@ from pathlib import Path
 from urllib.request import urlopen
 import logging
 import sys
+import enum
+import platform
+import subprocess
+
+from jsonmerge import merge
+from jsonschema import validate
 
 
 # Configure the logging system
 logging.basicConfig(filename ='grahil_update.log',
                     level = logging.ERROR)
+
+# creating enumerations using class
+SYSTEM_TYPE = None
+class SystemDist(enum.Enum):
+    SYSTEM_UBUNTU = "SYSTEM_UBUNTU"
+    SYSTEM_REDHAT = "SYSTEM_REDHAT"
+    SYSTEM_RPI = "SYSTEM_RPI"
+    SYSTEM_OPI = "SYSTEM_OPI"
+    SYSTEM_ARM_GENERIC = "SYSTEM_ARM_GENERIC"
+    SYSTEM_x86_64_GENERIC = "SYSTEM_x86_64_GENERIC"
+
 
 
 ''' Check if file is downloadable '''
@@ -37,10 +49,88 @@ def is_downloadable(url):
         return False
     return True
 
-# Check manifest to determien what is the latest version available
 
-# Download file
+def is_raspberrypi():
+    """
+    Is this running on a raspberry PI?
+    """
+    try:
+        with io.open('/sys/firmware/devicetree/base/model', 'r') as m:
+            if 'raspberry pi' in m.read().lower(): return True
+    except Exception: pass
+    return False
 
+
+def start_grahil_service(self):
+        cmd = 'systemctl start grahil.service'
+        proc = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+        proc.communicate()
+
+def stop_grahil_service(self):
+        cmd = 'systemctl stop grahil.service'
+        proc = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE)
+        proc.communicate()
+
+def is_active_grahil_service(self):
+        cmd = 'systemctl status grahil.service'
+        proc = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE,encoding='utf8')
+        stdout_list = proc.communicate()[0].split('\n')
+        for line in stdout_list:
+            if 'Active:' in line:
+                if '(running)' in line:
+                    return True
+        return False
+
+
+# START
+
+
+
+# Check python version (2.7 or 3.5+)    
+interpreter_major = sys.version_info.major
+interpreter_minor = sys.version_info.minor
+has_python_3_min_version = False
+has_python_2_min_version = False
+
+if interpreter_major == 3 and interpreter_minor > 6:
+    has_python_3_min_version = True
+    import importlib
+elif interpreter_major == 2 and interpreter_minor == 7:
+    has_python_2_min_version = True
+    import imp
+
+
+# Check OS -> we wil be supporting desktops/servers running ubuntu and centos as 
+# well as arm devices such as raspberry pi and orange pi
+
+system_type = os.uname()
+machine = system_type[4]
+if machine.startsWith("arm"):
+    logging.debug("dealing with arm")
+
+    if is_raspberrypi():
+        SYSTEM_TYPE = SystemDist.SYSTEM_RPI
+    else:
+        SYSTEM_TYPE = SystemDist.SYSTEM_x86_64_GENERIC
+
+elif machine.startsWith("x86_64"):
+    logging.debug("dealing with desktop/server")
+
+    
+    if has_python_3_min_version:
+        if 'ubuntu' in platform.platform().lower():
+            SYSTEM_TYPE = SystemDist.SYSTEM_UBUNTU
+        elif 'red hat' in platform.platform().lower():
+            SYSTEM_TYPE = SystemDist.SYSTEM_REDHAT
+    else:
+        if "ubuntu" in platform.linux_distribution()[0].lower():
+            SYSTEM_TYPE = SystemDist.SYSTEM_UBUNTU
+        elif "red hat" in platform.linux_distribution()[0].lower():
+            SYSTEM_TYPE = SystemDist.SYSTEM_REDHAT
+
+
+
+# variable declarations
 manifest = "https://grahil.s3.amazonaws.com/manifest.json"
 current_program_path = "/home/rajdeeprath/github/grahil-py/"
 program_backup_path = "/home/rajdeeprath/grahil_backups/"
@@ -149,14 +239,7 @@ if is_downloadable(manifest):
     payload_requirements_update = payload["dependencies"]["requirements_update"]
     payload_update_cleanups = payload["cleanups"]
 
-    # Check python version (3.7+)    
-    interpreter_major = sys.version_info.major
-    interpreter_minor = sys.version_info.minor
-    has_python_3_min_version = False
-
-    if interpreter_major == 3 and interpreter_minor > 6:
-        has_python_3_min_version = True
-
+    
 
     # Download payload archive to filesystem
     path_to_zip_file = os.path.join(temp_dir_for_download.name, update_filename)
@@ -230,11 +313,11 @@ if is_downloadable(manifest):
 
 
     logging.debug("upgrade %s", +str(upgrade))
-    upgrade = True
+    #upgrade = True
 
 
     if upgrade:
-        logging.info("Conditiosn valid to start upgrade")
+        logging.info("Conditions valid to start upgrade")
 
         ## First we copy all old files into update workspace
         if os.path.exists(temp_dir_for_updated.name):
@@ -305,9 +388,9 @@ if is_downloadable(manifest):
         ## verify everything
         ## do some smart thing here
 
-        
-        ## stop running program service
-        os.system("systemctl stop grahil.service")
+        if is_active_grahil_service():
+            ## stop running program service
+            stop_grahil_service()
 
 
         ## backup everything to a safe location
@@ -332,8 +415,9 @@ if is_downloadable(manifest):
         time.sleep(5)
 
         
-        ## Start service
-        os.system("systemctl restart grahil.service")
+        if not is_active_grahil_service():
+            ## Start service
+            start_grahil_service()
 
 
         # Wait for service to start
@@ -341,7 +425,7 @@ if is_downloadable(manifest):
 
 
         ## verify things are running ok and there are no errors from logs
-        TESTED_OK = False    
+        TESTED_OK = False
 
         error_log = os.path.join(current_program_path, error_log_file)
         if os.path.exists(error_log) and os.path.isfile(error_log):
@@ -354,8 +438,9 @@ if is_downloadable(manifest):
         if not TESTED_OK:
             logging.error("Upgrade failed. Reverting")
             
-            ## stop service
-            os.system("systemctl stop grahil.service")
+            if is_active_grahil_service():
+                ## stop running program service
+                stop_grahil_service()
             
             time.sleep(5)
 
@@ -367,8 +452,9 @@ if is_downloadable(manifest):
 
             time.sleep(5)
 
-            ## start service
-            os.system("systemctl restart grahil.service")
+            if not is_active_grahil_service():
+                ## Start service
+                start_grahil_service()
 
     else:
         logging.error("cannot upgrade")

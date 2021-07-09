@@ -1,5 +1,10 @@
 #!/bin/bash
 
+: '
+NOTE: This code is deprecated and the relevant logic is moved to main updater python script
+The updater python script should be added to root cron tab as a part of regular installation process
+'
+
 PYTHON_2_LOCATION=
 PYTHON_3_LOCATION=
 PYTHON_2_EXISTS=
